@@ -39,8 +39,13 @@
   .app .cnt{margin-left:auto;font-size:.82rem;color:var(--soft);font-weight:700;white-space:nowrap;}
   .app .cnt b{color:var(--purple);}
   .body{border-top:2px solid var(--line);padding:14px 16px;}
-  .lane{margin-bottom:15px;} .lane:last-child{margin-bottom:0;}
-  .lane h4{margin:0 0 8px;font-size:.74rem;letter-spacing:.5px;text-transform:uppercase;font-weight:800;}
+  .lane{margin-bottom:9px;border:1.5px solid var(--line);border-radius:13px;overflow:hidden;background:#fdfaff;}
+  .lane>summary{list-style:none;cursor:pointer;padding:8px 13px;font-size:.74rem;letter-spacing:.5px;text-transform:uppercase;font-weight:800;color:var(--soft);}
+  .lane>summary::-webkit-details-marker{display:none;}
+  .lane>summary::before{content:'▸ ';color:#c9b6e2;}
+  .lane[open]>summary::before{content:'▾ ';}
+  .lane.q>summary{color:#e0932b;} .lane.i>summary{color:var(--purple);} .lane.done>summary,.lane.ship>summary{color:var(--green);}
+  .laneb{padding:2px 13px 11px;}
   .lane.d h4{color:var(--green);} .lane.q h4{color:#e0932b;} .lane.i h4{color:var(--purple);} .lane.s h4{color:var(--soft);}
   .row{display:flex;align-items:flex-start;gap:9px;padding:5px 0;font-size:1rem;}
   .row input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--green);cursor:pointer;flex-shrink:0;}
@@ -54,6 +59,7 @@
   .qrow.dragging{opacity:.4;}
   .qrow.dragover{outline:2px dashed var(--pink);outline-offset:3px;border-radius:10px;}
   .statchip,.typechip,.priochip{border:none;border-radius:9px;font-size:.8rem;font-weight:700;padding:3px 9px;cursor:pointer;line-height:1.2;flex-shrink:0;white-space:nowrap;}
+  select.chipsel{appearance:none;-webkit-appearance:none;border:none;border-radius:9px;font-size:.8rem;font-weight:700;padding:3px 19px 3px 9px;cursor:pointer;line-height:1.3;flex-shrink:0;font-family:'Quicksand';max-width:135px;background-repeat:no-repeat;background-position:right 5px center;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><path d='M1 3l4 4 4-4' fill='none' stroke='%23b09bc9' stroke-width='1.6'/></svg>");}
   .dots{border:none;background:none;color:#b8a9d0;cursor:pointer;font-weight:800;font-size:1.2rem;padding:0 5px;}
   .detail{margin:0 0 12px 28px;padding:11px 13px;background:#faf6ff;border:1.5px solid #eeddf7;border-radius:12px;}
   .dmeta{font-size:.74rem;color:var(--soft);font-weight:800;margin-bottom:7px;text-transform:uppercase;letter-spacing:.4px;}
@@ -278,8 +284,9 @@ async function connectGitHub(){
 const $ = s => document.querySelector(s);
 const esc = s => (s+'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function setStatus(t){ $('#status').textContent = t; }
-const openState = new Set(['app:poda','rec:build']);
-function captureOpen(){ document.querySelectorAll('details[data-key]').forEach(d=>{ const k=d.getAttribute('data-key'); if(d.open) openState.add(k); else openState.delete(k); }); }
+const openState = new Set(['rec:stages']);
+const collapsed = new Set(); // for default-OPEN sections (the Queue): tracks which the user closed
+function captureOpen(){ document.querySelectorAll('details[data-key]').forEach(d=>{ const k=d.getAttribute('data-key'); if(d.hasAttribute('data-defopen')){ if(d.open) collapsed.delete(k); else collapsed.add(k); } else { if(d.open) openState.add(k); else openState.delete(k); } }); }
 
 /* ---------- persistence ---------- */
 const hasFS = 'showOpenFilePicker' in window;
@@ -339,6 +346,16 @@ function cycleType(id,i){ const a=app(id); const q=a.queue[i]; const idx=TYPE_OR
 const PRIO_ORDER=['high','med','low'];
 const PRIO_META={high:{e:'🔴',t:'high',c:'#d0567f'},med:{e:'🟡',t:'med',c:'#e0932b'},low:{e:'🟢',t:'low',c:'#2fbf7e'}};
 function cyclePriority(id,i){ const a=app(id); const q=a.queue[i]; const idx=PRIO_ORDER.indexOf(q.priority||'med'); q.priority=PRIO_ORDER[(idx+1)%3]; touch(); }
+function setStat(id,i,v){ const q=app(id).queue[i]; q.status=v; q.done=(v==='done'); touch(); }
+function setType(id,i,v){ app(id).queue[i].type=v; touch(); }
+function setPrio(id,i,v){ app(id).queue[i].priority=v; touch(); }
+function chipSel(id,i,kind){
+  const q=app(id).queue[i];
+  const C={status:[STATUS_ORDER,STATUS_META,q.status||'todo','setStat'],type:[TYPE_ORDER,TYPE_META,q.type||'task','setType'],prio:[PRIO_ORDER,PRIO_META,q.priority||'med','setPrio']}[kind];
+  const order=C[0],meta=C[1],cur=C[2],fn=C[3],m=meta[cur]||Object.values(meta)[0];
+  const opts=order.map(k=>`<option value="${k}" ${k===cur?'selected':''}>${meta[k].e} ${meta[k].t}</option>`).join('');
+  return `<select class="chipsel" style="background-color:${m.c}22;color:${m.c}" onchange="${fn}('${id}',${i},this.value)">${opts}</select>`;
+}
 function delApp(id){ const a=app(id); if(!a)return; if(!confirm('Remove the project "'+a.name+'" from your Tiara board?\n\nThis only clears it from the board — it does NOT touch any files, folders, or repos on your Mac.')) return; data.apps=data.apps.filter(x=>x.id!==id); openState.delete('app:'+id); touch(); setStatus('removed '+a.name+' from the board'); }
 async function pullRoadmap(appId){
   if(!HELPER.on){ setStatus('start the Tiara Helper to sync roadmap.md'); return; }
@@ -407,7 +424,7 @@ function render(){
     const rowHtml=(q,i)=>{
       const sm=STATUS_META[q.status]||STATUS_META.todo; const tm=TYPE_META[q.type]||TYPE_META.task; const pm=PRIO_META[q.priority]||PRIO_META.med;
       const det = openState.has('item:'+q.id) ? `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i})"><button onclick="addNote('${a.id}',${i})">note</button></div></div>` : '';
-      return `<div class="row qrow ${q.status==='done'?'done':''}" draggable="true" ondragstart="dragStart(event,'${a.id}',${i})" ondragend="dragEnd(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropRow(event,'${a.id}',${i})"><span class="grip" title="drag to reorder">⠿</span><button class="priochip" style="background:${pm.c}22;color:${pm.c}" onclick="cyclePriority('${a.id}',${i})" title="priority — click to change">${pm.e}</button><button class="statchip" style="background:${sm.c}22;color:${sm.c}" onclick="cycleStatus('${a.id}',${i})" title="click to change">${sm.e} ${sm.t}</button><button class="typechip" style="background:${tm.c}22;color:${tm.c}" onclick="cycleType('${a.id}',${i})" title="click to change">${tm.e} ${tm.t}</button><span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span><button class="dots" onclick="toggleDetail('${esc(q.id)}')" title="details & notes">⋯</button><button class="x" title="delete" onclick="delItem('${a.id}',${i})">✕</button></div>${det}`;
+      return `<div class="row qrow ${q.status==='done'?'done':''}" draggable="true" ondragstart="dragStart(event,'${a.id}',${i})" ondragend="dragEnd(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropRow(event,'${a.id}',${i})"><span class="grip" title="drag to reorder">⠿</span>${chipSel(a.id,i,'prio')}${chipSel(a.id,i,'status')}${chipSel(a.id,i,'type')}<span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span><button class="dots" onclick="toggleDetail('${esc(q.id)}')" title="details & notes">⋯</button><button class="x" title="delete" onclick="delItem('${a.id}',${i})">✕</button></div>${det}`;
     };
     let activeRows='', doneRows='';
     a.queue.forEach((q,i)=>{ if(q.status==='done') doneRows+=rowHtml(q,i); else activeRows+=rowHtml(q,i); });
@@ -420,10 +437,11 @@ function render(){
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
-        <div class="lane d"><h4>🌱 Recently done</h4>${drows}</div>
-        <div class="lane q"><h4>🔧 Queue</h4>${activeRows||'<div class="muted">nothing active 🎉</div>'}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><button onclick="addItem('${a.id}')">add</button></div>${doneFold}</div>
-        <div class="lane i"><h4>💭 Inbox</h4>${irows}<div class="addbox"><input id="inb-${a.id}" placeholder="drop an idea…" onkeydown="if(event.key==='Enter')addInbox('${a.id}')"><button onclick="addInbox('${a.id}')">drop</button></div></div>
-        <div class="lane s"><h4>🔒 Scramble <span class="scnote">(private — agents don't read this)</span></h4>${srows}<div class="addbox"><input id="scr-${a.id}" placeholder="brain-dump, anything…" onkeydown="if(event.key==='Enter')addScramble('${a.id}')"><button onclick="addScramble('${a.id}')">jot</button></div></div>
+        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>🔧 Queue · ${open}</summary><div class="laneb">${activeRows||'<div class="muted">nothing active 🎉</div>'}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><button onclick="addItem('${a.id}')">add</button></div></div></details>
+        ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>✅ Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
+        ${(a.done&&a.done.length)?`<details class="lane ship" data-key="ship:${a.id}" ${openState.has('ship:'+a.id)?'open':''}><summary>🌱 Shipped · ${a.done.length} <span class="scnote">from git commits</span></summary><div class="laneb">${drows}</div></details>`:''}
+        <details class="lane i" data-key="inb:${a.id}" ${openState.has('inb:'+a.id)?'open':''}><summary>💭 Inbox · ${a.inbox.length}</summary><div class="laneb">${irows}<div class="addbox"><input id="inb-${a.id}" placeholder="drop an idea…" onkeydown="if(event.key==='Enter')addInbox('${a.id}')"><button onclick="addInbox('${a.id}')">drop</button></div></div></details>
+        <details class="lane s" data-key="scr:${a.id}" ${openState.has('scr:'+a.id)?'open':''}><summary>🔒 Scramble <span class="scnote">private — agents never read this</span></summary><div class="laneb">${srows}<div class="addbox"><input id="scr-${a.id}" placeholder="brain-dump, anything…" onkeydown="if(event.key==='Enter')addScramble('${a.id}')"><button onclick="addScramble('${a.id}')">jot</button></div></div></details>
         <div class="scnote" style="margin-top:8px">repo: ${esc(a.repo)}</div>
         <button class="delproj" onclick="delApp('${a.id}')">🗑 remove project from board</button>
       </div></details>`;
