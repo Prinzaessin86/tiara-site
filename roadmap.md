@@ -12,7 +12,6 @@ reads it every session and keeps it current as work gets done.
 - [ ] TIA-11 · 🟡 · (task) review recipe for new app
 - [ ] TIA-12 · 🟡 · (task) review the whole runbook
 - [ ] TIA-15 · 🟡 · (task) turn the runbook into fully clickable recipes with copy-buttons (started)
-- [ ] TIA-18 · 🟡 · (task) only show last 10 commits
 
 ## ⛔ Blocked
 
@@ -20,6 +19,7 @@ reads it every session and keeps it current as work gets done.
 
 ## ✅ Done
 - [x] TIA-17 · (feature) drap projects around
+- [x] TIA-18 · (task) only show last 10 commits
 - [x] TIA-01 · (task) v1 working board + runbook (this page)
 - [x] TIA-02 · (task) Connect to a JSON file Claude Code also reads/writes
 - [x] TIA-04 · (task) Auto-pull 'recently done' from each repo's git
