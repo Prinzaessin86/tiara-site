@@ -73,6 +73,7 @@
   .addbox input{flex:1;font-family:'Quicksand';font-size:.92rem;border:2px solid var(--line);border-radius:10px;padding:7px 10px;}
   .addbox button{border:none;background:linear-gradient(90deg,var(--pink),var(--purple));color:#fff;font-weight:800;border-radius:10px;padding:0 13px;cursor:pointer;}
   .scnote{font-size:.72rem;color:var(--soft);font-weight:700;}
+  .repoedit{cursor:pointer;} .repoedit:hover{color:var(--pink);} .repoedit .ed{color:#c9b6e2;font-weight:800;margin-left:4px;}
 
   details.rec{background:var(--card);border:2px solid var(--line);border-radius:18px;margin-bottom:12px;overflow:hidden;}
   details.rec>summary{list-style:none;cursor:pointer;padding:14px 16px;}
@@ -392,11 +393,21 @@ function seedQueueFromRunbook(a){
   });
   return rec.steps.length;
 }
+function setRepo(id){
+  const a=app(id); const cur=(a.repo&&!a.repo.startsWith('('))?a.repo:'';
+  const guess=cur || ((GH.owner||'')+'/'+(a.name||'').replace(/\s+/g,''));
+  const v=prompt('GitHub repo for '+a.name+' — as owner/name\n(e.g. '+(GH.owner||'you')+'/MyApp). Leave blank to disconnect:', guess);
+  if(v===null) return;
+  a.repo = v.trim() || '(new)';
+  touch();
+  setStatus(a.repo.startsWith('(')?(a.name+' disconnected from GitHub'):('connected '+a.name+' → '+a.repo));
+}
 function addApp(){
   const n=prompt('New app name?'); if(!n)return;
   const e=prompt('An emoji for it?','🫧')||'🫧';
   const p=(prompt('Short tag prefix for its items? (e.g. RB)', n.replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase())||'ITEM').toUpperCase().replace(/[^A-Z0-9]/g,'');
-  const a={id:n.toLowerCase().replace(/\s+/g,''),prefix:p,name:n,emoji:e,color:'sky',repo:'(new)',status:'Stage 0 · factory',done:[],queue:[],inbox:[],scramble:[]};
+  const repo=(prompt('Its GitHub repo as owner/name (or leave blank to add later):', (GH.owner||'')+'/'+n.replace(/\s+/g,''))||'').trim()||'(new)';
+  const a={id:n.toLowerCase().replace(/\s+/g,''),prefix:p,name:n,emoji:e,color:'sky',repo:repo,status:'Stage 0 · factory',done:[],queue:[],inbox:[],scramble:[]};
   data.apps.push(a);
   ensurePrefixes();
   const seed=confirm('Seed its queue with the factory checklist from the runbook?\n\n(install → run factory → Xcode project → canary → SPEC + roadmap → design system + icon → first slice — each step personalized with this app’s name)');
@@ -442,7 +453,7 @@ function render(){
         ${(a.done&&a.done.length)?`<details class="lane ship" data-key="ship:${a.id}" ${openState.has('ship:'+a.id)?'open':''}><summary>🌱 Shipped · ${a.done.length} <span class="scnote">from git commits</span></summary><div class="laneb">${drows}</div></details>`:''}
         <details class="lane i" data-key="inb:${a.id}" ${openState.has('inb:'+a.id)?'open':''}><summary>💭 Inbox · ${a.inbox.length}</summary><div class="laneb">${irows}<div class="addbox"><input id="inb-${a.id}" placeholder="drop an idea…" onkeydown="if(event.key==='Enter')addInbox('${a.id}')"><button onclick="addInbox('${a.id}')">drop</button></div></div></details>
         <details class="lane s" data-key="scr:${a.id}" ${openState.has('scr:'+a.id)?'open':''}><summary>🔒 Scramble <span class="scnote">private — agents never read this</span></summary><div class="laneb">${srows}<div class="addbox"><input id="scr-${a.id}" placeholder="brain-dump, anything…" onkeydown="if(event.key==='Enter')addScramble('${a.id}')"><button onclick="addScramble('${a.id}')">jot</button></div></div></details>
-        <div class="scnote" style="margin-top:8px">repo: ${esc(a.repo)}</div>
+        <div class="scnote repoedit" style="margin-top:8px" onclick="setRepo('${a.id}')" title="click to set the GitHub repo">🔗 repo: ${esc(a.repo)} <span class="ed">✎ edit</span></div>
         <button class="delproj" onclick="delApp('${a.id}')">🗑 remove project from board</button>
       </div></details>`;
   }).join('');
