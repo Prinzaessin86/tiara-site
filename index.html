@@ -277,6 +277,20 @@ async function bReorder(a,q,afterId){ const meta=await resolveBoard(a);
   await retry(()=>ghGraphQL(`mutation($p:ID!,$i:ID!,$a:ID){ updateProjectV2ItemPosition(input:{projectId:$p,itemId:$i,afterId:$a}){ items{ totalCount } } }`,{ p:meta.projectId, i:q.itemId, a:afterId })); }
 // GitHub Projects is eventually-consistent right after a mutation, so idempotent writes get a few quiet retries
 async function retry(fn){ let last; for(let k=0;k<5;k++){ try{ return await fn(); }catch(e){ last=e; await new Promise(r=>setTimeout(r,300*(k+1))); } } throw last; }
+// temporary: runs the exact field-write the chips run, and reports the real outcome/error
+async function diagnose(id){ const a=app(id); let out='DIAGNOSE '+a.name+'\n\n';
+  try{ const meta=await resolveBoard(a);
+    out+='projectId: '+(meta.projectId?'ok':'MISSING')+'\n';
+    out+='fields found: '+Object.keys(meta.fields).join(', ')+'\n';
+    out+='priority opts: '+(meta.fields.priority?Object.keys(meta.fields.priority.opts).join('/'):'❌ MISSING')+'\n';
+    out+='type opts: '+(meta.fields.type?Object.keys(meta.fields.type.opts).join('/'):'❌ MISSING')+'\n';
+    const q=(a.queue||[]).find(x=>x.itemId&&x.issueNumber);
+    out+='test item: '+(q?('#'+q.issueNumber+' itemId='+(q.itemId||'').slice(0,10)+'…'):'❌ none has itemId')+'\n\n';
+    if(q){ try{ await ghGraphQL(`mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ projectV2Item{ id } } }`,{ p:meta.projectId, i:q.itemId, f:meta.fields.priority.id, o:meta.fields.priority.opts['High'] });
+      out+='WRITE priority=High on #'+q.issueNumber+': ✅ SUCCESS'; }
+      catch(e){ out+='WRITE priority=High: ❌\n'+e.message; } }
+  }catch(e){ out+='resolveBoard FAILED: '+e.message; }
+  alert(out); }
 
 function ghLoadCfg(){ try{ const c=JSON.parse(localStorage.getItem('tiaraGH')||'{}'); GH.token=c.token||''; GH.owner=c.owner||''; GH.boardRepo=c.boardRepo||'tiara'; }catch(e){} }
 function ghSaveCfg(){ localStorage.setItem('tiaraGH', JSON.stringify({token:GH.token,owner:GH.owner,boardRepo:GH.boardRepo})); }
@@ -643,7 +657,7 @@ function render(){
       <summary><span class="app-grip" draggable="true" ondragstart="appDragStart(event,${ai})" ondragend="appDragEnd(event)" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${a.emoji}</span><span class="nm">${esc(a.name)}</span><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b> · ${a.inbox.length} inbox</span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
-        ${boardFor(a)?`<div class="actions"><span class="alab">☁ github board</span><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a></div>`:((HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:'')}
+        ${boardFor(a)?`<div class="actions"><span class="alab">☁ github board</span><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a><button class="runbtn" onclick="diagnose('${a.id}')">🔧 diagnose</button></div>`:((HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:'')}
         <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb">${activeRows||'<div class="muted">nothing active 🎉</div>'}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><button onclick="addItem('${a.id}')">add</button></div></div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         ${(a.done&&a.done.length)?`<details class="lane ship" data-key="ship:${a.id}" ${openState.has('ship:'+a.id)?'open':''}><summary>Shipped · ${a.done.length} <span class="scnote">from git commits</span></summary><div class="laneb">${drows}</div></details>`:''}
@@ -670,7 +684,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v3 · retry+optimistic';
+const TIARA_VERSION = 'board-v4 · diagnose';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
