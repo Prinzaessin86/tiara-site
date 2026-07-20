@@ -521,8 +521,8 @@ const TYPE_ORDER=['task','bug','feature','chore'];
 const TYPE_META={task:{e:'📋',t:'task',c:'#8877a0'},bug:{e:'🐞',t:'bug',c:'#d0567f'},feature:{e:'✨',t:'feature',c:'#9b5de5'},chore:{e:'🧹',t:'chore',c:'#4ea8ff'}};
 function cycleType(id,i){ const a=app(id); const q=a.queue[i]; const idx=TYPE_ORDER.indexOf(q.type||'task'); const nv=TYPE_ORDER[(idx+1)%4];
   if(boardFor(a)){ const prev=q.type; q.type=nv; captureOpen(); render();
-    bSetField(a,q,'type',cap(nv)).then(()=>setStatus('🟢 '+q.id+' · '+nv))
-      .catch(e=>{ q.type=prev; captureOpen(); render(); setStatus('⚠ '+q.id+' type didn\'t save — reverted ('+e.message+')'); }); return; }
+    bSetField(a,q,'type',cap(nv)).then(()=>setStatus('🟢 '+q.id+' · '+nv+' — saved'))
+      .catch(e=>{ q.type=prev; captureOpen(); render(); alert('CHIP TYPE FAILED\nitem #'+q.issueNumber+'\nitemId='+(q.itemId?(''+q.itemId).slice(0,16):'❌ MISSING')+'\noption='+cap(nv)+'\nERROR: '+e.message); }); return; }
   q.type=nv; touch(); }
 const PRIO_ORDER=['high','med','low'];
 const PRIO_META={high:{e:'🔴',t:'high',c:'#d0567f'},med:{e:'🟡',t:'med',c:'#e0932b'},low:{e:'🟢',t:'low',c:'#2fbf7e'}};
@@ -687,7 +687,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v5 · diagnose2';
+const TIARA_VERSION = 'board-v6 · chip-error';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
