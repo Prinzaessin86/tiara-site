@@ -167,6 +167,7 @@ const RUNMAP = {}; // a website cannot run local commands; sync happens through 
 let HELPER = { on:false };          // .on === connected to GitHub (keeps render conditionals working)
 const GH = { token:'', owner:'', boardRepo:'tiara', boardSha:null };
 const mdCache = {};                 // in-memory: last roadmap.md we wrote per app, to skip no-ops
+const mdSeen = {};                  // in-memory: last roadmap.md text we've synced with (for auto-sync)
 
 function ghLoadCfg(){ try{ const c=JSON.parse(localStorage.getItem('tiaraGH')||'{}'); GH.token=c.token||''; GH.owner=c.owner||''; GH.boardRepo=c.boardRepo||'tiara'; }catch(e){} }
 function ghSaveCfg(){ localStorage.setItem('tiaraGH', JSON.stringify({token:GH.token,owner:GH.owner,boardRepo:GH.boardRepo})); }
@@ -199,7 +200,7 @@ const DOT_PRI={'🔴':'high','🟡':'med','🟢':'low'};
 function itemStatus(it){ return it.status || (it.done?'done':'todo'); }
 function roadmapRender(a){
   const L=['# '+(a.name||'App')+' — roadmap 🐙','','Your live queue. The top of Up next is what to build now.','You edit this from Tiara — you never touch this file by hand. Claude Code','reads it every session and keeps it current as work gets done.',''];
-  const buckets=[['doing','## 🔨 Doing'],['todo','## 🌸 Up next'],['blocked','## ⛔ Blocked'],['done','## ✅ Done']];
+  const buckets=[['doing','## 🔨 Doing'],['todo','## 🌸 Up next'],['blocked','## ⛔ Blocked'],['verify','## 🔍 Verify · awaiting the human device check'],['done','## ✅ Done']];
   for(const [st,hdr] of buckets){ L.push(hdr);
     (a.queue||[]).filter(x=>itemStatus(x)===st).forEach(it=>{
       if(st==='done'){ L.push(('- [x] '+(it.id||'')+' · ('+(it.type||'task')+') '+(it.title||'')).replace(/\s+$/,'')); }
@@ -211,7 +212,7 @@ function roadmapRender(a){
 function roadmapParse(text){
   const items=[]; let status='todo', cur=null;
   (text||'').split('\n').forEach(raw=>{ let m;
-    if(m=raw.match(/^##\s*(.*)$/)){ const h=m[1].toLowerCase(); status=h.includes('doing')?'doing':h.includes('next')?'todo':h.includes('blocked')?'blocked':h.includes('done')?'done':status; cur=null; return; }
+    if(m=raw.match(/^##\s*(.*)$/)){ const h=m[1].toLowerCase(); status=h.includes('doing')?'doing':h.includes('verify')?'verify':h.includes('next')?'todo':h.includes('blocked')?'blocked':h.includes('done')?'done':status; cur=null; return; }
     if((m=raw.match(/^\s{2,}-\s*(.*)$/))&&cur){ const t=m[1]; cur.notes.push({by:t.startsWith('🤖')?'claude':'you',text:t.replace(/^(👑\s*you|🤖\s*claude)\s*:\s*/,'').trim()}); return; }
     if(m=raw.match(/^- \[( |x|X)\]\s*(.*)$/)){ const rest=m[2].trim(); const it={status,done:status==='done',notes:[],type:'task',priority:'med'}; let mm;
       if(mm=rest.match(/^(\S+)\s·\s(🔴|🟡|🟢)\s·\s\((\w+)\)\s*(.*)$/)){ it.id=mm[1]; it.priority=DOT_PRI[mm[2]]||'med'; it.type=mm[3]; it.title=mm[4].trim(); }
@@ -230,7 +231,7 @@ async function loadFromGitHub(){
   try{ data=JSON.parse(f.text); GH.boardSha=f.sha; }catch(e){ setStatus('the board file on GitHub is not valid JSON'); }
 }
 let saving=false, saveQueued=false, saveTimer=null;
-function scheduleSave(){ setStatus('… editing'); clearTimeout(saveTimer); saveTimer=setTimeout(ghSave,1500); }
+function scheduleSave(){ setStatus('… editing'); clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ saveTimer=null; ghSave(); },1500); }
 async function ghSave(){
   if(!HELPER.on) return;
   if(saving){ saveQueued=true; return; }
@@ -241,7 +242,7 @@ async function ghSave(){
     let mirrored=0;
     for(const a of data.apps){ const or=appOwnerRepo(a); if(!or) continue;
       const md=roadmapRender(a); if(mdCache[a.id]===md) continue;
-      try{ const cur=await ghGetFile(or,'roadmap.md'); if(cur.missing||cur.text!==md){ await ghPutFile(or,'roadmap.md',md,cur.missing?null:cur.sha,'Tiara: update roadmap'); mirrored++; } mdCache[a.id]=md; }catch(e){}
+      try{ const cur=await ghGetFile(or,'roadmap.md'); if(cur.missing||cur.text!==md){ await ghPutFile(or,'roadmap.md',md,cur.missing?null:cur.sha,'Tiara: update roadmap'); mirrored++; } mdCache[a.id]=md; mdSeen[a.id]=md; }catch(e){}
     }
     setStatus('🟢 saved to GitHub'+(mirrored?(' · synced '+mirrored+' roadmap'+(mirrored>1?'s':'')):'')+' · '+new Date().toLocaleTimeString());
   }catch(e){ setStatus('save failed: '+e.message); }
@@ -257,12 +258,48 @@ async function pullDone(appId){
     setStatus(added?('pulled '+added+' done from GitHub for '+a.name):('no new commits for '+a.name)); touch();
   }catch(e){ setStatus('⚠ '+e.message); }
 }
+// Merge a roadmap.md into an app's queue, applying the verify gate:
+// an item that roadmap says is done, but Tiara had as not-done, becomes 🔍 verify (awaiting your device check).
+function applyRoadmap(a, text){
+  const incoming=roadmapParse(text);
+  const curById={}; (a.queue||[]).forEach(q=>{ if(q.id) curById[q.id]=q; });
+  a.queue=incoming.map(it=>{
+    let st=it.status||'todo'; const cur=curById[it.id];
+    if(st==='done' && (!cur || cur.status!=='done')) st='verify';
+    return {id:it.id||'',title:it.title||'',status:st,done:st==='done',type:it.type||'task',priority:it.priority||'med',notes:it.notes||[]};
+  });
+}
 async function pullRoadmap(appId){
   const a=app(appId); const or=appOwnerRepo(a); if(!or){ setStatus('no repo set for '+a.name); return; }
   try{ const f=await ghGetFile(or,'roadmap.md'); if(f.missing){ setStatus('no roadmap.md yet in '+a.name); return; }
-    a.queue=roadmapParse(f.text).map(it=>({id:it.id||'',title:it.title||'',status:it.status||'todo',done:it.status==='done',type:it.type||'task',priority:it.priority||'med',notes:it.notes||[]}));
-    mdCache[a.id]=roadmapRender(a); setStatus('pulled '+a.queue.length+' items from roadmap.md for '+a.name); touch();
+    applyRoadmap(a,f.text); mdSeen[a.id]=f.text;
+    setStatus('pulled roadmap.md for '+a.name+' · finished items are now 🔍 verify'); touch();
   }catch(e){ setStatus('⚠ '+e.message); }
+}
+// Auto-sync: quietly check each connected repo's roadmap.md for changes (Claude Code's work)
+// and pull them in. Guarded so it never runs while you are mid-edit, and never clobbers on first sight.
+let syncing=false;
+async function autoSync(){
+  if(!HELPER.on || saving || saveTimer || syncing) return;
+  syncing=true;
+  try{
+    let changed=0;
+    for(const a of data.apps){ const or=appOwnerRepo(a); if(!or) continue;
+      let f; try{ f=await ghGetFile(or,'roadmap.md'); }catch(e){ continue; }
+      if(f.missing) continue;
+      if(mdSeen[a.id]===undefined){ mdSeen[a.id]=f.text; continue; }   // first sight: baseline only, never clobber
+      if(f.text!==mdSeen[a.id]){
+        applyRoadmap(a,f.text); const md=roadmapRender(a);
+        try{ await ghPutFile(or,'roadmap.md',md,f.sha,'Tiara: sync / mark verify'); }catch(e){}
+        mdSeen[a.id]=md; mdCache[a.id]=md; changed++;
+      }
+    }
+    if(changed){ render();
+      try{ GH.boardSha=await ghPutFile(GH.owner+'/'+GH.boardRepo,'tiara-data.json',JSON.stringify(data,null,2),GH.boardSha,'Tiara auto-sync'); }catch(e){}
+      setStatus('🔄 auto-synced '+changed+' app'+(changed>1?'s':'')+' from GitHub · '+new Date().toLocaleTimeString());
+    }
+  }catch(e){}
+  syncing=false;
 }
 async function connectGitHub(){
   const t=(document.getElementById('gh-token')||{}).value; const token=(t||'').trim();
@@ -338,8 +375,8 @@ function dragEnd(ev){ ev.currentTarget.classList.remove('dragging'); }
 function dragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add('dragover'); ev.dataTransfer.dropEffect='move'; }
 function dragLeave(ev){ ev.currentTarget.classList.remove('dragover'); }
 function dropRow(ev,appId,i){ ev.preventDefault(); ev.currentTarget.classList.remove('dragover'); if(dragApp!==appId||dragIdx===null||dragIdx===i){ dragApp=dragIdx=null; return; } const a=app(appId); const [it]=a.queue.splice(dragIdx,1); const to=(dragIdx<i)?i-1:i; a.queue.splice(to,0,it); dragApp=dragIdx=null; touch(); }
-const STATUS_ORDER=['todo','doing','done','blocked'];
-const STATUS_META={todo:{e:'◻',t:'to do',c:'#8877a0'},doing:{e:'🔨',t:'doing',c:'#e0932b'},done:{e:'✅',t:'done',c:'#2fbf7e'},blocked:{e:'⛔',t:'blocked',c:'#d0567f'}};
+const STATUS_ORDER=['todo','doing','verify','blocked','done'];
+const STATUS_META={todo:{e:'◻',t:'to do',c:'#8877a0'},doing:{e:'🔨',t:'doing',c:'#e0932b'},verify:{e:'🔍',t:'verify',c:'#4ea8ff'},blocked:{e:'⛔',t:'blocked',c:'#d0567f'},done:{e:'✅',t:'done',c:'#2fbf7e'}};
 function migrate(){ ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>{ if(!q.id) q.id=nextId(a); if(!q.status) q.status=q.done?'done':'todo'; q.done=(q.status==='done'); if(!q.type) q.type='task'; if(!q.priority) q.priority='med'; if(!Array.isArray(q.notes)) q.notes=[]; }); }); }
 const TYPE_ORDER=['task','bug','feature','chore'];
 const TYPE_META={task:{e:'📋',t:'task',c:'#8877a0'},bug:{e:'🐞',t:'bug',c:'#d0567f'},feature:{e:'✨',t:'feature',c:'#9b5de5'},chore:{e:'🧹',t:'chore',c:'#4ea8ff'}};
@@ -358,18 +395,6 @@ function chipSel(id,i,kind){
   return `<select class="chipsel" style="background-color:${m.c}22;color:${m.c}" onchange="${fn}('${id}',${i},this.value)">${opts}</select>`;
 }
 function delApp(id){ const a=app(id); if(!a)return; if(!confirm('Remove the project "'+a.name+'" from your Tiara board?\n\nThis only clears it from the board — it does NOT touch any files, folders, or repos on your Mac.')) return; data.apps=data.apps.filter(x=>x.id!==id); openState.delete('app:'+id); touch(); setStatus('removed '+a.name+' from the board'); }
-async function pullRoadmap(appId){
-  if(!HELPER.on){ setStatus('start the Tiara Helper to sync roadmap.md'); return; }
-  try{
-    const r=await fetch('/api/roadmap-pull',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({appId})});
-    const j=await r.json();
-    if(j.error){ setStatus('⚠ '+j.error); return; }
-    const a=app(appId);
-    a.queue=(j.items||[]).map(it=>({id:it.id||'',title:it.title||'',status:it.status||'todo',done:it.status==='done',type:it.type||'task',priority:it.priority||'med',notes:it.notes||[]}));
-    setStatus('pulled '+a.queue.length+' items from roadmap.md into '+a.name);
-    touch();
-  }catch(e){ setStatus('⚠ '+e.message); }
-}
 function cycleStatus(id,i){ const a=app(id); const q=a.queue[i]; const idx=STATUS_ORDER.indexOf(q.status||'todo'); q.status=STATUS_ORDER[(idx+1)%4]; q.done=(q.status==='done'); touch(); }
 function toggleDetail(itemId){ const k='item:'+itemId; openState.has(k)?openState.delete(k):openState.add(k); render(); }
 function addNote(appId,i){ const inp=document.getElementById('note-'+appId+'-'+i); const v=inp.value.trim(); if(!v)return; app(appId).queue[i].notes.push({by:'you',text:v}); inp.value=''; touch(); }
@@ -421,6 +446,8 @@ function pillStatus(a){
   const q=a.queue||[];
   if(!q.length) return a.status||'—';
   const active=q.filter(x=>x.status!=='done');
+  const ver=q.filter(x=>x.status==='verify').length;
+  if(ver) return '🔍 '+ver+' to verify';
   if(q.some(x=>x.status==='doing')) return '🔨 in progress';
   if(active.length===0) return '✨ all done';
   if(active.length && active.every(x=>x.status==='blocked')) return '⛔ blocked';
@@ -485,6 +512,9 @@ function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.st
     HELPER.on=false; showOnboard(true); setStatus('connect GitHub to begin');
   }
 })();
+// Auto-sync triggers: when you return to the tab, and every 2 minutes while it is open.
+window.addEventListener('focus', ()=>{ autoSync(); });
+setInterval(()=>{ if(document.visibilityState==='visible') autoSync(); }, 120000);
 </script>
 </body>
 </html>
