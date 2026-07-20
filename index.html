@@ -354,6 +354,7 @@ async function loadFromGitHub(){
   const f=await ghGetFile(GH.owner+'/'+GH.boardRepo,'tiara-data.json');
   if(f.missing){ GH.boardSha=null; await ghSave(); return; }
   try{ data=JSON.parse(f.text); GH.boardSha=f.sha; }catch(e){ setStatus('the board file on GitHub is not valid JSON'); return; }
+  if(!Array.isArray(data.runbook)) data.runbook = JSON.parse(JSON.stringify(SEED.runbook));  // self-heal: a missing runbook used to crash render()
   data.apps.forEach(a=>{ if(boardFor(a)) a._jsonQueueBackup = a.queue||[]; });  // keep the original JSON queue as an untouched backup — never erased
   await loadBoardApps();   // board apps: replace their live queue with the GitHub Project
 }
@@ -521,7 +522,7 @@ const TYPE_META={task:{e:'📋',t:'task',c:'#8877a0'},bug:{e:'🐞',t:'bug',c:'#
 function cycleType(id,i){ const a=app(id); const q=a.queue[i]; const idx=TYPE_ORDER.indexOf(q.type||'task'); const nv=TYPE_ORDER[(idx+1)%4];
   if(boardFor(a)){ const prev=q.type; q.type=nv; captureOpen(); render();
     bSetField(a,q,'type',cap(nv)).then(()=>setStatus('🟢 '+q.id+' · '+nv+' — saved'))
-      .catch(e=>{ q.type=prev; captureOpen(); render(); alert('CHIP TYPE FAILED\nitem #'+q.issueNumber+'\nitemId='+(q.itemId?(''+q.itemId).slice(0,16):'❌ MISSING')+'\noption='+cap(nv)+'\nERROR: '+e.message); }); return; }
+      .catch(e=>{ q.type=prev; captureOpen(); render(); setStatus('⚠ '+q.id+' type didn\'t save — reverted ('+e.message+')'); }); return; }
   q.type=nv; touch(); }
 const PRIO_ORDER=['high','med','low'];
 const PRIO_META={high:{e:'🔴',t:'high',c:'#d0567f'},med:{e:'🟡',t:'med',c:'#e0932b'},low:{e:'🟢',t:'low',c:'#2fbf7e'}};
@@ -659,7 +660,7 @@ function render(){
       <summary><span class="app-grip" draggable="true" ondragstart="appDragStart(event,${ai})" ondragend="appDragEnd(event)" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${a.emoji}</span><span class="nm">${esc(a.name)}</span><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b> · ${a.inbox.length} inbox</span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
-        ${boardFor(a)?`<div class="actions"><span class="alab">☁ github board</span><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a><button class="runbtn" onclick="diagnose('${a.id}')">🔧 diagnose</button></div>`:((HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:'')}
+        ${boardFor(a)?`<div class="actions"><span class="alab">☁ github board</span><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a></div>`:((HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:'')}
         <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb">${activeRows||'<div class="muted">nothing active 🎉</div>'}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><button onclick="addItem('${a.id}')">add</button></div></div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         ${(a.done&&a.done.length)?`<details class="lane ship" data-key="ship:${a.id}" ${openState.has('ship:'+a.id)?'open':''}><summary>Shipped · ${a.done.length} <span class="scnote">from git commits</span></summary><div class="laneb">${drows}</div></details>`:''}
@@ -672,7 +673,7 @@ function render(){
   $('#board').innerHTML = b;
 
   const rbSel = '';
-  const r = rbSel + data.runbook.map((rec,ri)=>{
+  const r = rbSel + (data.runbook||[]).map((rec,ri)=>{
     const steps = rec.steps.map((s,si)=>`<div class="step"><div class="sh"><input type="checkbox" onchange="this.closest('.step').classList.toggle('sdone')"><span class="sd">${si+1}. ${esc(s.do)}</span></div>
       <div class="meta"><b>Why:</b> ${esc(s.why)}</div>
       ${s.how?`<div class="cmd"><code id="cmd-${ri}-${si}">${esc(s.how)}</code><button onclick="copyCmd('cmd-${ri}-${si}')">copy</button>${(HELPER.on&&RUNMAP[s.how])?`<button onclick="runAction(document.getElementById('rbApp').value,'${RUNMAP[s.how]}','rbo-${ri}-${si}')">▶ run</button>`:''}</div>${(HELPER.on&&RUNMAP[s.how])?`<pre class="runout" id="rbo-${ri}-${si}" style="display:none"></pre>`:''}`:''}
@@ -686,7 +687,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v7 · handler-test';
+const TIARA_VERSION = 'board-v8 · fixed';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
