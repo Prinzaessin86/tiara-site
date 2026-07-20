@@ -601,6 +601,7 @@ function pillStatus(a){
 }
 /* ---------- render ---------- */
 function render(){
+  const _scrollY = window.scrollY;   // keep the page from jumping when a re-render rebuilds the board
   migrate();
   const b = data.apps.map((a,ai)=>{
     const open = a.queue.filter(q=>q.status!=='done').length, dn = a.queue.filter(q=>q.status==='done').length;
@@ -642,6 +643,7 @@ function render(){
     return `<details class="rec" data-key="rec:${rec.id}" ${openState.has('rec:'+rec.id)?'open':''}><summary><div class="rt">${esc(rec.title)}</div><div class="rw">${esc(rec.when)}</div></summary>${steps}</details>`;
   }).join('');
   $('#runbook').innerHTML = r;
+  window.scrollTo(0, _scrollY);   // restore scroll so opening a note doesn't fling you elsewhere
 }
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
