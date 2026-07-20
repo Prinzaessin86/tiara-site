@@ -72,6 +72,10 @@
   .row .promote{cursor:pointer;border:none;background:#f3e9fb;color:var(--purple);font-weight:700;font-size:.72rem;border-radius:8px;padding:2px 8px;}
   .grip{cursor:grab;color:#cbb8e2;font-weight:800;font-size:1.05rem;user-select:none;line-height:1;}
   .app-grip{cursor:grab;color:#cbb8e2;font-weight:800;font-size:1.05rem;user-select:none;line-height:1;flex-shrink:0;margin-right:-3px;}
+  .appmove{display:inline-flex;flex-direction:column;gap:1px;flex-shrink:0;margin-right:2px;}
+  .appmove button{border:none;background:none;cursor:pointer;color:#c3b2df;font-size:.62rem;line-height:.9;padding:0 2px;}
+  .appmove button:hover{color:var(--pink);}
+  .vertop{font-size:.58rem;font-weight:800;color:#a98fce;background:#f4ecff;padding:2px 8px;border-radius:9px;align-self:center;letter-spacing:.02em;}
   .app.appdragover{outline:2px dashed var(--pink);outline-offset:3px;}
   .app.appdragging{opacity:.4;}
   .qrow.dragging{opacity:.4;}
@@ -135,7 +139,7 @@
 <body>
 <div class="wrap">
   <header>
-    <h1><span class="crest"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.5 3.5L12 5l4.5 6.5L21 8l-1.7 11H4.7L3 8Z"/></svg></span>Tiara</h1>
+    <h1><span class="crest"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.5 3.5L12 5l4.5 6.5L21 8l-1.7 11H4.7L3 8Z"/></svg></span>Tiara<span id="verTop" class="vertop"></span></h1>
     <div class="sub">your app-project control center</div>
   </header>
 
@@ -513,6 +517,7 @@ function showTab(t){
 
 /* ---------- mutations ---------- */
 function app(id){ return data.apps.find(a=>a.id===id); }
+function moveApp(id,dir){ const i=data.apps.findIndex(a=>a.id===id); if(i<0) return; const j=i+dir; if(j<0||j>=data.apps.length) return; const [a]=data.apps.splice(i,1); data.apps.splice(j,0,a); touch(); }
 const PREFIX={tiara:'TIA',poda:'PODA',sparklereef:'SR',rainybow:'RB',bubbles:'BUB',pagingdrdaddy:'PDD',tentaclepit:'TENT',dressie:'DRES'};
 function ensurePrefixes(){ data.apps.forEach(a=>{ if(!a.prefix) a.prefix = PREFIX[a.id] || (a.name.replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase()||'ITEM'); }); }
 function nextId(a){ let max=0; const rx=new RegExp('^'+a.prefix+'-(\\d+)$','i'); a.queue.forEach(q=>{ const m=(q.id||'').match(rx); if(m) max=Math.max(max,parseInt(m[1],10)); }); return a.prefix+'-'+String(max+1).padStart(2,'0'); }
@@ -680,7 +685,7 @@ function render(){
     const srows = a.scramble.map((t,i)=>`<div class="row"><span class="t">${esc(t)}</span><button class="x" onclick="delScramble('${a.id}',${i})">✕</button></div>`).join('') || '<div class="muted">empty</div>';
     const drows = (a.done||[]).map(t=>`<div class="row done"><span class="t">${esc(t)}</span></div>`).join('') || '<div class="muted">—</div>';
     return `<details class="app" data-key="app:${a.id}" ondragover="appDragOver(event)" ondragleave="appDragLeave(event)" ondrop="appDrop(event,${ai})" ${openState.has('app:'+a.id)?'open':''}>
-      <summary><span class="app-grip" draggable="true" ondragstart="appDragStart(event,${ai})" ondragend="appDragEnd(event)" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${a.emoji}</span><span class="nm">${esc(a.name)}</span><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b> · ${a.inbox.length} inbox</span></summary>
+      <summary><span class="app-grip" draggable="true" ondragstart="appDragStart(event,${ai})" ondragend="appDragEnd(event)" title="drag to reorder projects">⠿</span><span class="appmove"><button onclick="event.stopPropagation();moveApp('${a.id}',-1)" title="move up">▲</button><button onclick="event.stopPropagation();moveApp('${a.id}',1)" title="move down">▼</button></span><span class="rib r-${a.color}"></span><span class="emojitile">${a.emoji}</span><span class="nm">${esc(a.name)}</span><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b> · ${a.inbox.length} inbox</span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${boardFor(a)?`<div class="actions"><span class="alab">☁ github board</span><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a></div>`:((HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:'')}
@@ -710,10 +715,11 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v11 · auto-discover';
+const TIARA_VERSION = 'board-v12';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
+  const vt=document.getElementById('verTop'); if(vt) vt.textContent=TIARA_VERSION;
   render();
   if(GH.token){
     HELPER.on=true; showOnboard(false);
