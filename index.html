@@ -247,16 +247,19 @@ async function loadBoardItems(a){
       type:((n.type&&n.type.name)||'Task').toLowerCase(),
       notes:[], _commentCount:(c.comments&&c.comments.totalCount)||0, _notesLoaded:false };
   });
+  // eagerly pull notes for items that have comments, so notes persist across refresh (not just on expand)
+  a.queue.filter(q=>q._commentCount>0 && !q._notesLoaded).forEach(q=>{ bLoadNotes(a,q).then(()=>render()).catch(()=>{}); });
 }
 async function loadBoardApps(){ for(const a of data.apps){ if(boardFor(a)){ try{ await loadBoardItems(a); }catch(e){ setStatus('⚠ board '+a.name+': '+e.message); } } } }
 // --- board mutations (optimistic: caller updates local state, then awaits these) ---
 async function bSetField(a,q,fieldKey,optionName){
+  if(!q.itemId) throw new Error('still saving that item — one sec');
   const meta=await resolveBoard(a); const f=meta.fields[fieldKey]; if(!f) throw new Error('no "'+fieldKey+'" field on board');
   const opt=f.opts[optionName]; if(!opt) throw new Error('no option "'+optionName+'"');
-  await ghGraphQL(`mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ projectV2Item{ id } } }`,
-    { p:meta.projectId, i:q.itemId, f:f.id, o:opt });
+  await retry(()=>ghGraphQL(`mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ projectV2Item{ id } } }`,
+    { p:meta.projectId, i:q.itemId, f:f.id, o:opt }));
 }
-async function bSetState(a,q,state){ const or=appOwnerRepo(a); const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber,{method:'PATCH',body:JSON.stringify({state})}); if(!r.ok) throw new Error('issue state '+r.status); }
+async function bSetState(a,q,state){ const or=appOwnerRepo(a); await retry(async()=>{ const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber,{method:'PATCH',body:JSON.stringify({state})}); if(!r.ok) throw new Error('issue state '+r.status); }); }
 async function bComment(a,q,text){ const or=appOwnerRepo(a); const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber+'/comments',{method:'POST',body:JSON.stringify({body:text})}); if(!r.ok) throw new Error('comment '+r.status); }
 async function bLoadNotes(a,q){ const or=appOwnerRepo(a); const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber+'/comments'); if(!r.ok) return;
   const cs=await r.json(); q.notes=(cs||[]).map(c=>{ const m=(c.body||'').match(/^\s*(🤖\s*claude|👑\s*you)\s*:?\s*/i);
@@ -271,9 +274,9 @@ async function bAddItem(a,title){
   return { issueNumber:iss.number, itemId, url:iss.html_url };
 }
 async function bReorder(a,q,afterId){ const meta=await resolveBoard(a);
-  await ghGraphQL(`mutation($p:ID!,$i:ID!,$a:ID){ updateProjectV2ItemPosition(input:{projectId:$p,itemId:$i,afterId:$a}){ items{ totalCount } } }`,{ p:meta.projectId, i:q.itemId, a:afterId }); }
-// a board write failed → pull the real state back from GitHub so Tiara never silently disagrees with it
-function bReconcile(a,msg){ setStatus(msg); loadBoardItems(a).then(()=>{ captureOpen(); render(); }).catch(()=>{}); }
+  await retry(()=>ghGraphQL(`mutation($p:ID!,$i:ID!,$a:ID){ updateProjectV2ItemPosition(input:{projectId:$p,itemId:$i,afterId:$a}){ items{ totalCount } } }`,{ p:meta.projectId, i:q.itemId, a:afterId })); }
+// GitHub Projects is eventually-consistent right after a mutation, so idempotent writes get a few quiet retries
+async function retry(fn){ let last; for(let k=0;k<5;k++){ try{ return await fn(); }catch(e){ last=e; await new Promise(r=>setTimeout(r,300*(k+1))); } } throw last; }
 
 function ghLoadCfg(){ try{ const c=JSON.parse(localStorage.getItem('tiaraGH')||'{}'); GH.token=c.token||''; GH.owner=c.owner||''; GH.boardRepo=c.boardRepo||'tiara'; }catch(e){} }
 function ghSaveCfg(){ localStorage.setItem('tiaraGH', JSON.stringify({token:GH.token,owner:GH.owner,boardRepo:GH.boardRepo})); }
@@ -492,7 +495,7 @@ function dragEnd(ev){ ev.currentTarget.classList.remove('dragging'); }
 function dragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add('dragover'); ev.dataTransfer.dropEffect='move'; }
 function dragLeave(ev){ ev.currentTarget.classList.remove('dragover'); }
 function dropRow(ev,appId,i){ ev.preventDefault(); ev.currentTarget.classList.remove('dragover'); if(dragApp!==appId||dragIdx===null||dragIdx===i){ dragApp=dragIdx=null; return; } const a=app(appId); const [it]=a.queue.splice(dragIdx,1); const to=(dragIdx<i)?i-1:i; a.queue.splice(to,0,it); dragApp=dragIdx=null;
-  if(boardFor(a)){ captureOpen(); render(); const afterId=to>0?(a.queue[to-1]||{}).itemId:null; bReorder(a,it,afterId).then(()=>setStatus('🟢 reordered on the board')).catch(e=>bReconcile(a,'⚠ reorder didn\'t save: '+e.message)); return; }
+  if(boardFor(a)){ captureOpen(); render(); const afterId=to>0?(a.queue[to-1]||{}).itemId:null; bReorder(a,it,afterId).then(()=>setStatus('🟢 reordered on the board')).catch(e=>setStatus('⚠ reorder didn\'t save — refresh to see true order ('+e.message+')')); return; }
   touch(); }
 const STATUS_ORDER=['todo','doing','verify','blocked','done'];
 const STATUS_META={inbox:{e:'📥',t:'inbox',c:'#9b5de5'},todo:{e:'◻',t:'to do',c:'#8877a0'},doing:{e:'🔨',t:'doing',c:'#e0932b'},verify:{e:'🔍',t:'verify',c:'#4ea8ff'},blocked:{e:'⛔',t:'blocked',c:'#d0567f'},done:{e:'✅',t:'done',c:'#2fbf7e'}};
@@ -500,19 +503,24 @@ function migrate(){ ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>
 const TYPE_ORDER=['task','bug','feature','chore'];
 const TYPE_META={task:{e:'📋',t:'task',c:'#8877a0'},bug:{e:'🐞',t:'bug',c:'#d0567f'},feature:{e:'✨',t:'feature',c:'#9b5de5'},chore:{e:'🧹',t:'chore',c:'#4ea8ff'}};
 function cycleType(id,i){ const a=app(id); const q=a.queue[i]; const idx=TYPE_ORDER.indexOf(q.type||'task'); const nv=TYPE_ORDER[(idx+1)%4];
-  if(boardFor(a)){ q.type=nv; captureOpen(); render(); bSetField(a,q,'type',cap(nv)).then(()=>setStatus('🟢 '+q.id+' · '+nv)).catch(e=>bReconcile(a,'⚠ '+q.id+' didn\'t save: '+e.message)); return; }
+  if(boardFor(a)){ const prev=q.type; q.type=nv; captureOpen(); render();
+    bSetField(a,q,'type',cap(nv)).then(()=>setStatus('🟢 '+q.id+' · '+nv))
+      .catch(e=>{ q.type=prev; captureOpen(); render(); setStatus('⚠ '+q.id+' type didn\'t save — reverted ('+e.message+')'); }); return; }
   q.type=nv; touch(); }
 const PRIO_ORDER=['high','med','low'];
 const PRIO_META={high:{e:'🔴',t:'high',c:'#d0567f'},med:{e:'🟡',t:'med',c:'#e0932b'},low:{e:'🟢',t:'low',c:'#2fbf7e'}};
 function cyclePriority(id,i){ const a=app(id); const q=a.queue[i]; const idx=PRIO_ORDER.indexOf(q.priority||'med'); const nv=PRIO_ORDER[(idx+1)%3];
-  if(boardFor(a)){ q.priority=nv; captureOpen(); render(); bSetField(a,q,'priority',cap(nv)).then(()=>setStatus('🟢 '+q.id+' · '+nv+' priority')).catch(e=>bReconcile(a,'⚠ '+q.id+' didn\'t save: '+e.message)); return; }
+  if(boardFor(a)){ const prev=q.priority; q.priority=nv; captureOpen(); render();
+    bSetField(a,q,'priority',cap(nv)).then(()=>setStatus('🟢 '+q.id+' · '+nv+' priority'))
+      .catch(e=>{ q.priority=prev; captureOpen(); render(); setStatus('⚠ '+q.id+' priority didn\'t save — reverted ('+e.message+')'); }); return; }
   q.priority=nv; touch(); }
 function setStat(id,i,v){ const a=app(id); const q=a.queue[i];
   if(boardFor(a)){ const prev=q.status; q.status=v; q.done=(v==='done'); captureOpen(); render();
     const lane=STATUS2LANE[v]||'Up next';
     bSetField(a,q,'lane',lane)
       .then(()=> (v==='done')?bSetState(a,q,'closed'):(prev==='done'?bSetState(a,q,'open'):null))
-      .then(()=>setStatus('🟢 '+q.id+' → '+lane)).catch(e=>bReconcile(a,'⚠ '+q.id+' didn\'t save: '+e.message)); return; }
+      .then(()=>setStatus('🟢 '+q.id+' → '+lane))
+      .catch(e=>{ q.status=prev; q.done=(prev==='done'); captureOpen(); render(); setStatus('⚠ '+q.id+' didn\'t save — reverted ('+e.message+')'); }); return; }
   q.status=v; q.done=(v==='done'); touch(); }
 function setType(id,i,v){ app(id).queue[i].type=v; touch(); }
 function setPrio(id,i,v){ app(id).queue[i].priority=v; touch(); }
@@ -534,21 +542,33 @@ function toggleDetail(itemId){ const k='item:'+itemId; const willOpen=!openState
   if(willOpen){ for(const a of data.apps){ if(!boardFor(a)) continue; const q=(a.queue||[]).find(x=>x.id===itemId); if(q&&!q._notesLoaded){ bLoadNotes(a,q).then(()=>render()).catch(()=>{}); break; } } }
   render(); }
 function addNote(appId,i){ const a=app(appId); const inp=document.getElementById('note-'+appId+'-'+i); const v=inp.value.trim(); if(!v)return; const q=a.queue[i];
-  if(boardFor(a)){ q.notes.push({by:'you',text:v}); inp.value=''; captureOpen(); render(); bComment(a,q,'👑 you: '+v).then(()=>setStatus('🟢 note added to '+q.id)).catch(e=>bReconcile(a,'⚠ note didn\'t save: '+e.message)); return; }
+  if(boardFor(a)){ if(!q.issueNumber){ setStatus('one sec — still saving that item…'); return; }
+    const note={by:'you',text:v}; q.notes.push(note); inp.value=''; captureOpen(); render();
+    bComment(a,q,'👑 you: '+v).then(()=>setStatus('🟢 note added to '+q.id))
+      .catch(e=>{ const k=q.notes.indexOf(note); if(k>=0) q.notes.splice(k,1); captureOpen(); render(); setStatus('⚠ note didn\'t save — removed ('+e.message+')'); }); return; }
   q.notes.push({by:'you',text:v}); inp.value=''; touch(); }
 function toggleItem(id,i){ const a=app(id); a.queue[i].done=!a.queue[i].done; touch(); }
 function delItem(id,i){ const a=app(id); const q=a.queue[i];
-  if(boardFor(a)){ if(!confirm('Close issue '+q.id+' — "'+q.title+'"?\n\nThis closes it on GitHub. It is fully recoverable (you can reopen it anytime).')) return;
-    a.queue.splice(i,1); captureOpen(); render(); bSetState(a,q,'closed').then(()=>setStatus('🟢 closed '+q.id+' (recoverable)')).catch(e=>bReconcile(a,'⚠ '+q.id+' didn\'t close: '+e.message)); return; }
+  if(boardFor(a)){ if(!q.issueNumber){ setStatus('one sec — still saving that item…'); return; }
+    if(!confirm('Close issue '+q.id+' — "'+q.title+'"?\n\nThis closes it on GitHub. It is fully recoverable (you can reopen it anytime).')) return;
+    a.queue.splice(i,1); captureOpen(); render();
+    bSetState(a,q,'closed').then(()=>setStatus('🟢 closed '+q.id+' (recoverable)'))
+      .catch(e=>{ a.queue.splice(i,0,q); captureOpen(); render(); setStatus('⚠ '+q.id+' didn\'t close — put it back ('+e.message+')'); }); return; }
   a.queue.splice(i,1); touch(); }
 function addItem(id){ const a=app(id); const inp=document.getElementById('add-'+id); const v=inp.value.trim(); if(!v)return;
-  if(boardFor(a)){ inp.value=''; setStatus('adding to GitHub…');
-    bAddItem(a,v).then(res=>{ a.queue.push({id:'#'+res.issueNumber,issueNumber:res.issueNumber,itemId:res.itemId,url:res.url,title:v,status:'todo',done:false,type:'task',priority:'med',notes:[],_notesLoaded:true}); captureOpen(); render(); setStatus('🟢 added #'+res.issueNumber+' → Up next'); })
-      .catch(e=>bReconcile(a,'⚠ couldn\'t add to GitHub: '+e.message)); return; }
+  if(boardFor(a)){ inp.value='';
+    const tmp={id:'saving…',title:v,status:'todo',done:false,type:'task',priority:'med',notes:[],_notesLoaded:true,_pending:true};
+    a.queue.push(tmp); captureOpen(); render(); setStatus('adding to GitHub…');
+    bAddItem(a,v).then(res=>{ tmp.id='#'+res.issueNumber; tmp.issueNumber=res.issueNumber; tmp.itemId=res.itemId; tmp.url=res.url; delete tmp._pending; captureOpen(); render(); setStatus('🟢 added #'+res.issueNumber+' → Up next'); })
+      .catch(e=>{ const k=a.queue.indexOf(tmp); if(k>=0) a.queue.splice(k,1); captureOpen(); render(); setStatus('⚠ couldn\'t add — removed ('+e.message+')'); }); return; }
   a.queue.push({id:nextId(a),title:v,done:false}); inp.value=''; touch(); }
 function delInbox(id,i){ app(id).inbox.splice(i,1); touch(); }
 function promoteInbox(id,i){ const a=app(id); const title=a.inbox[i];
-  if(boardFor(a)){ setStatus('promoting to GitHub…'); bAddItem(a,title).then(res=>{ a.queue.push({id:'#'+res.issueNumber,issueNumber:res.issueNumber,itemId:res.itemId,url:res.url,title,status:'todo',done:false,type:'task',priority:'med',notes:[],_notesLoaded:true}); a.inbox.splice(i,1); captureOpen(); render(); if(HELPER.on) scheduleSave(); setStatus('🟢 promoted → #'+res.issueNumber); }).catch(e=>bReconcile(a,'⚠ promote didn\'t save: '+e.message)); return; }
+  if(boardFor(a)){ a.inbox.splice(i,1);
+    const tmp={id:'saving…',title,status:'todo',done:false,type:'task',priority:'med',notes:[],_notesLoaded:true,_pending:true};
+    a.queue.push(tmp); captureOpen(); render(); if(HELPER.on) scheduleSave(); setStatus('promoting to GitHub…');
+    bAddItem(a,title).then(res=>{ tmp.id='#'+res.issueNumber; tmp.issueNumber=res.issueNumber; tmp.itemId=res.itemId; tmp.url=res.url; delete tmp._pending; captureOpen(); render(); setStatus('🟢 promoted → #'+res.issueNumber); })
+      .catch(e=>{ const k=a.queue.indexOf(tmp); if(k>=0) a.queue.splice(k,1); a.inbox.splice(i,0,title); captureOpen(); render(); setStatus('⚠ promote didn\'t save — put it back ('+e.message+')'); }); return; }
   a.queue.push({id:nextId(a),title,done:false}); a.inbox.splice(i,1); touch(); }
 function addInbox(id){ const inp=document.getElementById('inb-'+id); const v=inp.value.trim(); if(!v)return; app(id).inbox.push(v); inp.value=''; touch(); }
 function addScramble(id){ const inp=document.getElementById('scr-'+id); const v=inp.value.trim(); if(!v)return; app(id).scramble.push(v); inp.value=''; touch(); }
