@@ -278,21 +278,20 @@ async function bReorder(a,q,afterId){ const meta=await resolveBoard(a);
 // GitHub Projects is eventually-consistent right after a mutation, so idempotent writes get a few quiet retries
 async function retry(fn){ let last; for(let k=0;k<5;k++){ try{ return await fn(); }catch(e){ last=e; await new Promise(r=>setTimeout(r,300*(k+1))); } } throw last; }
 // temporary: runs the exact bSetField path the chips run, on a real OPEN item, then reads GitHub back
-async function diagnose(id){ const a=app(id); let out='DIAGNOSE '+a.name+'\n\n'; const cfg=boardFor(a);
+async function diagnose(id){ const a=app(id); let out='DIAGNOSE (runs the real chip handler)\n\n'; const cfg=boardFor(a);
   try{ await resolveBoard(a);
-    const q=(a.queue||[]).find(x=>x.itemId&&x.issueNumber&&x.status!=='done') || (a.queue||[]).find(x=>x.itemId&&x.issueNumber);
-    out+='queue len '+((a.queue||[]).length)+', with itemId '+((a.queue||[]).filter(x=>x.itemId).length)+'\n';
-    out+='test item #'+(q?q.issueNumber:'?')+' status='+(q?q.status:'?')+' itemId='+(q?(''+q.itemId).slice(0,12):'NONE')+'\n\n';
-    if(!q){ alert(out+'no usable item'); return; }
-    try{ await bSetField(a,q,'priority','Low'); out+='bSetField priority=Low: returned OK\n'; }
-    catch(e){ out+='bSetField priority=Low: THREW → '+e.message+'\n'; }
-    try{ await bSetField(a,q,'type','Feature'); out+='bSetField type=Feature: returned OK\n'; }
-    catch(e){ out+='bSetField type=Feature: THREW → '+e.message+'\n'; }
-    const chk=await ghGraphQL(`query($l:String!,$n:Int!){user(login:$l){projectV2(number:$n){items(first:100){nodes{content{... on Issue{number}} p:fieldValueByName(name:"Priority"){... on ProjectV2ItemFieldSingleSelectValue{name}} t:fieldValueByName(name:"Type"){... on ProjectV2ItemFieldSingleSelectValue{name}}}}}}}`,{l:cfg.login,n:cfg.number});
-    const it=(chk.user.projectV2.items.nodes||[]).find(x=>x.content&&x.content.number===q.issueNumber);
-    out+='\nGitHub now #'+q.issueNumber+': prio='+((it&&it.p&&it.p.name)||'—')+' type='+((it&&it.t&&it.t.name)||'—');
-    out+='\n(if this shows Low/Feature, saving works)';
-  }catch(e){ out+='FAILED: '+e.message; }
+    const i=(a.queue||[]).findIndex(x=>x.itemId&&x.issueNumber&&x.status!=='done');
+    if(i<0){ alert('no open item with itemId'); return; }
+    const q=a.queue[i]; const num=q.issueNumber; const before=q.type;
+    out+='item #'+num+' at index '+i+'\ntype before = '+before+'\n';
+    cycleType(a.id, i);                       // <-- the ACTUAL chip click path
+    await new Promise(r=>setTimeout(r,3800));  // let the async save finish
+    const now=a.queue[i]; out+='local type after = '+(now?now.type:'?')+'\n';
+    const chk=await ghGraphQL(`query($l:String!,$n:Int!){user(login:$l){projectV2(number:$n){items(first:100){nodes{content{... on Issue{number}} t:fieldValueByName(name:"Type"){... on ProjectV2ItemFieldSingleSelectValue{name}}}}}}}`,{l:cfg.login,n:cfg.number});
+    const it=(chk.user.projectV2.items.nodes||[]).find(x=>x.content&&x.content.number===num);
+    out+='GitHub type = '+((it&&it.t&&it.t.name)||'—')+'\n\n';
+    out+=(it&&it.t&&it.t.name)&&(it.t.name.toLowerCase()!==before)?'✅ handler WROTE to GitHub':'❌ handler did NOT write to GitHub';
+  }catch(e){ out+='THREW: '+e.message; }
   alert(out); }
 
 function ghLoadCfg(){ try{ const c=JSON.parse(localStorage.getItem('tiaraGH')||'{}'); GH.token=c.token||''; GH.owner=c.owner||''; GH.boardRepo=c.boardRepo||'tiara'; }catch(e){} }
@@ -687,7 +686,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v6 · chip-error';
+const TIARA_VERSION = 'board-v7 · handler-test';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
