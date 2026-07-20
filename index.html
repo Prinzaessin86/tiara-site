@@ -38,6 +38,9 @@
   .r-sky{background:linear-gradient(160deg,#cdeeff,#bcd9ff);} .r-peach{background:linear-gradient(160deg,#ffe0c7,#ffc9d4);} .r-mint{background:linear-gradient(160deg,#c4f5e1,#a8e6cf);}
   .app .emojitile{width:36px;height:36px;border-radius:10px;background:#f6f0ff;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;}
   .app .nm{font-family:'Baloo 2';font-weight:700;font-size:1.25rem;}
+  .nmedit{border:none;background:none;cursor:pointer;color:#c9b8dd;padding:2px;display:inline-flex;align-items:center;flex-shrink:0;}
+  .nmedit svg{width:13px;height:13px;}
+  .nmedit:hover{color:var(--pink);}
   .app .pill{font-size:.72rem;font-weight:800;padding:3px 10px;border-radius:11px;background:#f1eef6;color:var(--soft);}
   .app .cnt{margin-left:auto;font-size:.82rem;color:var(--soft);font-weight:700;white-space:nowrap;}
   .app .cnt b{color:var(--purple);}
@@ -58,13 +61,17 @@
   .qrow .t{font-weight:700;}
   .row.done .t{text-decoration:line-through;color:var(--soft);}
   .row.qrow{background:#fdfaff;border:1.5px solid var(--line2);border-radius:12px;padding:9px 12px;align-items:center;gap:10px;margin-bottom:7px;}
-  .priodot{width:9px;height:9px;border-radius:50%;flex-shrink:0;cursor:pointer;border:none;padding:0;}
+  .priochip2{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;font-weight:700;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;flex-shrink:0;white-space:nowrap;line-height:1.2;}
+  .priochip2::before{content:'';width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0;}
   .typechip2{font-size:.72rem;color:var(--soft);font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;background:none;border:none;padding:0;}
   select.chipsel.status{padding:4px 22px 4px 10px;font-size:.78rem;}
   .row .id{font-size:.7rem;font-weight:800;color:#fff;background:var(--purple);padding:1px 6px;border-radius:6px;margin-right:5px;}
   .row .x{cursor:pointer;color:#d9a8c9;font-weight:800;border:none;background:none;font-size:1rem;padding:0 4px;}
   .row .promote{cursor:pointer;border:none;background:#f3e9fb;color:var(--purple);font-weight:700;font-size:.72rem;border-radius:8px;padding:2px 8px;}
   .grip{cursor:grab;color:#cbb8e2;font-weight:800;font-size:1.05rem;user-select:none;line-height:1;}
+  .app-grip{cursor:grab;color:#cbb8e2;font-weight:800;font-size:1.05rem;user-select:none;line-height:1;flex-shrink:0;margin-right:-3px;}
+  .app.appdragover{outline:2px dashed var(--pink);outline-offset:3px;}
+  .app.appdragging{opacity:.4;}
   .qrow.dragging{opacity:.4;}
   .qrow.dragover{outline:2px dashed var(--pink);outline-offset:3px;border-radius:10px;}
   .statchip,.typechip,.priochip{border:none;border-radius:9px;font-size:.8rem;font-weight:700;padding:3px 9px;cursor:pointer;line-height:1.2;flex-shrink:0;white-space:nowrap;}
@@ -84,21 +91,22 @@
   .scnote{font-size:.72rem;color:var(--soft);font-weight:700;}
   .repoedit{cursor:pointer;} .repoedit:hover{color:var(--pink);} .repoedit .ed{color:#c9b6e2;font-weight:800;margin-left:4px;}
 
-  details.rec{background:var(--card);border:2px solid var(--line);border-radius:18px;margin-bottom:12px;overflow:hidden;}
+  details.rec{background:var(--card);border:1.5px solid var(--line);border-radius:18px;margin-bottom:14px;overflow:hidden;box-shadow:0 8px 24px rgba(155,93,229,.07);}
   details.rec>summary{list-style:none;cursor:pointer;padding:14px 16px;}
-  .rec .rt{font-family:'Baloo 2';font-weight:700;font-size:1.2rem;}
+  .rec .rt{font-family:'Baloo 2';font-weight:700;font-size:1.2rem;color:#4a3a5e;}
   .rec .rw{font-size:.85rem;color:var(--soft);font-weight:600;}
-  .step{border-top:2px solid var(--line);padding:12px 16px;}
+  .step{border-top:1.5px solid var(--line2);padding:14px 18px;}
   .step .sh{display:flex;align-items:center;gap:10px;}
   .step input[type=checkbox]{width:20px;height:20px;accent-color:var(--green);}
-  .step .sd{font-weight:700;font-size:1.02rem;}
+  .step .sd{font-weight:700;font-size:1.02rem;color:#4a3a5e;}
   .step .meta{padding:6px 0 0 30px;font-size:.9rem;color:var(--soft);}
   .step .meta b{color:var(--ink);}
-  .cmd{display:flex;align-items:flex-start;gap:8px;margin:8px 0;background:linear-gradient(135deg,#fff0f8,#f1ecff);border:1.5px solid #f0d9ee;border-radius:13px;padding:10px 12px;}
-  .cmd code{color:#6b4a86;font-size:.85rem;font-family:ui-monospace,monospace;flex:1;overflow-x:auto;white-space:pre-wrap;word-break:break-word;line-height:1.5;}
-  .cmd button{border:none;background:linear-gradient(90deg,#ff9ecb,#b99cf0);color:#fff;font-weight:800;border-radius:10px;padding:5px 13px;cursor:pointer;font-size:.76rem;flex-shrink:0;box-shadow:0 2px 7px rgba(155,93,229,.25);}
-  .cmd button:hover{filter:brightness(1.05);}
-  .chk{color:var(--green);font-weight:700;}
+  .cmd{display:flex;align-items:flex-start;gap:8px;margin:8px 0;background:#faf7fc;border:1.5px solid var(--line2);border-radius:12px;padding:10px 12px;}
+  .cmd code{color:#5a4a6e;font-size:.85rem;font-family:ui-monospace,monospace;flex:1;overflow-x:auto;white-space:pre-wrap;word-break:break-word;line-height:1.5;}
+  .cmd button{border:1.5px solid var(--line);background:#fff;color:#7a4a9e;font-weight:700;border-radius:9px;padding:5px 13px;cursor:pointer;font-size:.76rem;flex-shrink:0;}
+  .cmd button:hover{border-color:var(--pink);}
+  .chk{color:var(--green);font-weight:700;display:flex;align-items:flex-start;gap:6px;}
+  .chk svg{width:14px;height:14px;flex-shrink:0;margin-top:3px;}
   .actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;}
   .actions .alab{font-size:.72rem;font-weight:800;color:#c05a97;background:#ffe6f4;border-radius:8px;padding:3px 8px;}
   .runbtn{border:none;background:linear-gradient(90deg,#ffd9ee,#e6dbff);color:#7a4a9e;font-weight:800;font-size:.78rem;border-radius:11px;padding:6px 12px;cursor:pointer;box-shadow:0 2px 6px rgba(155,93,229,.15);}
@@ -378,7 +386,12 @@ function app(id){ return data.apps.find(a=>a.id===id); }
 const PREFIX={tiara:'TIA',poda:'PODA',sparklereef:'SR',rainybow:'RB',bubbles:'BUB',pagingdrdaddy:'PDD',tentaclepit:'TENT',dressie:'DRES'};
 function ensurePrefixes(){ data.apps.forEach(a=>{ if(!a.prefix) a.prefix = PREFIX[a.id] || (a.name.replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase()||'ITEM'); }); }
 function nextId(a){ let max=0; const rx=new RegExp('^'+a.prefix+'-(\\d+)$','i'); a.queue.forEach(q=>{ const m=(q.id||'').match(rx); if(m) max=Math.max(max,parseInt(m[1],10)); }); return a.prefix+'-'+String(max+1).padStart(2,'0'); }
-let dragApp=null, dragIdx=null;
+let dragAppIdx=null;
+function appDragStart(ev,ai){ dragAppIdx=ai; ev.stopPropagation(); ev.currentTarget.closest('details.app').classList.add('appdragging'); ev.dataTransfer.effectAllowed='move'; try{ev.dataTransfer.setData('text/plain','');}catch(e){} }
+function appDragEnd(ev){ dragAppIdx=null; document.querySelectorAll('.app.appdragover,.app.appdragging').forEach(d=>d.classList.remove('appdragover','appdragging')); }
+function appDragOver(ev){ if(dragAppIdx===null) return; ev.preventDefault(); ev.currentTarget.classList.add('appdragover'); ev.dataTransfer.dropEffect='move'; }
+function appDragLeave(ev){ ev.currentTarget.classList.remove('appdragover'); }
+function appDrop(ev,ai){ if(dragAppIdx===null) return; ev.preventDefault(); ev.currentTarget.classList.remove('appdragover'); if(dragAppIdx===ai){ dragAppIdx=null; return; } const [it]=data.apps.splice(dragAppIdx,1); const to=(dragAppIdx<ai)?ai-1:ai; data.apps.splice(to,0,it); dragAppIdx=null; touch(); }
 function dragStart(ev,appId,i){ dragApp=appId; dragIdx=i; ev.currentTarget.classList.add('dragging'); ev.dataTransfer.effectAllowed='move'; try{ev.dataTransfer.setData('text/plain','');}catch(e){} }
 function dragEnd(ev){ ev.currentTarget.classList.remove('dragging'); }
 function dragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add('dragover'); ev.dataTransfer.dropEffect='move'; }
@@ -403,7 +416,7 @@ function chipSel(id,i,kind){
   const opts=order.map(k=>`<option value="${k}" ${k===cur?'selected':''}>${meta[k].e} ${meta[k].t}</option>`).join('');
   return `<select class="chipsel${kind==='status'?' status':''}" style="background-color:${m.c}22;color:${m.c}" onchange="${fn}('${id}',${i},this.value)">${opts}</select>`;
 }
-function prioDot(id,i){ const q=app(id).queue[i]; const m=PRIO_META[q.priority]||PRIO_META.med; return `<span class="priodot" style="background:${m.c}" title="priority: ${m.t} (click to change)" onclick="cyclePriority('${id}',${i})"></span>`; }
+function prioDot(id,i){ const q=app(id).queue[i]; const m=PRIO_META[q.priority]||PRIO_META.med; return `<span class="priochip2" style="background:${m.c}1a;color:${m.c}" title="click to change priority" onclick="cyclePriority('${id}',${i})">${m.t}</span>`; }
 function typeChip(id,i){ const q=app(id).queue[i]; const m=TYPE_META[q.type]||TYPE_META.task; return `<span class="typechip2" title="type: ${m.t} (click to change)" onclick="cycleType('${id}',${i})">${m.e} ${m.t}</span>`;
 }
 function delApp(id){ const a=app(id); if(!a)return; if(!confirm('Remove the project "'+a.name+'" from your Tiara board?\n\nThis only clears it from the board — it does NOT touch any files, folders, or repos on your Mac.')) return; data.apps=data.apps.filter(x=>x.id!==id); openState.delete('app:'+id); touch(); setStatus('removed '+a.name+' from the board'); }
@@ -430,6 +443,7 @@ function seedQueueFromRunbook(a){
   });
   return rec.steps.length;
 }
+function renameApp(id){ const a=app(id); if(!a) return; const v=prompt('Rename project:', a.name); if(v===null) return; const nn=v.trim(); if(!nn) return; a.name=nn; touch(); setStatus('renamed to '+nn); }
 function setRepo(id){
   const a=app(id); const cur=(a.repo&&!a.repo.startsWith('('))?a.repo:'';
   const guess=cur || ((GH.owner||'')+'/'+(a.name||'').replace(/\s+/g,''));
@@ -468,7 +482,7 @@ function pillStatus(a){
 /* ---------- render ---------- */
 function render(){
   migrate();
-  const b = data.apps.map(a=>{
+  const b = data.apps.map((a,ai)=>{
     const open = a.queue.filter(q=>q.status!=='done').length, dn = a.queue.filter(q=>q.status==='done').length;
     const next = a.queue.find(q=>q.status!=='done');
     const rowHtml=(q,i)=>{
@@ -482,8 +496,8 @@ function render(){
     const irows = a.inbox.map((t,i)=>`<div class="row"><span class="t">${esc(t)}</span><button class="promote" onclick="promoteInbox('${a.id}',${i})">→ queue</button><button class="x" onclick="delInbox('${a.id}',${i})">✕</button></div>`).join('') || '<div class="muted">empty</div>';
     const srows = a.scramble.map((t,i)=>`<div class="row"><span class="t">${esc(t)}</span><button class="x" onclick="delScramble('${a.id}',${i})">✕</button></div>`).join('') || '<div class="muted">empty</div>';
     const drows = (a.done||[]).map(t=>`<div class="row done"><span class="t">${esc(t)}</span></div>`).join('') || '<div class="muted">—</div>';
-    return `<details class="app" data-key="app:${a.id}" ${openState.has('app:'+a.id)?'open':''}>
-      <summary><span class="rib r-${a.color}"></span><span class="emojitile">${a.emoji}</span><span class="nm">${esc(a.name)}</span><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b> · ${a.inbox.length} inbox</span></summary>
+    return `<details class="app" data-key="app:${a.id}" ondragover="appDragOver(event)" ondragleave="appDragLeave(event)" ondrop="appDrop(event,${ai})" ${openState.has('app:'+a.id)?'open':''}>
+      <summary><span class="app-grip" draggable="true" ondragstart="appDragStart(event,${ai})" ondragend="appDragEnd(event)" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${a.emoji}</span><span class="nm">${esc(a.name)}</span><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b> · ${a.inbox.length} inbox</span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
@@ -503,8 +517,8 @@ function render(){
     const steps = rec.steps.map((s,si)=>`<div class="step"><div class="sh"><input type="checkbox" onchange="this.closest('.step').classList.toggle('sdone')"><span class="sd">${si+1}. ${esc(s.do)}</span></div>
       <div class="meta"><b>Why:</b> ${esc(s.why)}</div>
       ${s.how?`<div class="cmd"><code id="cmd-${ri}-${si}">${esc(s.how)}</code><button onclick="copyCmd('cmd-${ri}-${si}')">copy</button>${(HELPER.on&&RUNMAP[s.how])?`<button onclick="runAction(document.getElementById('rbApp').value,'${RUNMAP[s.how]}','rbo-${ri}-${si}')">▶ run</button>`:''}</div>${(HELPER.on&&RUNMAP[s.how])?`<pre class="runout" id="rbo-${ri}-${si}" style="display:none"></pre>`:''}`:''}
-      ${s.prompt?`<div class="meta" style="padding-top:6px"><b>🩷 Paste this to Claude:</b></div><div class="cmd"><code id="pr-${ri}-${si}">${esc(s.prompt)}</code><button onclick="copyCmd('pr-${ri}-${si}')">copy</button></div>`:''}
-      <div class="meta chk">✅ ${esc(s.check)}</div></div>`).join('');
+      ${s.prompt?`<div class="meta" style="padding-top:6px"><b>Paste this to Claude:</b></div><div class="cmd"><code id="pr-${ri}-${si}">${esc(s.prompt)}</code><button onclick="copyCmd('pr-${ri}-${si}')">copy</button></div>`:''}
+      <div class="meta chk"><svg viewBox="0 0 24 24" fill="none" stroke="#2f8f63" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>${esc(s.check)}</div></div>`).join('');
     return `<details class="rec" data-key="rec:${rec.id}" ${openState.has('rec:'+rec.id)?'open':''}><summary><div class="rt">${esc(rec.title)}</div><div class="rw">${esc(rec.when)}</div></summary>${steps}</details>`;
   }).join('');
   $('#runbook').innerHTML = r;
