@@ -7,25 +7,27 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Baloo+2:wght@600;700;800&display=swap');
   :root{
-    --pink:#FF6FB5; --purple:#9B5DE5; --sky:#4EA8FF; --sun:#FFC64B; --green:#2FBF7E;
-    --ink:#3d2f52; --soft:#7a6d92; --line:#f1e5f7; --card:#fff;
+    --pink:#FF6FB5; --purple:#9B5DE5; --brand:#7a3fd6; --sky:#4EA8FF; --sun:#FFC64B; --green:#2FBF7E;
+    --ink:#3a2d4d; --soft:#8a7ba3; --line:#f0e6f6; --line2:#f2e9f7; --card:#fff;
   }
   *{box-sizing:border-box;}
   body{margin:0; padding:22px 14px 70px; font-family:'Quicksand',system-ui,sans-serif; color:var(--ink); font-size:17px; line-height:1.5;
     background:radial-gradient(900px 420px at 6% -5%,#ffe0f0 0,transparent 60%),radial-gradient(900px 420px at 100% 3%,#e6ddfc 0,transparent 55%),linear-gradient(180deg,#fff4fb,#f4ecff);}
   .wrap{max-width:820px;margin:0 auto;}
   header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px;}
-  h1{font-family:'Baloo 2';font-weight:800;font-size:2rem;margin:0;background:linear-gradient(90deg,#ff5ba7,#9b5de5,#4ea8ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  h1{font-family:'Baloo 2';font-weight:800;font-size:1.85rem;margin:0;color:var(--brand);letter-spacing:-.01em;display:flex;align-items:center;gap:11px;}
+  h1 .crest{width:34px;height:34px;border-radius:10px;background:linear-gradient(150deg,#ff6fb5,#9b5de5);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(155,93,229,.28);}
   .sub{font-size:.8rem;color:var(--soft);font-weight:700;width:100%;}
   .bar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
-  button.tb{font-family:'Quicksand';font-weight:700;font-size:.85rem;border:2px solid var(--line);background:#fff;color:var(--ink);padding:7px 13px;border-radius:12px;cursor:pointer;}
+  button.tb{height:38px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-family:'Quicksand';font-weight:700;font-size:.85rem;border:1.5px solid var(--line);background:#fff;color:#5a4a6e;padding:0 14px;border-radius:11px;cursor:pointer;}
+  button.tb svg{width:15px;height:15px;flex-shrink:0;}
   button.tb:hover{border-color:var(--pink);}
   button.tb.primary{background:linear-gradient(90deg,var(--pink),var(--purple));color:#fff;border:none;}
   button.tb.newapp{background:linear-gradient(90deg,#2fbf7e,#4ea8ff);color:#fff;border:none;box-shadow:0 4px 12px rgba(47,191,126,.3);font-size:.9rem;}
-  #status{font-size:.78rem;color:var(--soft);font-weight:700;align-self:center;}
-  .tabs{display:flex;gap:8px;margin:8px 0 16px;}
-  .tab{font-family:'Baloo 2';font-weight:700;font-size:1.05rem;padding:8px 18px;border-radius:14px;cursor:pointer;background:#fff;border:2px solid var(--line);}
-  .tab.on{background:linear-gradient(90deg,var(--pink),var(--purple));color:#fff;border:none;}
+  #status{margin-left:auto;font-size:.78rem;color:var(--soft);font-weight:700;align-self:center;}
+  .tabs{display:flex;gap:26px;margin:8px 0 18px;border-bottom:1.5px solid #efe4f5;}
+  .tab{font-family:'Baloo 2';font-weight:700;font-size:1rem;padding:0 2px 12px;margin-bottom:-1.5px;cursor:pointer;color:#a99bc0;border-bottom:2.5px solid transparent;}
+  .tab.on{color:var(--brand);border-bottom-color:var(--purple);}
 
   details.app{background:var(--card);border:2px solid var(--line);border-radius:18px;margin-bottom:13px;overflow:hidden;box-shadow:0 6px 18px rgba(155,93,229,.08);}
   details.app>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:11px;}
@@ -34,17 +36,20 @@
   .r-pinkLav{background:linear-gradient(160deg,#ffd6ec,#c7b6ff);} .r-rose{background:linear-gradient(160deg,#ffd0e0,#ffb0cf);}
   .r-lav{background:linear-gradient(160deg,#e2d5ff,#c9b6ff);} .r-rainbow{background:linear-gradient(160deg,#ffc9d4,#ffe0a3,#c4f5e1,#bcd9ff,#e2d5ff);}
   .r-sky{background:linear-gradient(160deg,#cdeeff,#bcd9ff);} .r-peach{background:linear-gradient(160deg,#ffe0c7,#ffc9d4);} .r-mint{background:linear-gradient(160deg,#c4f5e1,#a8e6cf);}
+  .app .emojitile{width:36px;height:36px;border-radius:10px;background:#f6f0ff;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;}
   .app .nm{font-family:'Baloo 2';font-weight:700;font-size:1.25rem;}
   .app .pill{font-size:.72rem;font-weight:800;padding:3px 10px;border-radius:11px;background:#f1eef6;color:var(--soft);}
   .app .cnt{margin-left:auto;font-size:.82rem;color:var(--soft);font-weight:700;white-space:nowrap;}
   .app .cnt b{color:var(--purple);}
   .body{border-top:2px solid var(--line);padding:14px 16px;}
   .lane{margin-bottom:9px;border:1.5px solid var(--line);border-radius:13px;overflow:hidden;background:#fdfaff;}
-  .lane>summary{list-style:none;cursor:pointer;padding:8px 13px;font-size:.74rem;letter-spacing:.5px;text-transform:uppercase;font-weight:800;color:var(--soft);}
+  .lane>summary{list-style:none;cursor:pointer;padding:8px 13px;font-size:.82rem;font-weight:700;color:var(--soft);}
+  .lane.q{border:none;background:transparent;}
+  .lane.i,.lane.s,.lane.done,.lane.ship{background:#faf7fc;border-color:#f2ecf7;}
   .lane>summary::-webkit-details-marker{display:none;}
   .lane>summary::before{content:'▸ ';color:#c9b6e2;}
   .lane[open]>summary::before{content:'▾ ';}
-  .lane.q>summary{color:#e0932b;} .lane.i>summary{color:var(--purple);} .lane.done>summary,.lane.ship>summary{color:var(--green);}
+  .lane.q>summary{font-family:'Baloo 2';font-size:.98rem;color:#4a3a5e;padding-left:2px;} .lane.i>summary,.lane.done>summary,.lane.ship>summary,.lane.s>summary{color:var(--soft);}
   .laneb{padding:2px 13px 11px;}
   .lane.d h4{color:var(--green);} .lane.q h4{color:#e0932b;} .lane.i h4{color:var(--purple);} .lane.s h4{color:var(--soft);}
   .row{display:flex;align-items:flex-start;gap:9px;padding:5px 0;font-size:1rem;}
@@ -52,16 +57,14 @@
   .row .t{flex:1;}
   .qrow .t{font-weight:700;}
   .row.done .t{text-decoration:line-through;color:var(--soft);}
+  .row.qrow{background:#fdfaff;border:1.5px solid var(--line2);border-radius:12px;padding:9px 12px;align-items:center;gap:10px;margin-bottom:7px;}
+  .priodot{width:9px;height:9px;border-radius:50%;flex-shrink:0;cursor:pointer;border:none;padding:0;}
+  .typechip2{font-size:.72rem;color:var(--soft);font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;background:none;border:none;padding:0;}
+  select.chipsel.status{padding:4px 22px 4px 10px;font-size:.78rem;}
   .row .id{font-size:.7rem;font-weight:800;color:#fff;background:var(--purple);padding:1px 6px;border-radius:6px;margin-right:5px;}
   .row .x{cursor:pointer;color:#d9a8c9;font-weight:800;border:none;background:none;font-size:1rem;padding:0 4px;}
   .row .promote{cursor:pointer;border:none;background:#f3e9fb;color:var(--purple);font-weight:700;font-size:.72rem;border-radius:8px;padding:2px 8px;}
   .grip{cursor:grab;color:#cbb8e2;font-weight:800;font-size:1.05rem;user-select:none;line-height:1;}
-  .agrip{cursor:grab;color:#cbb8e2;font-weight:800;font-size:1.1rem;user-select:none;line-height:1;padding:2px 2px;}
-  .agrip:active{cursor:grabbing;}
-  details.app.drophi{outline:2px dashed var(--pink);outline-offset:2px;}
-  .donesearch{margin-bottom:8px;}
-  .donesearch input{width:100%;box-sizing:border-box;padding:7px 11px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:.82rem;background:#fff;}
-  .donesearch input:focus{outline:none;border-color:var(--pink);}
   .qrow.dragging{opacity:.4;}
   .qrow.dragover{outline:2px dashed var(--pink);outline-offset:3px;border-radius:10px;}
   .statchip,.typechip,.priochip{border:none;border-radius:9px;font-size:.8rem;font-weight:700;padding:3px 9px;cursor:pointer;line-height:1.2;flex-shrink:0;white-space:nowrap;}
@@ -122,22 +125,22 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>👑 Tiara</h1>
-    <div class="sub">The little crown that runs the whole kingdom · your control center</div>
+    <h1><span class="crest"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4.5 3.5L12 5l4.5 6.5L21 8l-1.7 11H4.7L3 8Z"/></svg></span>Tiara</h1>
+    <div class="sub">your app-project control center</div>
   </header>
 
   <div class="bar">
-    <button class="tb newapp" onclick="addApp()">＋ New app</button>
-    <button class="tb" onclick="refreshBoard()">🔄 Refresh</button>
-    <button class="tb" onclick="importFile()">📥 Import board</button>
-    <button class="tb" id="btn-export" onclick="exportFile()">⬇ Backup</button>
-    <button class="tb" onclick="ghDisconnect()">🔌 Disconnect</button>
+    <button class="tb newapp" style="border:none;background:linear-gradient(90deg,#2fbf7e,#4ea8ff);color:#fff;box-shadow:0 4px 12px rgba(47,191,126,.28);" onclick="addApp()"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New app</button>
+    <button class="tb" onclick="refreshBoard()"><svg viewBox="0 0 24 24" fill="none" stroke="#8a7ba3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v4h-4"/></svg>Refresh</button>
+    <button class="tb" onclick="importFile()"><svg viewBox="0 0 24 24" fill="none" stroke="#8a7ba3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Import</button>
+    <button class="tb" id="btn-export" onclick="exportFile()"><svg viewBox="0 0 24 24" fill="none" stroke="#8a7ba3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l4-4m-4 4l-4-4M5 21h14"/></svg>Backup</button>
+    <button class="tb" onclick="ghDisconnect()"><svg viewBox="0 0 24 24" fill="none" stroke="#8a7ba3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>Disconnect</button>
     <span id="status">connecting…</span>
   </div>
 
   <div id="onboard" style="display:none">
     <div class="onbox">
-      <h2>Connect Tiara to your GitHub 🎀</h2>
+      <h2>Connect Tiara to your GitHub</h2>
       <p>Your board lives safely in your own GitHub account. Connect it once and you never download anything again — just visit this page.</p>
       <ol>
         <li>Open <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener">github.com/settings/tokens</a> → <b>Generate new token</b> (fine-grained).</li>
@@ -147,27 +150,26 @@
       </ol>
       <input id="gh-token" type="password" placeholder="paste your token (starts with github_pat_…)">
       <input id="gh-repo" type="text" placeholder="board repo name (default: tiara)" value="tiara">
-      <button class="tb newapp" onclick="connectGitHub()">Connect 🔒</button>
+      <button class="tb newapp" style="border:none;background:linear-gradient(90deg,#2fbf7e,#4ea8ff);color:#fff;" onclick="connectGitHub()">Connect</button>
       <div id="gh-msg" class="gh-msg"></div>
     </div>
   </div>
 
   <div class="tabs" id="tabs">
-    <div class="tab on" id="tab-board" onclick="showTab('board')">🗺️ Board</div>
-    <div class="tab" id="tab-runbook" onclick="showTab('runbook')">📖 Runbook</div>
+    <div class="tab on" id="tab-board" onclick="showTab('board')">Board</div>
+    <div class="tab" id="tab-runbook" onclick="showTab('runbook')">Runbook</div>
   </div>
 
   <div id="board"></div>
   <div id="runbook" style="display:none"></div>
 
-  <footer>🐙 saved to a JSON file Claude Code reads too · drop ideas → triage → queue → build</footer>
+  <footer>saved to a JSON file Claude Code reads too · drop ideas → triage → queue → build</footer>
 </div>
 
 <script>
-const SEED = {"updated": "2026-07-16", "apps": [], "runbook": [{"id": "stages", "title": "The stages every app climbs", "when": "the blueprint · read once, follow always", "steps": [{"do": "Stage 0 · The factory", "why": "guardrails before features, so quality is never retrofitted into an audit later", "check": "you watched the canary test fail on purpose, then delete it and go green"}, {"do": "Stage 1 · Decide (SPEC.md)", "why": "what it is, and the more important list of what it is NOT; drift is fifty small inconsistent decisions", "check": "SPEC.md says LOCKED at the top and is committed"}, {"do": "Stage 2 · Design system", "why": "a design system that is not machine-enforced regresses to grey stock cards every sprint", "check": "a raw hex colour or magic font size is rejected by the quality hook"}, {"do": "Stage 3 · Vertical slice", "why": "one thing all the way through, so you learn the whole loop works on day one, not week three", "check": "one item, end to end, screenshotted on your real phone"}, {"do": "Stage 4 · Breadth", "why": "now the rest of the screens; anything that interrupts you (notifications) is built last and never loud", "check": "device, every time"}, {"do": "Stage 5 · Sync", "why": "CloudKit, development container only, always", "check": "it survives a delete and reinstall"}, {"do": "Stage 6 · Motion, polish & accessibility", "why": "things move, they do not teleport; Dynamic Type, VoiceOver, reduced motion; delete dead code", "check": "usable with VoiceOver, with your eyes closed"}, {"do": "Stage 7 · Release", "why": "TestFlight, then the App Store", "check": "someone who is not you installs it and opens it"}]}, {"id": "session", "title": "Start a work session (with Claude Code)", "when": "each time you sit down to build", "steps": [{"do": "Open Claude Code in the app", "why": "the safety hooks and CLAUDE.md only load from the app's own folder — start it anywhere else and every guardrail is silently off", "how": "cd ~/Developer/<AppName> && claude", "check": "Claude starts, from inside the app folder"}, {"do": "Pull the latest first", "why": "Tiara saved your newest items up to GitHub — this brings them down so Claude actually sees them", "how": "git pull", "check": "it says 'Already up to date', or pulls a fresh roadmap.md"}, {"do": "Ask what's next", "why": "the top of Up next in roadmap.md is what to build, dependencies respected — you never pick, the queue does", "how": "what's next in roadmap.md?", "check": "Claude names ONE item and what 'done' means for it"}, {"do": "Build it", "why": "the actual building is the Build recipe just below", "how": "then follow the Build recipe on that one item", "check": "make verify is green and you've seen it on your device"}, {"do": "Mark done AND push", "why": "the push is the exact step that lets Tiara see it — without it, nothing reaches your board", "how": "mark it done in roadmap.md, commit, then:  git push", "check": "the item turns up as 🔍 verify in Tiara within a couple of minutes"}]}, {"id": "build", "title": "Build one queue item", "when": "the core loop · 90% of the work", "steps": [{"do": "Pick the next item", "why": "dependencies mean you never build on a missing prerequisite", "how": "what's next in roadmap.md?", "check": "it names ONE item and what 'done' means"}, {"do": "Get the plan in English", "why": "you review intent, not code", "how": "plan the next item, no code yet", "check": "a short plan you understand and approve"}, {"do": "Test first — watch it go RED", "why": "a test written after the code just blesses the bug", "how": "write the failing test for it, run it, show me red", "check": "you see a genuinely failing test"}, {"do": "Implement — drive it GREEN", "why": "the Stop hook will not let the turn end while verify is red", "how": "make verify", "check": "verify: green (format, lint, build, test)"}, {"do": "See it work on device", "why": "true in code is not true on device", "how": "capture a simulator screenshot + accessibility report", "check": "the screenshot shows what you meant"}, {"do": "Record & close", "why": "git + the queue are the truth", "how": "commit, tick it done in roadmap.md, add a CHANGELOG line", "check": "the item moves to Done"}]}, {"id": "newapp", "title": "Stand up a new app (the factory)", "when": "once per app · Stages 0–1", "steps": [{"do": "Install the factory — once, ever", "why": "the factory is the machine that builds every app with the guardrails already inside. You set it up a single time and reuse it forever.", "how": "Unzip _bootstrap into your Developer folder so it sits at ~/Developer/_bootstrap. You never do this step again.", "check": "~/Developer/_bootstrap contains a 'newapp' file and a 'template' folder"}, {"do": "Run the factory", "why": "this stamps out the app's skeleton — safety hooks, tests and the verify gate — before any code exists", "how": "bash ~/Developer/_bootstrap/newapp <AppName>", "check": "Terminal says '<AppName> scaffolded' and points you back to Tiara"}, {"do": "Create the Xcode project", "why": "no script can make an Xcode project honestly, so this is the one hands-on part", "how": "Xcode → File > New > Project → iOS App → SwiftUI + SwiftData, save INTO ~/Developer/<AppName>, then right-click Sources and Tests → Convert to Folder. Then set up two build configs: Debug = DEV (bundle id ending .dev, home-screen name '<AppName> DEV', development CloudKit) and Release = the clean app — so both install on your phone side by side.", "check": "adding a file on disk shows up in the build with no project-file change, and a DEV build installs next to the real one"}, {"do": "Watch the canary fail, then go green", "why": "a test suite that was never wired up says 'all passed' forever. Watching it fail once, on purpose, proves the tests really run.", "how": "make verify", "check": "you SEE a red failing test, then delete CanaryTests.swift and it goes green"}, {"do": "Write SPEC.md + roadmap.md with Claude", "why": "the spec is the part only you decide; the roadmap is its plan. Claude writes both in the right format so you never have to know it.", "how": "cd ~/Developer/<AppName> && claude", "prompt": "Read SPEC.md, docs/BLUEPRINT.md, CLAUDE.md, and the ADRs in docs/decisions. Then help me fill in SPEC.md for <AppName> — ask me ONE question at a time: what it is in a paragraph, what it is NOT, the data, the screens, and what \"done\" means. Write my answers into SPEC.md in its existing format and keep it DRAFT until I say LOCKED. Then turn the blueprint stages plus the spec into roadmap.md as my live queue, in the four buckets (Doing / Up next / Blocked / Done), each item written as: - [ ] <PREFIX>-01 · a 🔴/🟡/🟢 priority · (type) title. Use my prefix <PREFIX> for the ids. Do not write any app code yet.", "check": "SPEC.md says LOCKED, and roadmap.md fills with your first items (they show up on this board)"}, {"do": "Design system + app icon", "why": "lock the look before any screens exist, so nothing turns into grey stock UI. The app icon lives here — it's a design choice, not plumbing.", "how": "Ask Claude to add Tokens.swift + a lint rule that rejects raw colours and sizes. Then in Xcode drop a 1024×1024 PNG into Assets.xcassets → AppIcon, and add a second set 'AppIcon-Dev' with the same art plus a DEV ribbon (drop your icon into the Tiara Helper folder as icon.png and double-click 'Make DEV icon' to stamp the ribbon for you), pointed at by the Debug config.", "check": "a raw hex colour is rejected by the hook; the real icon shows on Release and the ribboned DEV icon on Debug"}, {"do": "Build the first slice", "why": "prove the whole loop works on day one", "how": "run the Build recipe on the top item of your queue", "check": "one feature green and seen on your device"}]}, {"id": "triage", "title": "Triage sweep (together)", "when": "weekly, or when the inbox fills", "steps": [{"do": "Sort each inbox line", "why": "dedup + sequencing at the door stops the swamp", "how": "for each line: bin · duplicate · promote to the queue (with depends-on)", "check": "inbox empty; new items sit ordered in the queue"}]}]};
+const SEED = {"updated": "2026-07-16", "apps": [], "runbook": [{"id": "stages", "title": "The stages every app climbs", "when": "the blueprint · read once, follow always", "steps": [{"do": "Stage 0 · The factory", "why": "guardrails before features, so quality is never retrofitted into an audit later", "check": "you watched the canary test fail on purpose, then delete it and go green"}, {"do": "Stage 1 · Decide (SPEC.md)", "why": "what it is, and the more important list of what it is NOT; drift is fifty small inconsistent decisions", "check": "SPEC.md says LOCKED at the top and is committed"}, {"do": "Stage 2 · Design system", "why": "a design system that is not machine-enforced regresses to grey stock cards every sprint", "check": "a raw hex colour or magic font size is rejected by the quality hook"}, {"do": "Stage 3 · Vertical slice", "why": "one thing all the way through, so you learn the whole loop works on day one, not week three", "check": "one item, end to end, screenshotted on your real phone"}, {"do": "Stage 4 · Breadth", "why": "now the rest of the screens; anything that interrupts you (notifications) is built last and never loud", "check": "device, every time"}, {"do": "Stage 5 · Sync", "why": "CloudKit, development container only, always", "check": "it survives a delete and reinstall"}, {"do": "Stage 6 · Motion, polish & accessibility", "why": "things move, they do not teleport; Dynamic Type, VoiceOver, reduced motion; delete dead code", "check": "usable with VoiceOver, with your eyes closed"}, {"do": "Stage 7 · Release", "why": "TestFlight, then the App Store", "check": "someone who is not you installs it and opens it"}]}, {"id": "build", "title": "Build one queue item", "when": "the core loop · 90% of the work", "steps": [{"do": "Pick the next item", "why": "dependencies mean you never build on a missing prerequisite", "how": "what's next in roadmap.md?", "check": "it names ONE item and what 'done' means"}, {"do": "Get the plan in English", "why": "you review intent, not code", "how": "plan the next item, no code yet", "check": "a short plan you understand and approve"}, {"do": "Test first — watch it go RED", "why": "a test written after the code just blesses the bug", "how": "write the failing test for it, run it, show me red", "check": "you see a genuinely failing test"}, {"do": "Implement — drive it GREEN", "why": "the Stop hook will not let the turn end while verify is red", "how": "make verify", "check": "verify: green (format, lint, build, test)"}, {"do": "See it work on device", "why": "true in code is not true on device", "how": "capture a simulator screenshot + accessibility report", "check": "the screenshot shows what you meant"}, {"do": "Record & close", "why": "git + the queue are the truth", "how": "commit, tick it done in roadmap.md, add a CHANGELOG line", "check": "the item moves to Done"}]}, {"id": "newapp", "title": "Stand up a new app (the factory)", "when": "once per app · Stages 0–1", "steps": [{"do": "Install the factory — once, ever", "why": "the factory is the machine that builds every app with the guardrails already inside. You set it up a single time and reuse it forever.", "how": "Unzip _bootstrap into your Developer folder so it sits at ~/Developer/_bootstrap. You never do this step again.", "check": "~/Developer/_bootstrap contains a 'newapp' file and a 'template' folder"}, {"do": "Run the factory", "why": "this stamps out the app's skeleton — safety hooks, tests and the verify gate — before any code exists", "how": "bash ~/Developer/_bootstrap/newapp <AppName>", "check": "Terminal says '<AppName> scaffolded' and points you back to Tiara"}, {"do": "Create the Xcode project", "why": "no script can make an Xcode project honestly, so this is the one hands-on part", "how": "Xcode → File > New > Project → iOS App → SwiftUI + SwiftData, save INTO ~/Developer/<AppName>, then right-click Sources and Tests → Convert to Folder. Then set up two build configs: Debug = DEV (bundle id ending .dev, home-screen name '<AppName> DEV', development CloudKit) and Release = the clean app — so both install on your phone side by side.", "check": "adding a file on disk shows up in the build with no project-file change, and a DEV build installs next to the real one"}, {"do": "Watch the canary fail, then go green", "why": "a test suite that was never wired up says 'all passed' forever. Watching it fail once, on purpose, proves the tests really run.", "how": "make verify", "check": "you SEE a red failing test, then delete CanaryTests.swift and it goes green"}, {"do": "Write SPEC.md + roadmap.md with Claude", "why": "the spec is the part only you decide; the roadmap is its plan. Claude writes both in the right format so you never have to know it.", "how": "cd ~/Developer/<AppName> && claude", "prompt": "Read SPEC.md, docs/BLUEPRINT.md, CLAUDE.md, and the ADRs in docs/decisions. Then help me fill in SPEC.md for <AppName> — ask me ONE question at a time: what it is in a paragraph, what it is NOT, the data, the screens, and what \"done\" means. Write my answers into SPEC.md in its existing format and keep it DRAFT until I say LOCKED. Then turn the blueprint stages plus the spec into roadmap.md as my live queue, in the four buckets (Doing / Up next / Blocked / Done), each item written as: - [ ] <PREFIX>-01 · a 🔴/🟡/🟢 priority · (type) title. Use my prefix <PREFIX> for the ids. Do not write any app code yet.", "check": "SPEC.md says LOCKED, and roadmap.md fills with your first items (they show up on this board)"}, {"do": "Design system + app icon", "why": "lock the look before any screens exist, so nothing turns into grey stock UI. The app icon lives here — it's a design choice, not plumbing.", "how": "Ask Claude to add Tokens.swift + a lint rule that rejects raw colours and sizes. Then in Xcode drop a 1024×1024 PNG into Assets.xcassets → AppIcon, and add a second set 'AppIcon-Dev' with the same art plus a DEV ribbon (drop your icon into the Tiara Helper folder as icon.png and double-click 'Make DEV icon' to stamp the ribbon for you), pointed at by the Debug config.", "check": "a raw hex colour is rejected by the hook; the real icon shows on Release and the ribboned DEV icon on Debug"}, {"do": "Build the first slice", "why": "prove the whole loop works on day one", "how": "run the Build recipe on the top item of your queue", "check": "one feature green and seen on your device"}]}, {"id": "triage", "title": "Triage sweep (together)", "when": "weekly, or when the inbox fills", "steps": [{"do": "Sort each inbox line", "why": "dedup + sequencing at the door stops the swamp", "how": "for each line: bin · duplicate · promote to the queue (with depends-on)", "check": "inbox empty; new items sit ordered in the queue"}]}]};
 
 let data = JSON.parse(JSON.stringify(SEED));
-const RUNBOOK = SEED.runbook;   // the runbook lives in the app code, not your saved data
 let fileHandle = null;
 const RUNMAP = {}; // a website cannot run local commands; sync happens through GitHub
 /* ---------- GitHub sync (this is a real website; your data lives in your GitHub) ---------- */
@@ -235,7 +237,7 @@ function roadmapParse(text){
 async function loadFromGitHub(){
   const f=await ghGetFile(GH.owner+'/'+GH.boardRepo,'tiara-data.json');
   if(f.missing){ GH.boardSha=null; await ghSave(); return; }
-  try{ data=JSON.parse(f.text); GH.boardSha=f.sha; delete data.runbook; }catch(e){ setStatus('the board file on GitHub is not valid JSON'); }
+  try{ data=JSON.parse(f.text); GH.boardSha=f.sha; }catch(e){ setStatus('the board file on GitHub is not valid JSON'); }
 }
 let saving=false, saveQueued=false, saveTimer=null;
 function scheduleSave(){ setStatus('… editing'); clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ saveTimer=null; ghSave(); },1500); }
@@ -399,7 +401,10 @@ function chipSel(id,i,kind){
   const C={status:[STATUS_ORDER,STATUS_META,q.status||'todo','setStat'],type:[TYPE_ORDER,TYPE_META,q.type||'task','setType'],prio:[PRIO_ORDER,PRIO_META,q.priority||'med','setPrio']}[kind];
   const order=C[0],meta=C[1],cur=C[2],fn=C[3],m=meta[cur]||Object.values(meta)[0];
   const opts=order.map(k=>`<option value="${k}" ${k===cur?'selected':''}>${meta[k].e} ${meta[k].t}</option>`).join('');
-  return `<select class="chipsel" style="background-color:${m.c}22;color:${m.c}" onchange="${fn}('${id}',${i},this.value)">${opts}</select>`;
+  return `<select class="chipsel${kind==='status'?' status':''}" style="background-color:${m.c}22;color:${m.c}" onchange="${fn}('${id}',${i},this.value)">${opts}</select>`;
+}
+function prioDot(id,i){ const q=app(id).queue[i]; const m=PRIO_META[q.priority]||PRIO_META.med; return `<span class="priodot" style="background:${m.c}" title="priority: ${m.t} (click to change)" onclick="cyclePriority('${id}',${i})"></span>`; }
+function typeChip(id,i){ const q=app(id).queue[i]; const m=TYPE_META[q.type]||TYPE_META.task; return `<span class="typechip2" title="type: ${m.t} (click to change)" onclick="cycleType('${id}',${i})">${m.e} ${m.t}</span>`;
 }
 function delApp(id){ const a=app(id); if(!a)return; if(!confirm('Remove the project "'+a.name+'" from your Tiara board?\n\nThis only clears it from the board — it does NOT touch any files, folders, or repos on your Mac.')) return; data.apps=data.apps.filter(x=>x.id!==id); openState.delete('app:'+id); touch(); setStatus('removed '+a.name+' from the board'); }
 function cycleStatus(id,i){ const a=app(id); const q=a.queue[i]; const idx=STATUS_ORDER.indexOf(q.status||'todo'); q.status=STATUS_ORDER[(idx+1)%4]; q.done=(q.status==='done'); touch(); }
@@ -415,7 +420,7 @@ function addScramble(id){ const inp=document.getElementById('scr-'+id); const v=
 function delScramble(id,i){ app(id).scramble.splice(i,1); touch(); }
 function personalize(str,a){ return (str||'').replace(/<AppName>/g,a.name).replace(/<PREFIX>/g,a.prefix||'ITEM'); }
 function seedQueueFromRunbook(a){
-  const rec=RUNBOOK.find(r=>r.id==='newapp'); if(!rec) return 0;
+  const rec=(data.runbook||[]).find(r=>r.id==='newapp'); if(!rec) return 0;
   rec.steps.forEach(s=>{
     let note='Why: '+personalize(s.why,a);
     if(s.how) note+='\n\nDo: '+personalize(s.how,a);
@@ -454,11 +459,11 @@ function pillStatus(a){
   if(!q.length) return a.status||'—';
   const active=q.filter(x=>x.status!=='done');
   const ver=q.filter(x=>x.status==='verify').length;
-  if(ver) return '🔍 '+ver+' to verify';
-  if(q.some(x=>x.status==='doing')) return '🔨 in progress';
-  if(active.length===0) return '✨ all done';
-  if(active.length && active.every(x=>x.status==='blocked')) return '⛔ blocked';
-  return '🌸 '+active.length+' queued';
+  if(ver) return ver+' to verify';
+  if(q.some(x=>x.status==='doing')) return 'in progress';
+  if(active.length===0) return 'all done';
+  if(active.length && active.every(x=>x.status==='blocked')) return 'blocked';
+  return active.length+' queued';
 }
 /* ---------- render ---------- */
 function render(){
@@ -466,38 +471,35 @@ function render(){
   const b = data.apps.map(a=>{
     const open = a.queue.filter(q=>q.status!=='done').length, dn = a.queue.filter(q=>q.status==='done').length;
     const next = a.queue.find(q=>q.status!=='done');
-    const rowHtml=(q,i,opts)=>{
-      const o=opts||{};
+    const rowHtml=(q,i)=>{
       const sm=STATUS_META[q.status]||STATUS_META.todo; const tm=TYPE_META[q.type]||TYPE_META.task; const pm=PRIO_META[q.priority]||PRIO_META.med;
       const det = openState.has('item:'+q.id) ? `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i})"><button onclick="addNote('${a.id}',${i})">note</button></div></div>` : '';
-      return `<div class="row qrow${q.status==='done'?' done':''}${o.done?' donerow':''}" ${o.done?`data-text="${esc(o.text||'')}" data-old="${o.old?'1':'0'}" ${o.old?'style="display:none"':''}`:''} draggable="true" ondragstart="dragStart(event,'${a.id}',${i})" ondragend="dragEnd(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropRow(event,'${a.id}',${i})"><span class="grip" title="drag to reorder">⠿</span>${chipSel(a.id,i,'prio')}${chipSel(a.id,i,'status')}${chipSel(a.id,i,'type')}<span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span><button class="dots" onclick="toggleDetail('${esc(q.id)}')" title="details & notes">⋯</button><button class="x" title="delete" onclick="delItem('${a.id}',${i})">✕</button></div>${det}`;
+      return `<div class="row qrow ${q.status==='done'?'done':''}" draggable="true" ondragstart="dragStart(event,'${a.id}',${i})" ondragend="dragEnd(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropRow(event,'${a.id}',${i})"><span class="grip" title="drag to reorder">⠿</span>${prioDot(a.id,i)}${chipSel(a.id,i,'status')}<span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span>${typeChip(a.id,i)}<button class="dots" onclick="toggleDetail('${esc(q.id)}')" title="details & notes">⋯</button><button class="x" title="delete" onclick="delItem('${a.id}',${i})">✕</button></div>${det}`;
     };
-    let activeRows=''; const doneItems=[];
-    a.queue.forEach((q,i)=>{ if(q.status==='done') doneItems.push([q,i]); else activeRows+=rowHtml(q,i); });
-    const D=doneItems.length;
-    const doneRows = doneItems.map(([q,i],di)=> rowHtml(q,i,{done:true, text:((q.id||'')+' '+(q.title||'')).toLowerCase(), old: di < D-20})).join('');
+    let activeRows='', doneRows='';
+    a.queue.forEach((q,i)=>{ if(q.status==='done') doneRows+=rowHtml(q,i); else activeRows+=rowHtml(q,i); });
+    const doneFold = doneRows ? `<details class="donefold" data-key="done:${a.id}" ${openState.has('done:'+a.id)?'open':''}><summary>✅ Done · ${dn}</summary>${doneRows}</details>` : '';
     const irows = a.inbox.map((t,i)=>`<div class="row"><span class="t">${esc(t)}</span><button class="promote" onclick="promoteInbox('${a.id}',${i})">→ queue</button><button class="x" onclick="delInbox('${a.id}',${i})">✕</button></div>`).join('') || '<div class="muted">empty</div>';
     const srows = a.scramble.map((t,i)=>`<div class="row"><span class="t">${esc(t)}</span><button class="x" onclick="delScramble('${a.id}',${i})">✕</button></div>`).join('') || '<div class="muted">empty</div>';
-    const dcut=(a.done||[]).slice(0,10);
-    const drows = (dcut.map(t=>`<div class="row done"><span class="t">${esc(t)}</span></div>`).join('')||'<div class="muted">—</div>') + ((a.done&&a.done.length>10)?`<div class="scnote" style="margin-top:6px">showing the latest 10 of ${a.done.length}</div>`:'');
-    return `<details class="app" data-key="app:${a.id}" ${openState.has('app:'+a.id)?'open':''} ondragover="appDragOver(event,'${a.id}')" ondrop="appDrop(event,'${a.id}')" ondragleave="this.classList.remove('drophi')">
-      <summary><span class="agrip" draggable="true" title="drag to reorder projects" ondragstart="appDragStart(event,'${a.id}')" ondragend="appDragEnd()" onclick="event.preventDefault();event.stopPropagation();">⠿</span><span class="rib r-${a.color}"></span><span style="font-size:1.4rem">${a.emoji}</span><span class="nm">${esc(a.name)}</span><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">✓ ${dn} · <b>◦ ${open}</b> · 💭 ${a.inbox.length}</span></summary>
+    const drows = (a.done||[]).map(t=>`<div class="row done"><span class="t">${esc(t)}</span></div>`).join('') || '<div class="muted">—</div>';
+    return `<details class="app" data-key="app:${a.id}" ${openState.has('app:'+a.id)?'open':''}>
+      <summary><span class="rib r-${a.color}"></span><span class="emojitile">${a.emoji}</span><span class="nm">${esc(a.name)}</span><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b> · ${a.inbox.length} inbox</span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
-        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>🔧 Queue · ${open}</summary><div class="laneb">${activeRows||'<div class="muted">nothing active 🎉</div>'}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><button onclick="addItem('${a.id}')">add</button></div></div></details>
-        ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>✅ Done · ${dn}</summary><div class="laneb">${dn>20?`<div class="donesearch"><input id="dsearch-${a.id}" placeholder="🔍 search all ${dn} done…" oninput="filterDone('${a.id}',this.value)"></div>`:''}<div id="donelist-${a.id}">${doneRows}</div></div></details>`:''}
-        ${(a.done&&a.done.length)?`<details class="lane ship" data-key="ship:${a.id}" ${openState.has('ship:'+a.id)?'open':''}><summary>🌱 Shipped · ${a.done.length} <span class="scnote">from git commits</span></summary><div class="laneb">${drows}</div></details>`:''}
-        <details class="lane i" data-key="inb:${a.id}" ${openState.has('inb:'+a.id)?'open':''}><summary>💭 Inbox · ${a.inbox.length}</summary><div class="laneb">${irows}<div class="addbox"><input id="inb-${a.id}" placeholder="drop an idea…" onkeydown="if(event.key==='Enter')addInbox('${a.id}')"><button onclick="addInbox('${a.id}')">drop</button></div></div></details>
-        <details class="lane s" data-key="scr:${a.id}" ${openState.has('scr:'+a.id)?'open':''}><summary>🔒 Scramble <span class="scnote">private — agents never read this</span></summary><div class="laneb">${srows}<div class="addbox"><input id="scr-${a.id}" placeholder="brain-dump, anything…" onkeydown="if(event.key==='Enter')addScramble('${a.id}')"><button onclick="addScramble('${a.id}')">jot</button></div></div></details>
-        <div class="scnote repoedit" style="margin-top:8px" onclick="setRepo('${a.id}')" title="click to set the GitHub repo">🔗 repo: ${esc(a.repo)} <span class="ed">✎ edit</span></div>
-        <button class="delproj" onclick="delApp('${a.id}')">🗑 remove project from board</button>
+        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb">${activeRows||'<div class="muted">nothing active 🎉</div>'}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><button onclick="addItem('${a.id}')">add</button></div></div></details>
+        ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
+        ${(a.done&&a.done.length)?`<details class="lane ship" data-key="ship:${a.id}" ${openState.has('ship:'+a.id)?'open':''}><summary>Shipped · ${a.done.length} <span class="scnote">from git commits</span></summary><div class="laneb">${drows}</div></details>`:''}
+        <details class="lane i" data-key="inb:${a.id}" ${openState.has('inb:'+a.id)?'open':''}><summary>Inbox · ${a.inbox.length}</summary><div class="laneb">${irows}<div class="addbox"><input id="inb-${a.id}" placeholder="drop an idea…" onkeydown="if(event.key==='Enter')addInbox('${a.id}')"><button onclick="addInbox('${a.id}')">drop</button></div></div></details>
+        <details class="lane s" data-key="scr:${a.id}" ${openState.has('scr:'+a.id)?'open':''}><summary>Scramble <span class="scnote">private — agents never read this</span></summary><div class="laneb">${srows}<div class="addbox"><input id="scr-${a.id}" placeholder="brain-dump, anything…" onkeydown="if(event.key==='Enter')addScramble('${a.id}')"><button onclick="addScramble('${a.id}')">jot</button></div></div></details>
+        <div class="scnote repoedit" style="margin-top:8px" onclick="setRepo('${a.id}')" title="click to set the GitHub repo">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
+        <button class="delproj" onclick="delApp('${a.id}')">Remove project from board</button>
       </div></details>`;
   }).join('');
   $('#board').innerHTML = b;
 
   const rbSel = '';
-  const r = rbSel + RUNBOOK.map((rec,ri)=>{
+  const r = rbSel + data.runbook.map((rec,ri)=>{
     const steps = rec.steps.map((s,si)=>`<div class="step"><div class="sh"><input type="checkbox" onchange="this.closest('.step').classList.toggle('sdone')"><span class="sd">${si+1}. ${esc(s.do)}</span></div>
       <div class="meta"><b>Why:</b> ${esc(s.why)}</div>
       ${s.how?`<div class="cmd"><code id="cmd-${ri}-${si}">${esc(s.how)}</code><button onclick="copyCmd('cmd-${ri}-${si}')">copy</button>${(HELPER.on&&RUNMAP[s.how])?`<button onclick="runAction(document.getElementById('rbApp').value,'${RUNMAP[s.how]}','rbo-${ri}-${si}')">▶ run</button>`:''}</div>${(HELPER.on&&RUNMAP[s.how])?`<pre class="runout" id="rbo-${ri}-${si}" style="display:none"></pre>`:''}`:''}
@@ -508,13 +510,6 @@ function render(){
   $('#runbook').innerHTML = r;
 }
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
-function filterDone(appId,q){ const box=document.getElementById('donelist-'+appId); if(!box)return; const term=(q||'').trim().toLowerCase(); box.querySelectorAll('.donerow').forEach(r=>{ if(!term){ r.style.display = r.getAttribute('data-old')==='1' ? 'none' : ''; } else { r.style.display = (r.getAttribute('data-text')||'').includes(term) ? '' : 'none'; } }); }
-/* ---------- reorder project cards ---------- */
-let dragAppId=null;
-function appDragStart(e,id){ dragAppId=id; e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',id);}catch(_){} }
-function appDragEnd(){ dragAppId=null; document.querySelectorAll('.app.drophi').forEach(x=>x.classList.remove('drophi')); }
-function appDragOver(e,id){ if(dragAppId===null||dragAppId===id)return; e.preventDefault(); e.dataTransfer.dropEffect='move'; const el=e.currentTarget; document.querySelectorAll('.app.drophi').forEach(x=>{if(x!==el)x.classList.remove('drophi');}); el.classList.add('drophi'); }
-function appDrop(e,id){ e.preventDefault(); document.querySelectorAll('.app.drophi').forEach(x=>x.classList.remove('drophi')); if(dragAppId===null||dragAppId===id){dragAppId=null;return;} const from=data.apps.findIndex(a=>a.id===dragAppId), to=data.apps.findIndex(a=>a.id===id); if(from<0||to<0){dragAppId=null;return;} const [moved]=data.apps.splice(from,1); data.apps.splice(to,0,moved); dragAppId=null; scheduleSave(); render(); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
 (async function init(){
