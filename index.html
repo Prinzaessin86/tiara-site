@@ -173,7 +173,7 @@
   <div id="board"></div>
   <div id="runbook" style="display:none"></div>
 
-  <footer>saved to a JSON file Claude Code reads too · drop ideas → triage → queue → build</footer>
+  <footer>drop ideas → triage → queue → build · <span id="ver" style="opacity:.6"></span></footer>
 </div>
 
 <script>
@@ -670,8 +670,10 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
+const TIARA_VERSION = 'board-v3 · retry+optimistic';
 (async function init(){
   ghLoadCfg();
+  const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
   render();
   if(GH.token){
     HELPER.on=true; showOnboard(false);
