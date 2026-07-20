@@ -194,7 +194,19 @@ const mdSeen = {};                  // in-memory: last roadmap.md text we've syn
    no tiara-data.json queue, no roadmap.md mirror. GitHub is the single truth.
    ========================================================================== */
 const GH_BOARDS = { 'prinzaessin86/packmagic': { login:'Prinzaessin86', number:1, url:'https://github.com/users/Prinzaessin86/projects/1' } };
-function boardFor(a){ const or=appOwnerRepo(a); if(!or) return null; return GH_BOARDS[or.toLowerCase()]||null; }
+const _discovered = {};             // appId -> board config, found by asking the repo for a linked Project with a Lane field
+function boardFor(a){ if(!a) return null; const or=appOwnerRepo(a); if(!or) return null; return GH_BOARDS[or.toLowerCase()] || _discovered[a.id] || null; }
+// auto-discovery: any app whose repo has a linked Projects-v2 board with a "Lane" field becomes a board app — no hardcoding
+async function discoverBoards(){
+  for(const a of data.apps){ const or=appOwnerRepo(a); if(!or || GH_BOARDS[or.toLowerCase()] || _discovered[a.id]) continue;
+    const owner=or.split('/')[0], repo=or.split('/')[1]; if(!owner||!repo) continue;
+    try{ const d=await ghGraphQL(`query($o:String!,$r:String!){ repository(owner:$o,name:$r){ projectsV2(first:10){ nodes{ number title fields(first:30){ nodes{ ... on ProjectV2SingleSelectField{ name } } } } } } }`,{o:owner,r:repo});
+      const nodes=(d.repository&&d.repository.projectsV2&&d.repository.projectsV2.nodes)||[];
+      const board=nodes.find(n=>(n.fields.nodes||[]).some(f=>f&&f.name&&f.name.toLowerCase()==='lane'));
+      if(board) _discovered[a.id]={ login:owner, number:board.number, url:'https://github.com/users/'+owner+'/projects/'+board.number };
+    }catch(e){}
+  }
+}
 const _boardMeta = {};              // appId -> { projectId, fields:{lane,priority,type}{id,opts{name:id}} }
 const cap = s => (s||'').charAt(0).toUpperCase()+(s||'').slice(1);
 // lane <-> Tiara status
@@ -357,6 +369,7 @@ async function loadFromGitHub(){
   if(f.missing){ GH.boardSha=null; await ghSave(); return; }
   try{ data=JSON.parse(f.text); GH.boardSha=f.sha; }catch(e){ setStatus('the board file on GitHub is not valid JSON'); return; }
   if(!Array.isArray(data.runbook)) data.runbook = JSON.parse(JSON.stringify(SEED.runbook));  // self-heal: a missing runbook used to crash render()
+  await discoverBoards();  // find each app's linked board so boardFor() knows which apps are on GitHub
   data.apps.forEach(a=>{ if(boardFor(a)) a._jsonQueueBackup = a.queue||[]; });  // keep the original JSON queue as an untouched backup — never erased
   await loadBoardApps();   // board apps: replace their live queue with the GitHub Project
 }
@@ -697,7 +710,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v10 · steady-detail';
+const TIARA_VERSION = 'board-v11 · auto-discover';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
