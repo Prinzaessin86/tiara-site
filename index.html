@@ -248,7 +248,9 @@ async function loadBoardItems(a){
       notes:[], _commentCount:(c.comments&&c.comments.totalCount)||0, _notesLoaded:false };
   });
   // eagerly pull notes for items that have comments, so notes persist across refresh (not just on expand)
-  a.queue.filter(q=>q._commentCount>0 && !q._notesLoaded).forEach(q=>{ bLoadNotes(a,q).then(()=>render()).catch(()=>{}); });
+  // load them all, then render ONCE — avoids a redraw storm that makes the page jump while you click
+  const need=a.queue.filter(q=>q._commentCount>0 && !q._notesLoaded);
+  if(need.length) Promise.all(need.map(q=>bLoadNotes(a,q).catch(()=>{}))).then(()=>render());
 }
 async function loadBoardApps(){ for(const a of data.apps){ if(boardFor(a)){ try{ await loadBoardItems(a); }catch(e){ setStatus('⚠ board '+a.name+': '+e.message); } } } }
 // --- board mutations (optimistic: caller updates local state, then awaits these) ---
@@ -687,7 +689,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v8 · fixed';
+const TIARA_VERSION = 'board-v9 · calm-notes';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
