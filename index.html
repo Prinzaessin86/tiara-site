@@ -206,11 +206,14 @@ async function discoverBoards(){
   for(const a of data.apps){ const or=appOwnerRepo(a); if(!or) continue;
     const owner=or.split('/')[0], repo=or.split('/')[1]; if(!owner||!repo) continue;
     try{ const d=await ghGraphQL(`query($o:String!,$r:String!){ repository(owner:$o,name:$r){
+        pyml: object(expression:"HEAD:project.yml"){ ... on Blob{ text } }
         latestRelease{ tagName }
         refs(refPrefix:"refs/tags/", first:1, orderBy:{field:TAG_COMMIT_DATE, direction:DESC}){ nodes{ name } }
         projectsV2(first:10){ nodes{ number title fields(first:30){ nodes{ ... on ProjectV2SingleSelectField{ name } } } } } } }`,{o:owner,r:repo});
       const rp=d.repository; if(!rp) continue;
-      const ver=(rp.latestRelease&&rp.latestRelease.tagName) || (rp.refs&&rp.refs.nodes&&rp.refs.nodes[0]&&rp.refs.nodes[0].name) || '';
+      let ver=''; const pyml=rp.pyml&&rp.pyml.text;
+      if(pyml){ const m=pyml.match(/MARKETING_VERSION:\s*"?([0-9][A-Za-z0-9.\-]*)"?/); if(m) ver='v'+m[1]; }   // Xcode marketing version (bumps as you develop)
+      if(!ver) ver=(rp.latestRelease&&rp.latestRelease.tagName) || (rp.refs&&rp.refs.nodes&&rp.refs.nodes[0]&&rp.refs.nodes[0].name) || '';
       if(ver) _version[a.id]=ver;
       if(GH_BOARDS[or.toLowerCase()] || _discovered[a.id]) continue;   // board already known; version captured above
       const nodes=(rp.projectsV2&&rp.projectsV2.nodes)||[];
@@ -723,7 +726,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v13';
+const TIARA_VERSION = 'board-v14';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
