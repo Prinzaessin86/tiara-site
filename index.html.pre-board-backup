@@ -66,8 +66,6 @@
   .typechip2{font-size:.72rem;color:var(--soft);font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;background:none;border:none;padding:0;}
   select.chipsel.status{padding:4px 22px 4px 10px;font-size:.78rem;}
   .row .id{font-size:.7rem;font-weight:800;color:#fff;background:var(--purple);padding:1px 6px;border-radius:6px;margin-right:5px;}
-  .ghlink{font-size:.7rem;font-weight:800;color:#7a4a9e;background:#f3e9fb;border-radius:7px;padding:2px 7px;text-decoration:none;white-space:nowrap;flex-shrink:0;}
-  .ghlink:hover{background:#e9d9f7;}
   .row .x{cursor:pointer;color:#d9a8c9;font-weight:800;border:none;background:none;font-size:1rem;padding:0 4px;}
   .row .promote{cursor:pointer;border:none;background:#f3e9fb;color:var(--purple);font-weight:700;font-size:.72rem;border-radius:8px;padding:2px 8px;}
   .grip{cursor:grab;color:#cbb8e2;font-weight:800;font-size:1.05rem;user-select:none;line-height:1;}
@@ -153,12 +151,12 @@
       <h2>Connect Tiara to your GitHub</h2>
       <p>Your board lives safely in your own GitHub account. Connect it once and you never download anything again — just visit this page.</p>
       <ol>
-        <li>Open <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener">github.com/settings/tokens</a> → <b>Generate new token (classic)</b>.</li>
-        <li>Name it "Tiara", then tick just two boxes: <b>repo</b> and <b>project</b>.<br><span class="scnote">repo = read/write your issues + board data · project = drive the GitHub boards</span></li>
-        <li>Click <b>Generate token</b> and copy it (starts with <code>ghp_…</code>).</li>
+        <li>Open <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener">github.com/settings/tokens</a> → <b>Generate new token</b> (fine-grained).</li>
+        <li>Under <b>Repository access</b> pick <b>All repositories</b> (or just your app repos + a new <code>tiara</code> one).</li>
+        <li>Under <b>Permissions → Repository</b>, set <b>Contents</b> to <b>Read and write</b> (and, if you'd like it to make the board repo for you, <b>Administration → Read and write</b> too). Generate, then copy the token.</li>
         <li>Paste it below and press Connect.</li>
       </ol>
-      <input id="gh-token" type="password" placeholder="paste your token (ghp_… or github_pat_…)">
+      <input id="gh-token" type="password" placeholder="paste your token (starts with github_pat_…)">
       <input id="gh-repo" type="text" placeholder="board repo name (default: tiara)" value="tiara">
       <button class="tb newapp" style="border:none;background:linear-gradient(90deg,#2fbf7e,#4ea8ff);color:#fff;" onclick="connectGitHub()">Connect</button>
       <div id="gh-msg" class="gh-msg"></div>
@@ -187,91 +185,6 @@ let HELPER = { on:false };          // .on === connected to GitHub (keeps render
 const GH = { token:'', owner:'', boardRepo:'tiara', boardSha:null };
 const mdCache = {};                 // in-memory: last roadmap.md we wrote per app, to skip no-ops
 const mdSeen = {};                  // in-memory: last roadmap.md text we've synced with (for auto-sync)
-
-/* ============================================================================
-   GitHub Projects board adapter  (per-app; PackMagic pilot only for now)
-   When an app's repo is in GH_BOARDS, its queue is the live GitHub Project —
-   no tiara-data.json queue, no roadmap.md mirror. GitHub is the single truth.
-   ========================================================================== */
-const GH_BOARDS = { 'prinzaessin86/packmagic': { login:'Prinzaessin86', number:1, url:'https://github.com/users/Prinzaessin86/projects/1' } };
-function boardFor(a){ const or=appOwnerRepo(a); if(!or) return null; return GH_BOARDS[or.toLowerCase()]||null; }
-const _boardMeta = {};              // appId -> { projectId, fields:{lane,priority,type}{id,opts{name:id}} }
-const cap = s => (s||'').charAt(0).toUpperCase()+(s||'').slice(1);
-// lane <-> Tiara status
-const LANE2STATUS = {'inbox':'inbox','up next':'todo','doing':'doing','verify':'verify','blocked':'blocked','done':'done'};
-const STATUS2LANE = {'inbox':'Inbox','todo':'Up next','doing':'Doing','verify':'Verify','blocked':'Blocked','done':'Done'};
-const BOARD_STATUS_ORDER = ['inbox','todo','doing','verify','blocked','done'];
-const BOARD_STATUS_LABEL = {inbox:'inbox',todo:'up next',doing:'doing',verify:'verify',blocked:'blocked',done:'done'};
-
-async function ghGraphQL(query, variables){
-  const r = await fetch('https://api.github.com/graphql', { method:'POST',
-    headers:{ 'Authorization':'Bearer '+GH.token, 'Content-Type':'application/json' },
-    body: JSON.stringify({ query, variables }) });
-  const j = await r.json();
-  if(j.errors && j.errors.length) throw new Error(j.errors.map(e=>e.message).join('; '));
-  if(!r.ok) throw new Error('GitHub GraphQL '+r.status);
-  return j.data;
-}
-// discover the project id + single-select field/option ids once per app
-async function resolveBoard(a){
-  const cfg = boardFor(a); if(!cfg) return null;
-  if(_boardMeta[a.id]) return _boardMeta[a.id];
-  const d = await ghGraphQL(`query($login:String!,$num:Int!){ user(login:$login){ projectV2(number:$num){ id
-      fields(first:50){ nodes{ ... on ProjectV2SingleSelectField { id name options{ id name } } } } } } }`,
-    { login:cfg.login, num:cfg.number });
-  const p = d.user.projectV2; if(!p) throw new Error('project not found');
-  const fields = {};
-  (p.fields.nodes||[]).forEach(f=>{ if(!f||!f.name) return; const k=f.name.toLowerCase();
-    if(k==='lane'||k==='priority'||k==='type'){ fields[k]={ id:f.id, opts:{} }; (f.options||[]).forEach(o=>fields[k].opts[o.name]=o.id); } });
-  return _boardMeta[a.id] = { projectId:p.id, fields };
-}
-// load the board's items into a.queue (replaces the local queue for board apps)
-async function loadBoardItems(a){
-  const cfg = boardFor(a); await resolveBoard(a);
-  const d = await ghGraphQL(`query($login:String!,$num:Int!){ user(login:$login){ projectV2(number:$num){ items(first:100){ nodes{
-      id
-      content{ ... on Issue { number title body state url comments{ totalCount } labels(first:20){ nodes{ name } } } }
-      lane: fieldValueByName(name:"Lane"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
-      priority: fieldValueByName(name:"Priority"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
-      type: fieldValueByName(name:"Type"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
-    } } } } }`, { login:cfg.login, num:cfg.number });
-  const nodes = (d.user.projectV2.items.nodes||[]).filter(n=>n.content && n.content.number);
-  a.queue = nodes.map(n=>{
-    const c = n.content;
-    const pack = (c.labels&&c.labels.nodes||[]).map(l=>l.name).find(nm=>/^[A-Za-z]+-\d+$/.test(nm));
-    const lane = (n.lane&&n.lane.name) || 'Up next';
-    const status = (c.state==='CLOSED') ? 'done' : (LANE2STATUS[lane.toLowerCase()] || 'todo');
-    return { id: pack || ('#'+c.number), issueNumber:c.number, itemId:n.id, url:c.url,
-      title:c.title, status, done:(status==='done'),
-      priority:((n.priority&&n.priority.name)||'Med').toLowerCase(),
-      type:((n.type&&n.type.name)||'Task').toLowerCase(),
-      notes:[], _commentCount:(c.comments&&c.comments.totalCount)||0, _notesLoaded:false };
-  });
-}
-async function loadBoardApps(){ for(const a of data.apps){ if(boardFor(a)){ try{ await loadBoardItems(a); }catch(e){ setStatus('⚠ board '+a.name+': '+e.message); } } } }
-// --- board mutations (optimistic: caller updates local state, then awaits these) ---
-async function bSetField(a,q,fieldKey,optionName){
-  const meta=await resolveBoard(a); const f=meta.fields[fieldKey]; if(!f) throw new Error('no "'+fieldKey+'" field on board');
-  const opt=f.opts[optionName]; if(!opt) throw new Error('no option "'+optionName+'"');
-  await ghGraphQL(`mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ projectV2Item{ id } } }`,
-    { p:meta.projectId, i:q.itemId, f:f.id, o:opt });
-}
-async function bSetState(a,q,state){ const or=appOwnerRepo(a); const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber,{method:'PATCH',body:JSON.stringify({state})}); if(!r.ok) throw new Error('issue state '+r.status); }
-async function bComment(a,q,text){ const or=appOwnerRepo(a); const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber+'/comments',{method:'POST',body:JSON.stringify({body:text})}); if(!r.ok) throw new Error('comment '+r.status); }
-async function bLoadNotes(a,q){ const or=appOwnerRepo(a); const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber+'/comments'); if(!r.ok) return;
-  const cs=await r.json(); q.notes=(cs||[]).map(c=>{ const m=(c.body||'').match(/^\s*(🤖\s*claude|👑\s*you)\s*:?\s*/i);
-    return { by:(m&&/claude|🤖/i.test(m[1]))?'claude':'you', text:(c.body||'').replace(/^\s*(🤖\s*claude|👑\s*you)\s*:?\s*/i,'') }; }); q._notesLoaded=true; }
-async function bAddItem(a,title){
-  const or=appOwnerRepo(a);
-  const r=await ghApi('/repos/'+or+'/issues',{method:'POST',body:JSON.stringify({title})}); if(!r.ok) throw new Error('create issue '+r.status);
-  const iss=await r.json(); const meta=await resolveBoard(a);
-  const add=await ghGraphQL(`mutation($p:ID!,$c:ID!){ addProjectV2ItemById(input:{projectId:$p,contentId:$c}){ item{ id } } }`,{ p:meta.projectId, c:iss.node_id });
-  const itemId=add.addProjectV2ItemById.item.id;
-  const f=meta.fields.lane; if(f&&f.opts['Up next']) await ghGraphQL(`mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ projectV2Item{ id } } }`,{ p:meta.projectId, i:itemId, f:f.id, o:f.opts['Up next'] });
-  return { issueNumber:iss.number, itemId, url:iss.html_url };
-}
-async function bReorder(a,q,afterId){ const meta=await resolveBoard(a);
-  await ghGraphQL(`mutation($p:ID!,$i:ID!,$a:ID){ updateProjectV2ItemPosition(input:{projectId:$p,itemId:$i,afterId:$a}){ items{ totalCount } } }`,{ p:meta.projectId, i:q.itemId, a:afterId }); }
 
 function ghLoadCfg(){ try{ const c=JSON.parse(localStorage.getItem('tiaraGH')||'{}'); GH.token=c.token||''; GH.owner=c.owner||''; GH.boardRepo=c.boardRepo||'tiara'; }catch(e){} }
 function ghSaveCfg(){ localStorage.setItem('tiaraGH', JSON.stringify({token:GH.token,owner:GH.owner,boardRepo:GH.boardRepo})); }
@@ -332,9 +245,7 @@ function roadmapParse(text){
 async function loadFromGitHub(){
   const f=await ghGetFile(GH.owner+'/'+GH.boardRepo,'tiara-data.json');
   if(f.missing){ GH.boardSha=null; await ghSave(); return; }
-  try{ data=JSON.parse(f.text); GH.boardSha=f.sha; }catch(e){ setStatus('the board file on GitHub is not valid JSON'); return; }
-  data.apps.forEach(a=>{ if(boardFor(a)) a._jsonQueueBackup = a.queue||[]; });  // keep the original JSON queue as an untouched backup — never erased
-  await loadBoardApps();   // board apps: replace their live queue with the GitHub Project
+  try{ data=JSON.parse(f.text); GH.boardSha=f.sha; }catch(e){ setStatus('the board file on GitHub is not valid JSON'); }
 }
 let saving=false, saveQueued=false, saveTimer=null;
 function scheduleSave(){ setStatus('… editing'); clearTimeout(saveTimer); saveTimer=setTimeout(()=>{ saveTimer=null; ghSave(); },1500); }
@@ -344,12 +255,9 @@ async function ghSave(){
   saving=true;
   try{
     setStatus('saving to GitHub…');
-    // board apps live on GitHub Projects — don't persist their queue into the JSON store
-    const out=JSON.parse(JSON.stringify(data)); out.apps.forEach(a=>{ if(boardFor(a)) a.queue = a._jsonQueueBackup||[]; delete a._jsonQueueBackup; });
-    GH.boardSha = await ghPutFile(GH.owner+'/'+GH.boardRepo,'tiara-data.json', JSON.stringify(out,null,2), GH.boardSha, 'Tiara board update');
+    GH.boardSha = await ghPutFile(GH.owner+'/'+GH.boardRepo,'tiara-data.json', JSON.stringify(data,null,2), GH.boardSha, 'Tiara board update');
     let mirrored=0;
-    for(const a of data.apps){ if(boardFor(a)) continue;   // no roadmap.md mirror for board apps
-      const or=appOwnerRepo(a); if(!or) continue;
+    for(const a of data.apps){ const or=appOwnerRepo(a); if(!or) continue;
       const md=roadmapRender(a); if(mdCache[a.id]===md) continue;
       try{ const cur=await ghGetFile(or,'roadmap.md'); if(cur.missing||cur.text!==md){ await ghPutFile(or,'roadmap.md',md,cur.missing?null:cur.sha,'Tiara: update roadmap'); mirrored++; } mdCache[a.id]=md; mdSeen[a.id]=md; }catch(e){}
     }
@@ -393,8 +301,7 @@ async function autoSync(){
   syncing=true;
   try{
     let changed=0;
-    for(const a of data.apps){ if(boardFor(a)) continue;   // board apps refresh via the Refresh button, not roadmap.md
-      const or=appOwnerRepo(a); if(!or) continue;
+    for(const a of data.apps){ const or=appOwnerRepo(a); if(!or) continue;
       let f; try{ f=await ghGetFile(or,'roadmap.md'); }catch(e){ continue; }
       if(f.missing) continue;
       if(mdSeen[a.id]===undefined){ mdSeen[a.id]=f.text; continue; }   // first sight: baseline only, never clobber
@@ -489,38 +396,24 @@ function dragStart(ev,appId,i){ dragApp=appId; dragIdx=i; ev.currentTarget.class
 function dragEnd(ev){ ev.currentTarget.classList.remove('dragging'); }
 function dragOver(ev){ ev.preventDefault(); ev.currentTarget.classList.add('dragover'); ev.dataTransfer.dropEffect='move'; }
 function dragLeave(ev){ ev.currentTarget.classList.remove('dragover'); }
-function dropRow(ev,appId,i){ ev.preventDefault(); ev.currentTarget.classList.remove('dragover'); if(dragApp!==appId||dragIdx===null||dragIdx===i){ dragApp=dragIdx=null; return; } const a=app(appId); const [it]=a.queue.splice(dragIdx,1); const to=(dragIdx<i)?i-1:i; a.queue.splice(to,0,it); dragApp=dragIdx=null;
-  if(boardFor(a)){ captureOpen(); render(); const afterId=to>0?(a.queue[to-1]||{}).itemId:null; bReorder(a,it,afterId).then(()=>setStatus('🟢 reordered on the board')).catch(e=>setStatus('reorder failed: '+e.message)); return; }
-  touch(); }
+function dropRow(ev,appId,i){ ev.preventDefault(); ev.currentTarget.classList.remove('dragover'); if(dragApp!==appId||dragIdx===null||dragIdx===i){ dragApp=dragIdx=null; return; } const a=app(appId); const [it]=a.queue.splice(dragIdx,1); const to=(dragIdx<i)?i-1:i; a.queue.splice(to,0,it); dragApp=dragIdx=null; touch(); }
 const STATUS_ORDER=['todo','doing','verify','blocked','done'];
-const STATUS_META={inbox:{e:'📥',t:'inbox',c:'#9b5de5'},todo:{e:'◻',t:'to do',c:'#8877a0'},doing:{e:'🔨',t:'doing',c:'#e0932b'},verify:{e:'🔍',t:'verify',c:'#4ea8ff'},blocked:{e:'⛔',t:'blocked',c:'#d0567f'},done:{e:'✅',t:'done',c:'#2fbf7e'}};
+const STATUS_META={todo:{e:'◻',t:'to do',c:'#8877a0'},doing:{e:'🔨',t:'doing',c:'#e0932b'},verify:{e:'🔍',t:'verify',c:'#4ea8ff'},blocked:{e:'⛔',t:'blocked',c:'#d0567f'},done:{e:'✅',t:'done',c:'#2fbf7e'}};
 function migrate(){ ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>{ if(!q.id) q.id=nextId(a); if(!q.status) q.status=q.done?'done':'todo'; q.done=(q.status==='done'); if(!q.type) q.type='task'; if(!q.priority) q.priority='med'; if(!Array.isArray(q.notes)) q.notes=[]; }); }); }
 const TYPE_ORDER=['task','bug','feature','chore'];
 const TYPE_META={task:{e:'📋',t:'task',c:'#8877a0'},bug:{e:'🐞',t:'bug',c:'#d0567f'},feature:{e:'✨',t:'feature',c:'#9b5de5'},chore:{e:'🧹',t:'chore',c:'#4ea8ff'}};
-function cycleType(id,i){ const a=app(id); const q=a.queue[i]; const idx=TYPE_ORDER.indexOf(q.type||'task'); const nv=TYPE_ORDER[(idx+1)%4];
-  if(boardFor(a)){ q.type=nv; captureOpen(); render(); bSetField(a,q,'type',cap(nv)).then(()=>setStatus('🟢 '+q.id+' · '+nv)).catch(e=>setStatus('update failed: '+e.message)); return; }
-  q.type=nv; touch(); }
+function cycleType(id,i){ const a=app(id); const q=a.queue[i]; const idx=TYPE_ORDER.indexOf(q.type||'task'); q.type=TYPE_ORDER[(idx+1)%4]; touch(); }
 const PRIO_ORDER=['high','med','low'];
 const PRIO_META={high:{e:'🔴',t:'high',c:'#d0567f'},med:{e:'🟡',t:'med',c:'#e0932b'},low:{e:'🟢',t:'low',c:'#2fbf7e'}};
-function cyclePriority(id,i){ const a=app(id); const q=a.queue[i]; const idx=PRIO_ORDER.indexOf(q.priority||'med'); const nv=PRIO_ORDER[(idx+1)%3];
-  if(boardFor(a)){ q.priority=nv; captureOpen(); render(); bSetField(a,q,'priority',cap(nv)).then(()=>setStatus('🟢 '+q.id+' · '+nv+' priority')).catch(e=>setStatus('update failed: '+e.message)); return; }
-  q.priority=nv; touch(); }
-function setStat(id,i,v){ const a=app(id); const q=a.queue[i];
-  if(boardFor(a)){ const prev=q.status; q.status=v; q.done=(v==='done'); captureOpen(); render();
-    const lane=STATUS2LANE[v]||'Up next';
-    bSetField(a,q,'lane',lane)
-      .then(()=> (v==='done')?bSetState(a,q,'closed'):(prev==='done'?bSetState(a,q,'open'):null))
-      .then(()=>setStatus('🟢 '+q.id+' → '+lane)).catch(e=>setStatus('update failed: '+e.message)); return; }
-  q.status=v; q.done=(v==='done'); touch(); }
+function cyclePriority(id,i){ const a=app(id); const q=a.queue[i]; const idx=PRIO_ORDER.indexOf(q.priority||'med'); q.priority=PRIO_ORDER[(idx+1)%3]; touch(); }
+function setStat(id,i,v){ const q=app(id).queue[i]; q.status=v; q.done=(v==='done'); touch(); }
 function setType(id,i,v){ app(id).queue[i].type=v; touch(); }
 function setPrio(id,i,v){ app(id).queue[i].priority=v; touch(); }
 function chipSel(id,i,kind){
-  const a=app(id); const q=a.queue[i]; const onBoard=!!boardFor(a);
-  const statusOrder = onBoard ? BOARD_STATUS_ORDER : STATUS_ORDER;
-  const C={status:[statusOrder,STATUS_META,q.status||'todo','setStat'],type:[TYPE_ORDER,TYPE_META,q.type||'task','setType'],prio:[PRIO_ORDER,PRIO_META,q.priority||'med','setPrio']}[kind];
+  const q=app(id).queue[i];
+  const C={status:[STATUS_ORDER,STATUS_META,q.status||'todo','setStat'],type:[TYPE_ORDER,TYPE_META,q.type||'task','setType'],prio:[PRIO_ORDER,PRIO_META,q.priority||'med','setPrio']}[kind];
   const order=C[0],meta=C[1],cur=C[2],fn=C[3],m=meta[cur]||Object.values(meta)[0];
-  const label=(k)=> (onBoard&&kind==='status'&&BOARD_STATUS_LABEL[k]) ? BOARD_STATUS_LABEL[k] : meta[k].t;
-  const opts=order.map(k=>`<option value="${k}" ${k===cur?'selected':''}>${meta[k].e} ${label(k)}</option>`).join('');
+  const opts=order.map(k=>`<option value="${k}" ${k===cur?'selected':''}>${meta[k].e} ${meta[k].t}</option>`).join('');
   return `<select class="chipsel${kind==='status'?' status':''}" style="background-color:${m.c}22;color:${m.c}" onchange="${fn}('${id}',${i},this.value)">${opts}</select>`;
 }
 function prioDot(id,i){ const q=app(id).queue[i]; const m=PRIO_META[q.priority]||PRIO_META.med; return `<span class="priochip2" style="background:${m.c}1a;color:${m.c}" title="click to change priority" onclick="cyclePriority('${id}',${i})">${m.t}</span>`; }
@@ -528,26 +421,13 @@ function typeChip(id,i){ const q=app(id).queue[i]; const m=TYPE_META[q.type]||TY
 }
 function delApp(id){ const a=app(id); if(!a)return; if(!confirm('Remove the project "'+a.name+'" from your Tiara board?\n\nThis only clears it from the board — it does NOT touch any files, folders, or repos on your Mac.')) return; data.apps=data.apps.filter(x=>x.id!==id); openState.delete('app:'+id); touch(); setStatus('removed '+a.name+' from the board'); }
 function cycleStatus(id,i){ const a=app(id); const q=a.queue[i]; const idx=STATUS_ORDER.indexOf(q.status||'todo'); q.status=STATUS_ORDER[(idx+1)%4]; q.done=(q.status==='done'); touch(); }
-function toggleDetail(itemId){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
-  if(willOpen){ for(const a of data.apps){ if(!boardFor(a)) continue; const q=(a.queue||[]).find(x=>x.id===itemId); if(q&&!q._notesLoaded){ bLoadNotes(a,q).then(()=>render()).catch(()=>{}); break; } } }
-  render(); }
-function addNote(appId,i){ const a=app(appId); const inp=document.getElementById('note-'+appId+'-'+i); const v=inp.value.trim(); if(!v)return; const q=a.queue[i];
-  if(boardFor(a)){ q.notes.push({by:'you',text:v}); inp.value=''; captureOpen(); render(); bComment(a,q,'👑 you: '+v).then(()=>setStatus('🟢 note added to '+q.id)).catch(e=>setStatus('note failed: '+e.message)); return; }
-  q.notes.push({by:'you',text:v}); inp.value=''; touch(); }
+function toggleDetail(itemId){ const k='item:'+itemId; openState.has(k)?openState.delete(k):openState.add(k); render(); }
+function addNote(appId,i){ const inp=document.getElementById('note-'+appId+'-'+i); const v=inp.value.trim(); if(!v)return; app(appId).queue[i].notes.push({by:'you',text:v}); inp.value=''; touch(); }
 function toggleItem(id,i){ const a=app(id); a.queue[i].done=!a.queue[i].done; touch(); }
-function delItem(id,i){ const a=app(id); const q=a.queue[i];
-  if(boardFor(a)){ if(!confirm('Close issue '+q.id+' — "'+q.title+'"?\n\nThis closes it on GitHub. It is fully recoverable (you can reopen it anytime).')) return;
-    a.queue.splice(i,1); captureOpen(); render(); bSetState(a,q,'closed').then(()=>setStatus('🟢 closed '+q.id+' (recoverable)')).catch(e=>setStatus('close failed: '+e.message)); return; }
-  a.queue.splice(i,1); touch(); }
-function addItem(id){ const a=app(id); const inp=document.getElementById('add-'+id); const v=inp.value.trim(); if(!v)return;
-  if(boardFor(a)){ inp.value=''; setStatus('adding to GitHub…');
-    bAddItem(a,v).then(res=>{ a.queue.push({id:'#'+res.issueNumber,issueNumber:res.issueNumber,itemId:res.itemId,url:res.url,title:v,status:'todo',done:false,type:'task',priority:'med',notes:[],_notesLoaded:true}); captureOpen(); render(); setStatus('🟢 added #'+res.issueNumber+' → Up next'); })
-      .catch(e=>setStatus('add failed: '+e.message)); return; }
-  a.queue.push({id:nextId(a),title:v,done:false}); inp.value=''; touch(); }
+function delItem(id,i){ app(id).queue.splice(i,1); touch(); }
+function addItem(id){ const a=app(id); const inp=document.getElementById('add-'+id); const v=inp.value.trim(); if(!v)return; a.queue.push({id:nextId(a),title:v,done:false}); inp.value=''; touch(); }
 function delInbox(id,i){ app(id).inbox.splice(i,1); touch(); }
-function promoteInbox(id,i){ const a=app(id); const title=a.inbox[i];
-  if(boardFor(a)){ setStatus('promoting to GitHub…'); bAddItem(a,title).then(res=>{ a.queue.push({id:'#'+res.issueNumber,issueNumber:res.issueNumber,itemId:res.itemId,url:res.url,title,status:'todo',done:false,type:'task',priority:'med',notes:[],_notesLoaded:true}); a.inbox.splice(i,1); captureOpen(); render(); if(HELPER.on) scheduleSave(); setStatus('🟢 promoted → #'+res.issueNumber); }).catch(e=>setStatus('promote failed: '+e.message)); return; }
-  a.queue.push({id:nextId(a),title,done:false}); a.inbox.splice(i,1); touch(); }
+function promoteInbox(id,i){ const a=app(id); a.queue.push({id:nextId(a),title:a.inbox[i],done:false}); a.inbox.splice(i,1); touch(); }
 function addInbox(id){ const inp=document.getElementById('inb-'+id); const v=inp.value.trim(); if(!v)return; app(id).inbox.push(v); inp.value=''; touch(); }
 function addScramble(id){ const inp=document.getElementById('scr-'+id); const v=inp.value.trim(); if(!v)return; app(id).scramble.push(v); inp.value=''; touch(); }
 function delScramble(id,i){ app(id).scramble.splice(i,1); touch(); }
@@ -608,7 +488,7 @@ function render(){
     const rowHtml=(q,i)=>{
       const sm=STATUS_META[q.status]||STATUS_META.todo; const tm=TYPE_META[q.type]||TYPE_META.task; const pm=PRIO_META[q.priority]||PRIO_META.med;
       const det = openState.has('item:'+q.id) ? `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i})"><button onclick="addNote('${a.id}',${i})">note</button></div></div>` : '';
-      return `<div class="row qrow ${q.status==='done'?'done':''}" draggable="true" ondragstart="dragStart(event,'${a.id}',${i})" ondragend="dragEnd(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropRow(event,'${a.id}',${i})"><span class="grip" title="drag to reorder">⠿</span>${prioDot(a.id,i)}${chipSel(a.id,i,'status')}<span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span>${typeChip(a.id,i)}${q.url?`<a class="ghlink" href="${q.url}" target="_blank" onclick="event.stopPropagation()" title="open issue #${q.issueNumber} on GitHub">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="toggleDetail('${esc(q.id)}')" title="details & notes">⋯</button><button class="x" title="delete" onclick="delItem('${a.id}',${i})">✕</button></div>${det}`;
+      return `<div class="row qrow ${q.status==='done'?'done':''}" draggable="true" ondragstart="dragStart(event,'${a.id}',${i})" ondragend="dragEnd(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropRow(event,'${a.id}',${i})"><span class="grip" title="drag to reorder">⠿</span>${prioDot(a.id,i)}${chipSel(a.id,i,'status')}<span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span>${typeChip(a.id,i)}<button class="dots" onclick="toggleDetail('${esc(q.id)}')" title="details & notes">⋯</button><button class="x" title="delete" onclick="delItem('${a.id}',${i})">✕</button></div>${det}`;
     };
     let activeRows='', doneRows='';
     a.queue.forEach((q,i)=>{ if(q.status==='done') doneRows+=rowHtml(q,i); else activeRows+=rowHtml(q,i); });
@@ -620,7 +500,7 @@ function render(){
       <summary><span class="app-grip" draggable="true" ondragstart="appDragStart(event,${ai})" ondragend="appDragEnd(event)" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${a.emoji}</span><span class="nm">${esc(a.name)}</span><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b> · ${a.inbox.length} inbox</span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
-        ${boardFor(a)?`<div class="actions"><span class="alab">☁ github board</span><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a></div>`:((HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:'')}
+        ${(HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
         <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb">${activeRows||'<div class="muted">nothing active 🎉</div>'}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><button onclick="addItem('${a.id}')">add</button></div></div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         ${(a.done&&a.done.length)?`<details class="lane ship" data-key="ship:${a.id}" ${openState.has('ship:'+a.id)?'open':''}><summary>Shipped · ${a.done.length} <span class="scnote">from git commits</span></summary><div class="laneb">${drows}</div></details>`:''}
