@@ -84,7 +84,8 @@
   .qrow.dragover{outline:2px dashed var(--pink);outline-offset:3px;border-radius:10px;}
   .statchip,.typechip,.priochip{border:none;border-radius:9px;font-size:.8rem;font-weight:700;padding:3px 9px;cursor:pointer;line-height:1.2;flex-shrink:0;white-space:nowrap;}
   select.chipsel{appearance:none;-webkit-appearance:none;border:none;border-radius:9px;font-size:.8rem;font-weight:700;padding:3px 19px 3px 9px;cursor:pointer;line-height:1.3;flex-shrink:0;font-family:'Quicksand';max-width:135px;background-repeat:no-repeat;background-position:right 5px center;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><path d='M1 3l4 4 4-4' fill='none' stroke='%23b09bc9' stroke-width='1.6'/></svg>");}
-  .dots{border:none;background:none;color:#b8a9d0;cursor:pointer;font-weight:800;font-size:1.2rem;padding:0 5px;}
+  .dots{border:none;background:none;color:#b09bc9;cursor:pointer;font-weight:800;font-size:.9rem;padding:0 5px;line-height:1;}
+  .dots:hover{color:var(--pink);}
   .detail{margin:0 0 12px 28px;padding:11px 13px;background:#faf6ff;border:1.5px solid #eeddf7;border-radius:12px;}
   .dmeta{font-size:.74rem;color:var(--soft);font-weight:800;margin-bottom:7px;text-transform:uppercase;letter-spacing:.4px;}
   .notes{margin-bottom:8px;} .note{font-size:.92rem;margin:5px 0;line-height:1.4;} .note b{color:var(--purple);}
@@ -151,6 +152,12 @@
   .prow .papp .em{font-size:1rem;flex-shrink:0;}
   .prow .pid{font-size:.7rem;font-weight:800;color:#fff;background:var(--purple);padding:1px 6px;border-radius:6px;flex-shrink:0;}
   .prow .pt{flex:1;font-size:.98rem;min-width:0;}
+  .hsubbar{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 15px;}
+  .hsub{display:inline-flex;align-items:center;gap:6px;font-family:'Quicksand';font-weight:700;font-size:.8rem;border:1.5px solid var(--line);background:#fff;color:#6a5a82;border-radius:11px;padding:5px 12px;cursor:pointer;}
+  .hsub:hover{border-color:var(--pink);}
+  .hsub.on{background:linear-gradient(90deg,#ffd9ee,#e6dbff);color:#7a4a9e;border-color:transparent;font-weight:800;}
+  .hsub .hsc{font-size:.66rem;font-weight:800;color:#fff;background:var(--purple);padding:0 6px;border-radius:6px;}
+  .hsub .appicon{width:15px;height:15px;border-radius:5px;}
   .hgroup{margin-bottom:16px;}
   .hgroup h3{font-family:'Baloo 2';font-weight:700;font-size:1rem;color:var(--brand);margin:0 0 6px;display:flex;align-items:center;gap:7px;}
   .hgroup .hc{font-size:.9rem;color:#5a4a6e;padding:4px 2px;border-bottom:1px solid var(--line);font-family:ui-monospace,monospace;}
@@ -639,7 +646,8 @@ function typeChip(id,i){ const q=app(id).queue[i]; const m=TYPE_META[q.type]||TY
 }
 function delApp(id){ const a=app(id); if(!a)return; if(!confirm('Remove the project "'+a.name+'" from your Tiara board?\n\nThis only clears it from the board — it does NOT touch any files, folders, or repos on your Mac.')) return; data.apps=data.apps.filter(x=>x.id!==id); openState.delete('app:'+id); touch(); setStatus('removed '+a.name+' from the board'); }
 function cycleStatus(id,i){ const a=app(id); const q=a.queue[i]; const idx=STATUS_ORDER.indexOf(q.status||'todo'); q.status=STATUS_ORDER[(idx+1)%4]; q.done=(q.status==='done'); touch(); }
-function toggleDetail(itemId){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
+function toggleDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
+  if(btn) btn.textContent=willOpen?'▾':'▸';
   let a,q,i=-1; for(const ap of data.apps){ const idx=(ap.queue||[]).findIndex(x=>x.id===itemId); if(idx>=0){ a=ap; q=ap.queue[idx]; i=idx; break; } }
   const slot=document.getElementById(dsId(itemId));
   if(!slot||!a){ render(); return; }                       // fallback: full redraw if the slot isn't found
@@ -647,7 +655,8 @@ function toggleDetail(itemId){ const k='item:'+itemId; const willOpen=!openState
   if(willOpen && boardFor(a) && !q._notesLoaded){ bLoadNotes(a,q).then(()=>{ const s=document.getElementById(dsId(itemId)); if(s && openState.has(k)) s.innerHTML=detailHtml(a,q,i); }).catch(()=>{}); }
 }
 // same as toggleDetail but writes into the Portfolio tab's own detail slot (the board's is hidden but still in the DOM)
-function togglePortDetail(itemId){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
+function togglePortDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
+  if(btn) btn.textContent=willOpen?'▾':'▸';
   let a,q,i=-1; for(const ap of data.apps){ const idx=(ap.queue||[]).findIndex(x=>x.id===itemId); if(idx>=0){ a=ap; q=ap.queue[idx]; i=idx; break; } }
   const slot=document.getElementById('pds-'+dsId(itemId));
   if(!slot||!a){ renderPortfolio(); return; }
@@ -770,19 +779,24 @@ function renderPortfolio(){
     const pm=PRIO_META[q.priority]||PRIO_META.med; const tm=TYPE_META[q.type]||TYPE_META.task;
     const icon=_icon[a.id]?`<img class="appicon" style="width:17px;height:17px" src="${_icon[a.id]}" alt="">`:`<span class="em">${esc(a.emoji||'🫧')}</span>`;
     const det=openState.has('item:'+q.id)?detailHtml(a,q,i,'p'):'';
-    return `<div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}<span class="pt">${esc(q.title||'')}</span><span class="priochip2" style="background:${pm.c}1a;color:${pm.c}" title="priority">${pm.t}</span><span class="typechip2" title="type">${tm.e} ${tm.t}</span>${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="togglePortDetail('${esc(q.id)}')" title="details & notes">⋯</button></div><div class="pdslot" id="pds-${dsId(q.id)}">${det}</div>`;
+    return `<div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}<span class="pt">${esc(q.title||'')}</span><span class="priochip2" style="background:${pm.c}1a;color:${pm.c}" title="priority">${pm.t}</span><span class="typechip2" title="type">${tm.e} ${tm.t}</span>${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="togglePortDetail('${esc(q.id)}',this)" title="details & notes">${openState.has('item:'+q.id)?'▾':'▸'}</button></div><div class="pdslot" id="pds-${dsId(q.id)}">${det}</div>`;
   }).join('') : '<div class="muted">no open items — every board is clear 🎉</div>';
   el.innerHTML = `<div class="phead"><b>${total}</b> open item${total===1?'':'s'} across ${data.apps.length} project${data.apps.length===1?'':'s'} · ${auto?'highest priority first':'your project order'}</div>${toggle}${body}`;
 }
-// History tab — shipped work pulled from each repo's git commits (moved off the project cards)
+// History tab — shipped work pulled from each repo's git commits, kept per-project behind sub-tabs
+let historyApp = null;
+function setHistoryApp(id){ historyApp=id; renderHistory(); }
 function renderHistory(){
   const el=$('#history'); if(!el) return;
-  const groups=data.apps.filter(a=>(a.done&&a.done.length));
-  const body = groups.length ? groups.map(a=>{
-    const icon=_icon[a.id]?`<img class="appicon" style="width:18px;height:18px" src="${_icon[a.id]}" alt="">`:`<span>${esc(a.emoji||'🫧')}</span>`;
-    return `<div class="hgroup"><h3>${icon}${esc(a.name)} <span class="scnote">· ${a.done.length} commit${a.done.length===1?'':'s'}</span></h3>${a.done.map(c=>`<div class="hc">${esc(c)}</div>`).join('')}</div>`;
-  }).join('') : '<div class="muted">No commit history pulled yet. On the Board, open a project and press <b>⟳ pull commit history</b> to populate this.</div>';
-  el.innerHTML = `<div class="phead">Shipped work · pulled from each repo\'s git commits</div>${body}`;
+  const apps=data.apps.filter(a=>(a.done&&a.done.length));
+  if(!apps.length){ el.innerHTML=`<div class="phead">Shipped work · from each repo\'s git commits</div><div class="muted">No commit history pulled yet. On the Board, open a project and press <b>⟳ pull commit history</b> to populate this.</div>`; return; }
+  if(!historyApp || !apps.some(a=>a.id===historyApp)) historyApp=apps[0].id;   // keep the selection valid
+  const tabs=apps.map(a=>{ const on=a.id===historyApp;
+    const icon=_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:`<span>${esc(a.emoji||'🫧')}</span>`;
+    return `<button class="hsub ${on?'on':''}" onclick="setHistoryApp('${a.id}')">${icon}${esc(a.name)} <span class="hsc">${a.done.length}</span></button>`; }).join('');
+  const a=apps.find(x=>x.id===historyApp);
+  const list=(a.done||[]).map(c=>`<div class="hc">${esc(c)}</div>`).join('');
+  el.innerHTML = `<div class="phead">Shipped work · from each repo\'s git commits</div><div class="hsubbar">${tabs}</div><div class="hgroup">${list}</div>`;
 }
 function render(){
   const _scrollY = window.scrollY;   // keep the page from jumping when a re-render rebuilds the board
@@ -793,7 +807,7 @@ function render(){
     const rowHtml=(q,i)=>{
       const sm=STATUS_META[q.status]||STATUS_META.todo; const tm=TYPE_META[q.type]||TYPE_META.task; const pm=PRIO_META[q.priority]||PRIO_META.med;
       const det = openState.has('item:'+q.id) ? detailHtml(a,q,i) : '';
-      return `<div class="row qrow ${q.status==='done'?'done':''}" draggable="true" ondragstart="dragStart(event,'${a.id}',${i})" ondragend="dragEnd(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropRow(event,'${a.id}',${i})"><span class="grip" title="drag to reorder">⠿</span>${prioDot(a.id,i)}${chipSel(a.id,i,'status')}<span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span>${typeChip(a.id,i)}${q.url?`<a class="ghlink" href="${q.url}" target="_blank" onclick="event.stopPropagation()" title="open issue #${q.issueNumber} on GitHub">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="toggleDetail('${esc(q.id)}')" title="details & notes">⋯</button><button class="x" title="delete" onclick="delItem('${a.id}',${i})">✕</button></div><div class="dslot" id="${dsId(q.id)}">${det}</div>`;
+      return `<div class="row qrow ${q.status==='done'?'done':''}" draggable="true" ondragstart="dragStart(event,'${a.id}',${i})" ondragend="dragEnd(event)" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropRow(event,'${a.id}',${i})"><span class="grip" title="drag to reorder">⠿</span>${prioDot(a.id,i)}${chipSel(a.id,i,'status')}<span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span>${typeChip(a.id,i)}${q.url?`<a class="ghlink" href="${q.url}" target="_blank" onclick="event.stopPropagation()" title="open issue #${q.issueNumber} on GitHub">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="toggleDetail('${esc(q.id)}',this)" title="details & notes">${openState.has('item:'+q.id)?'▾':'▸'}</button><button class="x" title="delete" onclick="delItem('${a.id}',${i})">✕</button></div><div class="dslot" id="${dsId(q.id)}">${det}</div>`;
     };
     let activeRows='', doneRows='';
     a.queue.forEach((q,i)=>{ if(q.status==='done') doneRows+=rowHtml(q,i); else activeRows+=rowHtml(q,i); });
@@ -832,7 +846,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v21';
+const TIARA_VERSION = 'board-v22';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
