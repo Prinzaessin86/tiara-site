@@ -703,7 +703,6 @@ function render(){
         <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb">${activeRows||'<div class="muted">nothing active 🎉</div>'}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><button onclick="addItem('${a.id}')">add</button></div></div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         ${(a.done&&a.done.length)?`<details class="lane ship" data-key="ship:${a.id}" ${openState.has('ship:'+a.id)?'open':''}><summary>Shipped · ${a.done.length} <span class="scnote">from git commits</span></summary><div class="laneb">${drows}</div></details>`:''}
-        <details class="lane i" data-key="inb:${a.id}" ${openState.has('inb:'+a.id)?'open':''}><summary>Inbox · ${a.inbox.length}</summary><div class="laneb">${irows}<div class="addbox"><input id="inb-${a.id}" placeholder="drop an idea…" onkeydown="if(event.key==='Enter')addInbox('${a.id}')"><button onclick="addInbox('${a.id}')">drop</button></div></div></details>
         <details class="lane s" data-key="scr:${a.id}" ${openState.has('scr:'+a.id)?'open':''}><summary>Scramble <span class="scnote">private — agents never read this</span></summary><div class="laneb">${srows}<div class="addbox"><input id="scr-${a.id}" placeholder="brain-dump, anything…" onkeydown="if(event.key==='Enter')addScramble('${a.id}')"><button onclick="addScramble('${a.id}')">jot</button></div></div></details>
         <div class="scnote repoedit" style="margin-top:8px" onclick="setRepo('${a.id}')" title="click to set the GitHub repo">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
         <button class="delproj" onclick="delApp('${a.id}')">Remove project from board</button>
@@ -726,7 +725,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v15';
+const TIARA_VERSION = 'board-v16';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
