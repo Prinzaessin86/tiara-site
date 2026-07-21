@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Tiara doc-sync checkpoint.
+# When index.html changes, the page changed — so the captured reference must too:
+#   docs/HOW-TIARA-WORKS.md in the PRIVATE `tiara` repo (never on this public page).
+# This hook requires a board-version bump on any index.html change and reminds you
+# to refresh that doc. One-off bypass:  TIARA_SKIP_DOC=1 git commit …
+set -uo pipefail
+
+# Only act when index.html is part of this commit.
+if git diff --cached --name-only | grep -qx 'index.html'; then
+  if [ "${TIARA_SKIP_DOC:-0}" = "1" ]; then
+    echo "tiara: TIARA_SKIP_DOC=1 — skipping the doc/version checkpoint this once."
+    exit 0
+  fi
+  if git diff --cached -U0 -- index.html | grep -qE '^\+.*TIARA_VERSION[[:space:]]*='; then
+    echo "🎀 tiara checkpoint: version bumped ✓"
+    echo "   → Now make docs/HOW-TIARA-WORKS.md in the PRIVATE 'tiara' repo reflect this change"
+    echo "     (any new/changed tab, card control, row action, sync, badge or checkmark)."
+    echo "     The page must never drift from the doc."
+  else
+    echo "⛔ tiara checkpoint: index.html changed but TIARA_VERSION was not bumped."
+    echo "   1) bump  const TIARA_VERSION = 'board-vNN'  in index.html (the footer follows it)"
+    echo "   2) update docs/HOW-TIARA-WORKS.md in the PRIVATE 'tiara' repo to match"
+    echo "   then re-commit.   (one-off bypass: TIARA_SKIP_DOC=1 git commit …)"
+    exit 1
+  fi
+fi
+exit 0
