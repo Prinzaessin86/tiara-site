@@ -38,6 +38,9 @@
   .r-sky{background:linear-gradient(160deg,#cdeeff,#bcd9ff);} .r-peach{background:linear-gradient(160deg,#ffe0c7,#ffc9d4);} .r-mint{background:linear-gradient(160deg,#c4f5e1,#a8e6cf);}
   .app .emojitile{width:36px;height:36px;border-radius:10px;background:#f6f0ff;display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;}
   .app .nm{font-family:'Baloo 2';font-weight:700;font-size:1.25rem;}
+  .tftoggle{border:none;background:none;cursor:pointer;color:#c9b8dd;opacity:.5;padding:2px 3px;font-size:.82rem;line-height:1;flex-shrink:0;}
+  .tftoggle.on{color:#2f6fd0;opacity:1;}
+  .tftoggle:hover{color:var(--pink);opacity:1;}
   .nmedit{border:none;background:none;cursor:pointer;color:#c9b8dd;padding:2px;display:inline-flex;align-items:center;flex-shrink:0;}
   .nmedit svg{width:13px;height:13px;}
   .nmedit:hover{color:var(--pink);}
@@ -237,7 +240,6 @@ const _version = {};                 // appId -> current version string (latest 
 const _testflight = {};              // appId -> true when the repo has a committed release.yml (TestFlight-enabled)
 const _bootstrap = {};               // appId -> true when the repo has a committed project.yml (factory-bootstrapped)
 const _devprod = {};                 // appId -> true when project.yml has a Dev Debug config + a Release config (DEV/PROD split)
-const _bundleId = {};                // appId -> the app's PROD bundle id (from project.yml), used to match TestFlight status
 const _tfstatus = {};                // bundleId -> live TestFlight build {name,version,build,state,expired,uploaded} from release-status.json
 const _icon = {};                    // appId -> data URL of the app's AppIcon (falls back to the emoji)
 // pull each app's AppIcon PNG from its repo, so cards show the real icon instead of an emoji
@@ -267,8 +269,10 @@ async function loadTFStatus(){
     for(const b of Object.keys(apps)) _tfstatus[b]=apps[b];
   }catch(e){}   // never let a missing/bad status file break load
 }
-// the live TestFlight build for an app (matched by its PROD bundle id), or null
-function tfLive(a){ const b=_bundleId[a.id]; return (b && _tfstatus[b]) ? _tfstatus[b] : null; }
+// the live TestFlight build for an app, or null. Opt-in: only apps that declare a
+// `bundleId` in tiara-data.json show the badge (the field is both the allowlist flag and
+// the authoritative match key into release-status.json — no project.yml guessing).
+function tfLive(a){ const b=a&&a.bundleId; return (b && _tfstatus[b]) ? _tfstatus[b] : null; }
 // auto-discovery: any app whose repo has a linked board (Lane field) becomes a board app; also pull each app's current version
 async function discoverBoards(){
   for(const a of data.apps){ const or=appOwnerRepo(a); if(!or) continue;
@@ -286,10 +290,6 @@ async function discoverBoards(){
         const hasDevDebug=/[\w-]*dev[\w-]*\s*:\s*debug\b/i.test(pyml);   // e.g. "Debug-Dev: debug"
         const hasRelease=/:\s*release\b/i.test(pyml);                     // e.g. "Release-Dev: release"
         if(hasDevDebug && hasRelease) _devprod[a.id]=true;
-        // the PROD bundle id (drives TestFlight matching): the one that is neither a -Dev variant nor a test target
-        const ids=[...pyml.matchAll(/PRODUCT_BUNDLE_IDENTIFIER:\s*"?([\w.\-]+)"?/g)].map(x=>x[1]);
-        const prodId=ids.find(id=>!/-Dev$/i.test(id) && !/Tests?$/i.test(id));
-        if(prodId) _bundleId[a.id]=prodId;
         const m=pyml.match(/MARKETING_VERSION:\s*"?([0-9][A-Za-z0-9.\-]*)"?/); if(m) ver='v'+m[1]; }   // Xcode marketing version (bumps as you develop)
       if(!ver) ver=(rp.latestRelease&&rp.latestRelease.tagName) || (rp.refs&&rp.refs.nodes&&rp.refs.nodes[0]&&rp.refs.nodes[0].name) || '';
       if(ver) _version[a.id]=ver;
@@ -729,6 +729,25 @@ function seedQueueFromRunbook(a){
   return rec.steps.length;
 }
 function renameApp(id){ const a=app(id); if(!a) return; const v=prompt('Rename project:', a.name); if(v===null) return; const nn=v.trim(); if(!nn) return; a.name=nn; touch(); setStatus('renamed to '+nn); }
+// ✈ opt-in: pick which live TestFlight app (from release-status.json) this project is, or turn the badge off.
+// Sets a.bundleId — both the allowlist flag and the match key. Persists via touch()→save.
+function tfToggle(id){
+  const a=app(id); if(!a) return;
+  const keys=Object.keys(_tfstatus);
+  if(a.bundleId){   // already opted in → offer to change or turn off
+    if(confirm('“'+a.name+'” is showing its TestFlight badge ('+a.bundleId+').\n\nOK = turn the badge OFF.  Cancel = keep it.')){
+      delete a.bundleId; touch(); setStatus('“'+a.name+'” opted out of the TestFlight badge');
+    }
+    return;
+  }
+  if(!keys.length){ setStatus('no live TestFlight builds reported yet — the poller runs every 6h (or run it from the Actions tab)'); return; }
+  const suggest=keys.findIndex(k=>((_tfstatus[k].name||'').toLowerCase()===(a.name||'').toLowerCase().replace(/\s+/g,'')||(_tfstatus[k].name||'').toLowerCase()===(a.name||'').toLowerCase()));
+  const list=keys.map((k,i)=>`${i+1}. ${_tfstatus[k].name||k}  —  ${k}  (v${_tfstatus[k].version} build ${_tfstatus[k].build})`).join('\n');
+  const v=prompt('Which App Store Connect app is “'+a.name+'”?\nEnter its number to show the live TestFlight badge (blank = none):\n\n'+list, suggest>=0?String(suggest+1):'');
+  if(v===null) return; const n=parseInt((v||'').trim(),10);
+  if(!n||n<1||n>keys.length){ setStatus('no change'); return; }
+  a.bundleId=keys[n-1]; touch(); setStatus('“'+a.name+'” → TestFlight badge on ('+a.bundleId+')');
+}
 function setRepo(id){
   const a=app(id); const cur=(a.repo&&!a.repo.startsWith('('))?a.repo:'';
   const guess=cur || ((GH.owner||'')+'/'+(a.name||'').replace(/\s+/g,''));
@@ -848,7 +867,7 @@ function render(){
     const srows = a.scramble.map((t,i)=>`<div class="row"><span class="t">${esc(t)}</span><button class="x" onclick="delScramble('${a.id}',${i})">✕</button></div>`).join('') || '<div class="muted">empty</div>';
     const drows = (a.done||[]).map(t=>`<div class="row done"><span class="t">${esc(t)}</span></div>`).join('') || '<div class="muted">—</div>';
     return `<details class="app" data-key="app:${a.id}" ondragover="appDragOver(event)" ondragleave="appDragLeave(event)" ondrop="appDrop(event,${ai})" ${openState.has('app:'+a.id)?'open':''}>
-      <summary><span class="app-grip" draggable="true" ondragstart="appDragStart(event,${ai})" ondragend="appDragEnd(event)" title="drag to reorder projects">⠿</span><span class="appmove"><button onclick="event.stopPropagation();moveApp('${a.id}',-1)" title="move up">▲</button><button onclick="event.stopPropagation();moveApp('${a.id}',1)" title="move down">▼</button></span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><span class="nm">${esc(a.name)}</span>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span></summary>
+      <summary><span class="app-grip" draggable="true" ondragstart="appDragStart(event,${ai})" ondragend="appDragEnd(event)" title="drag to reorder projects">⠿</span><span class="appmove"><button onclick="event.stopPropagation();moveApp('${a.id}',-1)" title="move up">▲</button><button onclick="event.stopPropagation();moveApp('${a.id}',1)" title="move down">▼</button></span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><span class="nm">${esc(a.name)}</span>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<button class="tftoggle${a.bundleId?' on':''}" title="${a.bundleId?'TestFlight badge on — click to change or turn off':'show a live TestFlight badge — pick which App Store Connect app this is'}" onclick="event.stopPropagation();tfToggle('${a.id}')">✈</button><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a))?`<div class="actions">${checkChips(a)}${boardFor(a)?`<a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a>`:`<button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button>`}<button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull commit history</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
@@ -878,7 +897,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v23';
+const TIARA_VERSION = 'board-v24';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
