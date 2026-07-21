@@ -139,8 +139,13 @@
   .checkchip{font-size:.68rem;font-weight:800;padding:3px 9px;border-radius:9px;letter-spacing:.02em;white-space:nowrap;}
   .checkchip.on{color:#2f9e6e;background:#e7f7ef;}
   .checkchip.off{color:#b3a6c6;background:#f4f0f8;}
-  .phead{font-family:'Baloo 2';font-weight:700;font-size:1.05rem;color:#4a3a5e;margin:2px 0 14px;}
+  .phead{font-family:'Baloo 2';font-weight:700;font-size:1.05rem;color:#4a3a5e;margin:2px 0 12px;}
   .phead b{color:var(--purple);}
+  .psort{display:flex;align-items:center;gap:7px;margin:0 0 15px;flex-wrap:wrap;}
+  .psortlab{font-size:.72rem;font-weight:800;color:var(--soft);text-transform:uppercase;letter-spacing:.4px;}
+  .psortbtn{font-family:'Quicksand';font-weight:700;font-size:.78rem;border:1.5px solid var(--line);background:#fff;color:#7a6a92;border-radius:10px;padding:5px 12px;cursor:pointer;}
+  .psortbtn:hover{border-color:var(--pink);}
+  .psortbtn.on{background:linear-gradient(90deg,#ffd9ee,#e6dbff);color:#7a4a9e;border-color:transparent;font-weight:800;}
   .prow{display:flex;align-items:center;gap:9px;padding:9px 12px;background:#fdfaff;border:1.5px solid var(--line2);border-radius:12px;margin-bottom:7px;}
   .prow .papp{display:inline-flex;align-items:center;gap:6px;font-family:'Baloo 2';font-weight:700;font-size:.82rem;color:#6a5a82;width:132px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .prow .papp .em{font-size:1rem;flex-shrink:0;}
@@ -736,20 +741,29 @@ const dsId = id => 'ds-'+(''+id).replace(/[^a-zA-Z0-9]/g,'_');   // stable DOM i
 function detailHtml(a,q,i){ const sm=STATUS_META[q.status]||STATUS_META.todo;
   return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i})"><button onclick="addNote('${a.id}',${i})">note</button></div></div>`;
 }
-// Portfolio tab — every open item across every project, one list, sorted by priority then app
+// Portfolio tab — every open item across every project, one list.
+// Auto = re-sort by priority on every render (regenerates). Manual = follow the exact order you
+// arranged your projects (and items within each) on the Board, and leave it put (no re-sort).
+let portfolioSort = 'auto';
+function setPortfolioSort(m){ portfolioSort=m; try{localStorage.setItem('tiaraPortfolioSort',m);}catch(e){} renderPortfolio(); }
 function renderPortfolio(){
   const el=$('#portfolio'); if(!el) return;
-  const prank={high:0,med:1,medium:1,low:2};
+  const auto = portfolioSort!=='manual';
   const rows=[];
   data.apps.forEach(a=>{ (a.queue||[]).forEach(q=>{ if(itemStatus(q)!=='done') rows.push({a,q}); }); });
-  rows.sort((x,y)=>(prank[x.q.priority]??1)-(prank[y.q.priority]??1) || (x.a.name||'').localeCompare(y.a.name||''));
+  if(auto){ const prank={high:0,med:1,medium:1,low:2};
+    rows.sort((x,y)=>(prank[x.q.priority]??1)-(prank[y.q.priority]??1) || (x.a.name||'').localeCompare(y.a.name||'')); }
+  // manual: leave rows in project order (data.apps) + queue order exactly as you arranged them
   const total=rows.length;
+  const toggle=`<div class="psort"><span class="psortlab">Sort</span>`
+    +`<button class="psortbtn ${auto?'on':''}" onclick="setPortfolioSort('auto')" title="re-sorts by priority on every load">⟳ Auto · priority</button>`
+    +`<button class="psortbtn ${auto?'':'on'}" onclick="setPortfolioSort('manual')" title="follows the order you arranged your projects on the Board — stays put">✋ Manual · my order</button></div>`;
   const body = total ? rows.map(({a,q})=>{
     const pm=PRIO_META[q.priority]||PRIO_META.med; const tm=TYPE_META[q.type]||TYPE_META.task;
     const icon=_icon[a.id]?`<img class="appicon" style="width:17px;height:17px" src="${_icon[a.id]}" alt="">`:`<span class="em">${esc(a.emoji||'🫧')}</span>`;
     return `<div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}<span class="pt">${esc(q.title||'')}</span><span class="priochip2" style="background:${pm.c}1a;color:${pm.c}" title="priority">${pm.t}</span><span class="typechip2" title="type">${tm.e} ${tm.t}</span>${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}</div>`;
   }).join('') : '<div class="muted">no open items — every board is clear 🎉</div>';
-  el.innerHTML = `<div class="phead"><b>${total}</b> open item${total===1?'':'s'} across ${data.apps.length} project${data.apps.length===1?'':'s'} · highest priority first</div>${body}`;
+  el.innerHTML = `<div class="phead"><b>${total}</b> open item${total===1?'':'s'} across ${data.apps.length} project${data.apps.length===1?'':'s'} · ${auto?'highest priority first':'your project order'}</div>${toggle}${body}`;
 }
 // History tab — shipped work pulled from each repo's git commits (moved off the project cards)
 function renderHistory(){
@@ -809,9 +823,10 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v19';
+const TIARA_VERSION = 'board-v20';
 (async function init(){
   ghLoadCfg();
+  try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
   render();
   if(GH.token){
