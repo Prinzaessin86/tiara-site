@@ -287,9 +287,14 @@ async function discoverBoards(){
       if(rp.rel && rp.rel.text) _testflight[a.id]=true;   // a committed release.yml means this app is TestFlight-enabled
       let ver=''; const pyml=rp.pyml&&rp.pyml.text;
       if(pyml){ _bootstrap[a.id]=true;   // a committed project.yml means the factory bootstrap ran
-        const hasDevDebug=/[\w-]*dev[\w-]*\s*:\s*debug\b/i.test(pyml);   // e.g. "Debug-Dev: debug"
-        const hasRelease=/:\s*release\b/i.test(pyml);                     // e.g. "Release-Dev: release"
-        if(hasDevDebug && hasRelease) _devprod[a.id]=true;
+        // DEV/PROD split: a Debug (dev) and a Release (prod) config, plus a DEV marker. Handles BOTH
+        // the "Debug-Dev: debug / Release-Prod: release" style AND the factory-template style of plain
+        // "Debug:"/"Release:" configs with a DEV compile flag (DEBUG DEV / -DDEV_BUILD) and a .dev bundle id.
+        const hasDebug=/(^|\n)\s*Debug[\w-]*\s*:/i.test(pyml) || /:\s*debug\b/i.test(pyml);
+        const hasRelease=/(^|\n)\s*Release[\w-]*\s*:/i.test(pyml) || /:\s*release\b/i.test(pyml);
+        const swiftFlags=(pyml.match(/SWIFT_ACTIVE_COMPILATION_CONDITIONS[^\n]*/i)||[''])[0];
+        const hasDevMark=/\bDEV_BUILD\b/i.test(pyml) || /\bDEV\b/.test(swiftFlags) || /\bDebug-?Dev\b/i.test(pyml) || /\.dev\b/i.test(pyml);
+        if(hasDebug && hasRelease && hasDevMark) _devprod[a.id]=true;
         const m=pyml.match(/MARKETING_VERSION:\s*"?([0-9][A-Za-z0-9.\-]*)"?/); if(m) ver='v'+m[1]; }   // Xcode marketing version (bumps as you develop)
       if(!ver) ver=(rp.latestRelease&&rp.latestRelease.tagName) || (rp.refs&&rp.refs.nodes&&rp.refs.nodes[0]&&rp.refs.nodes[0].name) || '';
       if(ver) _version[a.id]=ver;
@@ -897,7 +902,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v24';
+const TIARA_VERSION = 'board-v25';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
