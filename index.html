@@ -646,7 +646,15 @@ function toggleDetail(itemId){ const k='item:'+itemId; const willOpen=!openState
   slot.innerHTML = willOpen ? detailHtml(a,q,i) : '';       // update ONLY this row's detail — no board redraw, no jump
   if(willOpen && boardFor(a) && !q._notesLoaded){ bLoadNotes(a,q).then(()=>{ const s=document.getElementById(dsId(itemId)); if(s && openState.has(k)) s.innerHTML=detailHtml(a,q,i); }).catch(()=>{}); }
 }
-function addNote(appId,i){ const a=app(appId); const inp=document.getElementById('note-'+appId+'-'+i); const v=inp.value.trim(); if(!v)return; const q=a.queue[i];
+// same as toggleDetail but writes into the Portfolio tab's own detail slot (the board's is hidden but still in the DOM)
+function togglePortDetail(itemId){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
+  let a,q,i=-1; for(const ap of data.apps){ const idx=(ap.queue||[]).findIndex(x=>x.id===itemId); if(idx>=0){ a=ap; q=ap.queue[idx]; i=idx; break; } }
+  const slot=document.getElementById('pds-'+dsId(itemId));
+  if(!slot||!a){ renderPortfolio(); return; }
+  slot.innerHTML = willOpen ? detailHtml(a,q,i,'p') : '';
+  if(willOpen && boardFor(a) && !q._notesLoaded){ bLoadNotes(a,q).then(()=>{ const s=document.getElementById('pds-'+dsId(itemId)); if(s && openState.has(k)) s.innerHTML=detailHtml(a,q,i,'p'); }).catch(()=>{}); }
+}
+function addNote(appId,i,scope){ scope=scope||''; const a=app(appId); const inp=document.getElementById('note-'+scope+appId+'-'+i); const v=inp.value.trim(); if(!v)return; const q=a.queue[i];
   if(boardFor(a)){ if(!q.issueNumber){ setStatus('one sec — still saving that item…'); return; }
     const note={by:'you',text:v}; q.notes.push(note); inp.value=''; captureOpen(); render();
     bComment(a,q,'👑 you: '+v).then(()=>setStatus('🟢 note added to '+q.id))
@@ -738,8 +746,8 @@ function pillStatus(a){
 }
 /* ---------- render ---------- */
 const dsId = id => 'ds-'+(''+id).replace(/[^a-zA-Z0-9]/g,'_');   // stable DOM id for a row's detail slot
-function detailHtml(a,q,i){ const sm=STATUS_META[q.status]||STATUS_META.todo;
-  return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i})"><button onclick="addNote('${a.id}',${i})">note</button></div></div>`;
+function detailHtml(a,q,i,scope){ scope=scope||''; const sm=STATUS_META[q.status]||STATUS_META.todo;
+  return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${scope}${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i},'${scope}')"><button onclick="addNote('${a.id}',${i},'${scope}')">note</button></div></div>`;
 }
 // Portfolio tab — every open item across every project, one list.
 // Auto = re-sort by priority on every render (regenerates). Manual = follow the exact order you
@@ -750,7 +758,7 @@ function renderPortfolio(){
   const el=$('#portfolio'); if(!el) return;
   const auto = portfolioSort!=='manual';
   const rows=[];
-  data.apps.forEach(a=>{ (a.queue||[]).forEach(q=>{ if(itemStatus(q)!=='done') rows.push({a,q}); }); });
+  data.apps.forEach(a=>{ (a.queue||[]).forEach((q,i)=>{ if(itemStatus(q)!=='done') rows.push({a,q,i}); }); });
   if(auto){ const prank={high:0,med:1,medium:1,low:2};
     rows.sort((x,y)=>(prank[x.q.priority]??1)-(prank[y.q.priority]??1) || (x.a.name||'').localeCompare(y.a.name||'')); }
   // manual: leave rows in project order (data.apps) + queue order exactly as you arranged them
@@ -758,10 +766,11 @@ function renderPortfolio(){
   const toggle=`<div class="psort"><span class="psortlab">Sort</span>`
     +`<button class="psortbtn ${auto?'on':''}" onclick="setPortfolioSort('auto')" title="re-sorts by priority on every load">⟳ Auto · priority</button>`
     +`<button class="psortbtn ${auto?'':'on'}" onclick="setPortfolioSort('manual')" title="follows the order you arranged your projects on the Board — stays put">✋ Manual · my order</button></div>`;
-  const body = total ? rows.map(({a,q})=>{
+  const body = total ? rows.map(({a,q,i})=>{
     const pm=PRIO_META[q.priority]||PRIO_META.med; const tm=TYPE_META[q.type]||TYPE_META.task;
     const icon=_icon[a.id]?`<img class="appicon" style="width:17px;height:17px" src="${_icon[a.id]}" alt="">`:`<span class="em">${esc(a.emoji||'🫧')}</span>`;
-    return `<div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}<span class="pt">${esc(q.title||'')}</span><span class="priochip2" style="background:${pm.c}1a;color:${pm.c}" title="priority">${pm.t}</span><span class="typechip2" title="type">${tm.e} ${tm.t}</span>${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}</div>`;
+    const det=openState.has('item:'+q.id)?detailHtml(a,q,i,'p'):'';
+    return `<div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}<span class="pt">${esc(q.title||'')}</span><span class="priochip2" style="background:${pm.c}1a;color:${pm.c}" title="priority">${pm.t}</span><span class="typechip2" title="type">${tm.e} ${tm.t}</span>${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="togglePortDetail('${esc(q.id)}')" title="details & notes">⋯</button></div><div class="pdslot" id="pds-${dsId(q.id)}">${det}</div>`;
   }).join('') : '<div class="muted">no open items — every board is clear 🎉</div>';
   el.innerHTML = `<div class="phead"><b>${total}</b> open item${total===1?'':'s'} across ${data.apps.length} project${data.apps.length===1?'':'s'} · ${auto?'highest priority first':'your project order'}</div>${toggle}${body}`;
 }
@@ -823,7 +832,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v20';
+const TIARA_VERSION = 'board-v21';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
