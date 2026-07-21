@@ -10,7 +10,7 @@ reads it every session and keeps it current as work gets done.
 - [ ] TIA-11 · 🟡 · (task) review recipe for new app
 - [ ] TIA-12 · 🟡 · (task) review the whole runbook
 - [ ] TIA-15 · 🟡 · (task) turn the runbook into fully clickable recipes with copy-buttons (started)
-- [ ] TIA-19 · 🟡 · (feature) remove inbox chip
+- [ ] TIA-19 · 🟡 · (chore) remove inbox chip
 
 ## ⛔ Blocked
 
