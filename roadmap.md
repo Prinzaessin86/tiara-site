@@ -7,7 +7,6 @@ reads it every session and keeps it current as work gets done.
 ## 🔨 Doing
 
 ## 🌸 Up next
-- [ ] TIA-11 · 🟡 · (task) review recipe for new app
 - [ ] TIA-12 · 🟡 · (task) review the whole runbook
 - [ ] TIA-15 · 🟡 · (task) turn the runbook into fully clickable recipes with copy-buttons (started)
 - [ ] TIA-19 · 🟡 · (chore) remove inbox chip
@@ -19,6 +18,7 @@ reads it every session and keeps it current as work gets done.
 ## ✅ Done
 - [x] TIA-05 · (task) Keep the collaborators door open (hosted data seam) — later
 - [x] TIA-10 · (task) add claude code capability
+- [x] TIA-11 · (task) review recipe for new app
 - [x] TIA-17 · (feature) drap projects around
 - [x] TIA-18 · (task) only show last 10 commits
 - [x] TIA-01 · (task) v1 working board + runbook (this page)
