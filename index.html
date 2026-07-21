@@ -704,7 +704,7 @@ function render(){
   migrate();
   const b = data.apps.map((a,ai)=>{
     const open = a.queue.filter(q=>q.status!=='done').length, dn = a.queue.filter(q=>q.status==='done').length;
-    const next = a.queue.find(q=>q.status!=='done');
+    const next = a.queue.find(q=>q.status!=='done' && q.status!=='blocked' && q.status!=='verify');
     const rowHtml=(q,i)=>{
       const sm=STATUS_META[q.status]||STATUS_META.todo; const tm=TYPE_META[q.type]||TYPE_META.task; const pm=PRIO_META[q.priority]||PRIO_META.med;
       const det = openState.has('item:'+q.id) ? detailHtml(a,q,i) : '';
@@ -746,7 +746,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v17';
+const TIARA_VERSION = 'board-v18';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
