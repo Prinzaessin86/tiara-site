@@ -1,0 +1,1160 @@
+{
+  "updated": "2026-07-17",
+  "apps": [
+    {
+      "id": "tiara",
+      "name": "Tiara",
+      "emoji": "👑",
+      "color": "pinkLav",
+      "repo": "Prinzaessin86/Tiara-site",
+      "status": "building today",
+      "done": [
+        "Initial commit",
+        "Rename index_1.html to index.html",
+        "Add files via upload",
+        "Update index.html",
+        "Update index.html to new version",
+        "update tiara board",
+        "Tiara: update roadmap",
+        "Tiara auto-sync",
+        "Tiara board update"
+      ],
+      "queue": [
+        {
+          "id": "TIA-05",
+          "title": "Keep the collaborators door open (hosted data seam) — later",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-10",
+          "title": "add claude code capability",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-11",
+          "title": "review recipe for new app",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-12",
+          "title": "review the whole runbook",
+          "status": "todo",
+          "done": false,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-15",
+          "title": "turn the runbook into fully clickable recipes with copy-buttons (started)",
+          "status": "todo",
+          "done": false,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-17",
+          "title": "drap projects around",
+          "status": "done",
+          "done": true,
+          "type": "feature",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-18",
+          "title": "only show last 10 commits",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-01",
+          "title": "v1 working board + runbook (this page)",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-02",
+          "title": "Connect to a JSON file Claude Code also reads/writes",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-04",
+          "title": "Auto-pull 'recently done' from each repo's git",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-03",
+          "title": "Drag-to-reorder queue items",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-06",
+          "title": "add detail view to items",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-07",
+          "title": "stop the view collapsing after adding something",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-08",
+          "title": "fix the numbering system",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-09",
+          "title": "add priority",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-13",
+          "title": "most recent commits separatte from queue it needs to be collapsable",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-14",
+          "title": "clickable items should become dropdowns",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-16",
+          "title": "replace green with amber",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TIA-19",
+          "title": "remove inbox chip",
+          "done": false,
+          "status": "todo",
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        }
+      ],
+      "inbox": [],
+      "scramble": [],
+      "prefix": "TIA"
+    },
+    {
+      "id": "sparklereef",
+      "name": "Sparkle Reef",
+      "emoji": "✨",
+      "color": "lav",
+      "repo": "Prinzaessin86/SparkleReef",
+      "status": "audited vs code",
+      "done": [
+        "Prepare Sparkle Reef v1 two-player flow",
+        "Harden rewards and polish v1 UI",
+        "Keep Bloop home button visible in portrait",
+        "Stabilize shared game handoffs",
+        "Configure prod Firebase for v1",
+        "Tiara: update roadmap",
+        "Prepare v1.1 gameplay bugfixes",
+        "Harden v1 sync and smoke coverage",
+        "Harden shared sync and rewards",
+        "Remove stale join and local economy code",
+        "Remove unused Daily Bubble helpers",
+        "Bloop: pond rendering fix (recolored per-player art, contained states)",
+        "Tyler Sparkle Score fixed",
+        "stale docs + copy removed",
+        "Poda full-state reconnect",
+        "Sweet Task deck seeding"
+      ],
+      "queue": [
+        {
+          "id": "SR-14",
+          "title": "setup firebase prod properly",
+          "status": "doing",
+          "done": false,
+          "type": "task",
+          "priority": "high",
+          "notes": []
+        },
+        {
+          "id": "SR-07",
+          "title": "Delete leftover dead code (SweetTaskReply)",
+          "status": "todo",
+          "done": false,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-10",
+          "title": "Daddy-mint reveal notification",
+          "status": "todo",
+          "done": false,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-11",
+          "title": "Implement Giggle Cards",
+          "status": "todo",
+          "done": false,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-13",
+          "title": "Bloop pond arc more pronounced (device-check)",
+          "status": "todo",
+          "done": false,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-16",
+          "title": "check babygirl mentions reintroduce babygirl in hub view",
+          "status": "todo",
+          "done": false,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-17",
+          "title": "make crew mapping in Tyler better (vague — needs a concrete change)",
+          "status": "todo",
+          "done": false,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-18",
+          "title": "Daily bubble not async",
+          "status": "todo",
+          "done": false,
+          "type": "bug",
+          "priority": "high",
+          "notes": [
+            {
+              "by": "you",
+              "text": "What We Know Daddy saw the actual marble shot, not just the same daily layout. That should be impossible in the current /Users/CassandraMyers/Developer/SparkleReef code because Daily Bubble does not send shot angle, board state, marble movement, queue index, or camera position anywhere. Current code only syncs Daily Bubble result summaries: best score, cleared, attempts, note, sparkle. What I Investigated I checked: Daily Bubble view/model/engine Firebase Daily Bubble sync shared game routing Firebase active game rules old CloudKit share code SwiftData CloudKit model container Xcode prod/dev schemes other Sparkle Reef folders on the Mac I found no current code path that would live-sync a Daily Bubble shot. Possible Explanations Most likely: TestFlight did not contain the code I inspected, or the uploaded build came from another Sparkle Reef folder/project. There are multiple copies, including review/audit folders, and the app still shows 1.0 build 1, so it is hard to verify exactly what code is installed. Also possible: a stale TestFlight build or local installed app was tested instead of the newest archive. Less likely, but still worth hardening: Daily Bubble is still listed as allowed in shared Firebase active game rules, even though the app does not currently start it as a shared game. CloudKit/SwiftData can sync Daily Bubble result rows, sparkles, and jar data, but I did not find evidence that it can sync live marble shots. Recommended Fix Path Later Add a visible build fingerprint on the home screen, e.g. commit hash/date. Increment build number before every TestFlight upload. Re-archive only from /Users/CassandraMyers/Developer/SparkleReef/SparkleReef.xcodeproj using SparkleReef-Prod. Remove dailyBubble from shared active-game rules and app-level shared-game eligibility. Make Daily Bubble explicitly local gameplay, with Firebase used only for per-role daily result comparison. Add tests proving two Daily Bubble instances for the same day start with the same pearls but mutate independently after one player shoots. Current Confidence I’m high-confidence the current inspected code should not live-sync Daily Bubble shots. I’m medium-high confidence the real issue is build/source confusion or stale TestFlight code. I’m high-confidence Daily Bubble should still be hardened so it cannot ever accidentally enter shared-session behavior.   9:03 PM"
+            }
+          ]
+        },
+        {
+          "id": "SR-02",
+          "title": "Networked Sweet Task exchange across two phones",
+          "status": "done",
+          "done": true,
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-03",
+          "title": "Cross-account economy actually syncs (CKShare)",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-04",
+          "title": "Live two-phone Bloop (turn-based live)",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-05",
+          "title": "Tyler + Bumble invite links",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-06",
+          "title": "Hub coach card",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-08",
+          "title": "Dedupe Firebase URL + DEV/PROD split",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-09",
+          "title": "Bumble vet-vs-stack race",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-12",
+          "title": "Bloop duplicate label near big pond (device-check)",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "SR-15",
+          "title": "check color schemes for overlays",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        }
+      ],
+      "inbox": [],
+      "scramble": [
+        "make crew mapping in Tyler better (vague — needs a concrete change)"
+      ],
+      "prefix": "SR"
+    },
+    {
+      "id": "pagingdrdaddy",
+      "name": "Paging Dr. Daddy",
+      "emoji": "📟",
+      "color": "peach",
+      "repo": "Prinzaessin86/PagingDrDaddy",
+      "status": "awaiting audit",
+      "done": [
+        "test: cover CheckInService routing, scheduler determinism, refill idempotency",
+        "chore: set DEVELOPMENT_TEAM for signing (P9)",
+        "feat: use default notification sound, drop pager-beep.caf dependency",
+        "fix: iCloud tile reflects real connection state, updates live",
+        "docs: record clean-install-after-model-change and iCloud-state lessons",
+        "fix(sharing): repair accept lifecycle and store readiness before treating sync as a data problem",
+        "fix(sharing): truthful share diagnostics, no share churn, gated writes, async load",
+        "fix(sharing): stop the Set up sharing freeze by moving share creation off the main actor",
+        "fix(concurrency): remove non-Sendable self capture in background share path",
+        "feat(ui): chart short name, and pick a day for preset check-ins",
+        "fix(ui): anchor sheet shares one date calendar, only time-vs-preset swaps",
+        "chore: reword flagpole to check in; bump build number to 2",
+        "fix(sharing): full accept-error capture + enforce single-Anchor invariant",
+        "chore: bump build number to 3",
+        "Tiara: update roadmap"
+      ],
+      "queue": [
+        {
+          "id": "PDD-01",
+          "title": "Daddy needs to verify new version",
+          "status": "doing",
+          "done": false,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        }
+      ],
+      "inbox": [],
+      "scramble": [],
+      "prefix": "PDD"
+    },
+    {
+      "id": "rainybow",
+      "name": "Rainybow",
+      "emoji": "🌈",
+      "color": "rainbow",
+      "repo": "Prinzaessin86/rainybow",
+      "status": "Stage 3 next",
+      "done": [
+        "0.5: add Apple swiftui-specialist skill, hand picked and read",
+        "ADR 0004: hand picked agent skills, Xcode 27 gap documented",
+        "CLAUDE.md: document the ! bypass as the guard's known limit",
+        "Stage 1: lock SPEC.md, cut the rain, gate the refusals",
+        "ADRs: cut the rain, fence the history, add status lines",
+        "Roadmap and spec: replace the rain with the nudge",
+        "help: list refusals in the verify gate description",
+        "ADR-0002/0005: remove the rain scar, no live supersession",
+        "Add ADR hygiene gate to make verify",
+        "Refusals: move the banned-word list into a manifest",
+        "Design system: add Tokens.swift, delete draft SPEC.md",
+        "Design system: move full spec into .claude/rules, stub CLAUDE.md",
+        "Fonts: register bundled Baloo 2 at launch via CTFontManager",
+        "Fix swift-quality lint gate; add design-system swiftlint rules",
+        "Tiara: update roadmap",
+        "Stage 0 factory",
+        "Stage 1 SPEC.md LOCKED",
+        "Stage 2 design system (Tokens + hook)"
+      ],
+      "queue": [
+        {
+          "id": "RB-30",
+          "title": "Data model: the Thing (6 fields)",
+          "done": true,
+          "status": "done",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "RB-31",
+          "title": "Position maths formula",
+          "done": true,
+          "status": "done",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "RB-32",
+          "title": "Swift Testing test for the maths",
+          "done": false,
+          "status": "doing",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "RB-33",
+          "title": "Bow screen: one tappable dot",
+          "done": true,
+          "status": "done",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "RB-34",
+          "title": "Tap → done → resets",
+          "done": true,
+          "status": "done",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "RB-35",
+          "title": "Run on real device (screenshot)",
+          "done": true,
+          "status": "done",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "RB-36",
+          "title": "reconcile old notes: the 'rain' is cut, replaced by the nudge",
+          "done": false,
+          "status": "doing",
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        }
+      ],
+      "inbox": [],
+      "scramble": [],
+      "prefix": "RB"
+    },
+    {
+      "id": "tentaclepit",
+      "name": "Tentaclepit",
+      "emoji": "🩺",
+      "color": "mint",
+      "repo": "Prinzaessin86/tentaclepit",
+      "status": "awaiting audit",
+      "done": [],
+      "queue": [
+        {
+          "id": "TENT-02",
+          "title": "when changing date of medikinet the time stays locked",
+          "done": false,
+          "status": "todo",
+          "type": "bug",
+          "priority": "high",
+          "notes": []
+        },
+        {
+          "id": "TENT-01",
+          "title": "undo blocking medikinet and attentin to add extra doses for the day",
+          "done": false,
+          "status": "todo",
+          "type": "feature",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "TENT-03",
+          "title": "period on home view is calculated wrong",
+          "done": false,
+          "status": "todo",
+          "type": "bug",
+          "priority": "high",
+          "notes": []
+        },
+        {
+          "id": "TENT-04",
+          "title": "guided daily checkin",
+          "done": false,
+          "status": "todo",
+          "type": "feature",
+          "priority": "med",
+          "notes": []
+        }
+      ],
+      "inbox": [
+        "dose-model waves",
+        "archived-meds question",
+        "water/cals: art, better AI recognition, 2nd API key",
+        "withings implementation",
+        "import oz history"
+      ],
+      "scramble": [],
+      "prefix": "TENT"
+    },
+    {
+      "id": "poda",
+      "name": "Poda",
+      "emoji": "🐙",
+      "color": "rose",
+      "repo": "Prinzaessin86/PodaProject",
+      "status": "queue forming",
+      "done": [
+        "~30 v1.0/v1.1 bug + feature items verified in code and archived"
+      ],
+      "queue": [
+        {
+          "id": "PODA-01",
+          "title": "Re-evaluate the 6am/7am shield handoff",
+          "done": false,
+          "status": "todo",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "PODA-02",
+          "title": "Notifications + messages + character-appearance rework",
+          "done": false,
+          "status": "todo",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "PODA-03",
+          "title": "Dose 5 doesn't enact its shield",
+          "done": false,
+          "status": "todo",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "PODA-04",
+          "title": "Wind-down re-audit + overlay",
+          "done": false,
+          "status": "todo",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "PODA-05",
+          "title": "Rework the holiday request process",
+          "done": false,
+          "status": "todo",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        },
+        {
+          "id": "PODA-06",
+          "title": "Remove the hyperfocus-timer char limit",
+          "done": false,
+          "status": "todo",
+          "notes": [],
+          "priority": "med",
+          "type": "task"
+        }
+      ],
+      "inbox": [
+        "setup: write Poda's feature spec",
+        "setup: use-case testing"
+      ],
+      "scramble": [],
+      "prefix": "PODA"
+    },
+    {
+      "id": "bubbles",
+      "name": "Bubbles",
+      "emoji": "🫧",
+      "color": "sky",
+      "repo": "Prinzaessin86/Bubbles",
+      "status": "planner — solid, audit-fixes done",
+      "done": [
+        "Audit fixes: Critical/High/Medium/Low all committed",
+        "78 tests green"
+      ],
+      "queue": [],
+      "inbox": [
+        "full audit against current code still to run (its own queue TBD)"
+      ],
+      "scramble": [],
+      "prefix": "BUB"
+    },
+    {
+      "id": "dressie",
+      "name": "Dressie",
+      "emoji": "👗",
+      "color": "peach",
+      "repo": "Prinzaessin86/Dressie",
+      "status": "awaiting audit",
+      "done": [],
+      "queue": [],
+      "inbox": [
+        "wardrobe cleanup checklist: choker · black bikini · everyday underwear batches · circus underwear · faketape undies · paws set · 2 missing nappies · princess jammies (content, tick one-by-one)"
+      ],
+      "scramble": [],
+      "prefix": "DRES"
+    },
+    {
+      "id": "octobrain",
+      "prefix": "ITEM",
+      "name": "Octobrain",
+      "emoji": "🫧",
+      "color": "sky",
+      "repo": "Prinzaessin86/Octobrain",
+      "status": "Stage 0 · factory",
+      "done": [],
+      "queue": [],
+      "inbox": [],
+      "scramble": []
+    },
+    {
+      "id": "packmagic",
+      "prefix": "PACK",
+      "name": "PackMagic",
+      "emoji": "🧳",
+      "color": "sky",
+      "repo": "Prinzaessin86/PackMagic",
+      "status": "Stage 0 · factory",
+      "done": [
+        "Roadmap PACK-13,17-25: daddy collapse, autocomplete, weather reformat, fixes",
+        "Scaffold: safety gate, quality loop, verify harness, ADRs",
+        "Scaffold buildable project: XcodeGen, DEV/PROD, icon, ADR-0004/0005",
+        "Add SwiftData model, static catalog, and tested packing engine",
+        "Build the full SwiftUI app: screens, design system, weather, DEV seed",
+        "Add UI smoke test (home -> list) and vendor the web-app reference docs",
+        "Docs: fill SPEC, roadmap, CLAUDE design system + lessons, README",
+        "Bundle Quicksand and add a native styled .xlsx export",
+        "Comment the intricate low-level code",
+        "Revert \"Comment the intricate low-level code\"",
+        "Design-audit round: icon language, collapse-by-default, Pack Mode",
+        "Fix RBLayer texture failure on device: lazy list",
+        "Convert remaining UI emoji to SF Symbols; delete unused code",
+        "Add local reminder notifications",
+        "Tiara: update roadmap"
+      ],
+      "queue": [
+        {
+          "id": "PACK-26",
+          "title": "fixed: weather + travel advice now derive from the picked city. The picker wrote \"City, Region, Country\" and Open-Meteo returned 0 results for the whole string; now geocode the leading place name + country hint. Re-check on device.",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-21",
+          "title": "weather result: advice split into labelled Power / Documents / Medication blocks. Was blocked by PACK-26 (no weather to format); verifiable now.",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-19",
+          "title": "leave-date spacing: more, balanced gap between the date and the early/later chips",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-25",
+          "title": "daddy prompts now legible in every box (Top/Bottom/Dress, Bra/Undies/Socks)",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-27",
+          "title": "octopus gone from the PodaBar, replaced with a sparkles chip (footer/celebration octopi kept)",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-13",
+          "title": "make each single day of the daddy module collapsable",
+          "status": "done",
+          "done": true,
+          "type": "feature",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-17",
+          "title": "remove emojis on start screen",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-18",
+          "title": "for where to add an auto completer library so data already gets verified on entry",
+          "status": "done",
+          "done": true,
+          "type": "feature",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-20",
+          "title": "replace wellness with spa on what are you up to",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-22",
+          "title": "remove emojis from title in packing list",
+          "status": "done",
+          "done": true,
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-23",
+          "title": "trip title should be bigger in packing list",
+          "status": "done",
+          "done": true,
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-24",
+          "title": "trips can't be deleted with swipe",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-01",
+          "title": "Install the factory — once, ever",
+          "status": "done",
+          "done": true,
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-02",
+          "title": "Run the factory",
+          "status": "done",
+          "done": true,
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-03",
+          "title": "Create the Xcode project",
+          "status": "done",
+          "done": true,
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-04",
+          "title": "Watch the canary fail, then go green",
+          "status": "done",
+          "done": true,
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-05",
+          "title": "Write SPEC.md + roadmap.md with Claude",
+          "status": "done",
+          "done": true,
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-06",
+          "title": "Design system + app icon",
+          "status": "done",
+          "done": true,
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-07",
+          "title": "Build the first slice",
+          "status": "done",
+          "done": true,
+          "type": "chore",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-09",
+          "title": "remove weird shadows of the trip tiles",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-10",
+          "title": "descriptive text in name this trip can't be seen",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-11",
+          "title": "shadow box behind when do you leave date remove",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-12",
+          "title": "correct date format in trip list to dd-mm-yyyy",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-14",
+          "title": "only a few of the emojis are replaced very inconsistent",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-16",
+          "title": "arrow next to by bag does nothing",
+          "status": "done",
+          "done": true,
+          "type": "bug",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-15",
+          "title": "make split taps for reminder and packing list",
+          "status": "done",
+          "done": true,
+          "type": "feature",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-08",
+          "title": "redo app icon",
+          "status": "done",
+          "done": true,
+          "type": "task",
+          "priority": "med",
+          "notes": []
+        },
+        {
+          "id": "PACK-28",
+          "title": "input fields for trip name and city don't react well to tapping",
+          "done": false,
+          "status": "todo",
+          "type": "bug",
+          "priority": "high",
+          "notes": []
+        },
+        {
+          "id": "PACK-29",
+          "title": "if list is too long i.e. meds scrolling becomes almost impossible",
+          "done": false,
+          "status": "todo",
+          "type": "bug",
+          "priority": "high",
+          "notes": []
+        }
+      ],
+      "inbox": [],
+      "scramble": []
+    },
+    {
+      "id": "podaknows",
+      "prefix": "PK",
+      "name": "PodaKnows",
+      "emoji": "🐙",
+      "color": "peach",
+      "repo": "Prinzaessin86/Podaknows",
+      "status": "P0 · verify on device",
+      "done": [],
+      "queue": [],
+      "inbox": [],
+      "scramble": []
+    }
+  ],
+  "runbook": [
+    {
+      "id": "stages",
+      "title": "The stages every app climbs",
+      "when": "the blueprint · read once, follow always",
+      "steps": [
+        {
+          "do": "Stage 0 · The factory",
+          "why": "guardrails before features, so quality is never retrofitted into an audit later",
+          "check": "you watched the canary test fail on purpose, then delete it and go green"
+        },
+        {
+          "do": "Stage 1 · Decide (SPEC.md)",
+          "why": "what it is, and the more important list of what it is NOT; drift is fifty small inconsistent decisions",
+          "check": "SPEC.md says LOCKED at the top and is committed"
+        },
+        {
+          "do": "Stage 2 · Design system",
+          "why": "a design system that is not machine-enforced regresses to grey stock cards every sprint",
+          "check": "a raw hex colour or magic font size is rejected by the quality hook"
+        },
+        {
+          "do": "Stage 3 · Vertical slice",
+          "why": "one thing all the way through, so you learn the whole loop works on day one, not week three",
+          "check": "one item, end to end, screenshotted on your real phone"
+        },
+        {
+          "do": "Stage 4 · Breadth",
+          "why": "now the rest of the screens; anything that interrupts you (notifications) is built last and never loud",
+          "check": "device, every time"
+        },
+        {
+          "do": "Stage 5 · Sync",
+          "why": "CloudKit, development container only, always",
+          "check": "it survives a delete and reinstall"
+        },
+        {
+          "do": "Stage 6 · Motion, polish & accessibility",
+          "why": "things move, they do not teleport; Dynamic Type, VoiceOver, reduced motion; delete dead code",
+          "check": "usable with VoiceOver, with your eyes closed"
+        },
+        {
+          "do": "Stage 7 · Release",
+          "why": "TestFlight, then the App Store",
+          "check": "someone who is not you installs it and opens it"
+        }
+      ]
+    },
+    {
+      "id": "build",
+      "title": "Build one queue item",
+      "when": "the core loop · 90% of the work",
+      "steps": [
+        {
+          "do": "Pick the next item",
+          "why": "dependencies mean you never build on a missing prerequisite",
+          "how": "what's next?",
+          "check": "it names ONE item (the top of Up next) and what 'done' means"
+        },
+        {
+          "do": "Get the plan in English",
+          "why": "you review intent, not code",
+          "how": "plan the next item, no code yet",
+          "check": "a short plan you understand and approve"
+        },
+        {
+          "do": "Test first — watch it go RED",
+          "why": "a test written after the code just blesses the bug",
+          "how": "write the failing test for it, run it, show me red",
+          "check": "you see a genuinely failing test"
+        },
+        {
+          "do": "Implement — drive it GREEN",
+          "why": "the Stop hook will not let the turn end while verify is red",
+          "how": "make verify",
+          "check": "verify: green (format, lint, build, test)"
+        },
+        {
+          "do": "See it work on device",
+          "why": "true in code is not true on device",
+          "how": "capture a simulator screenshot + accessibility report",
+          "check": "the screenshot shows what you meant"
+        },
+        {
+          "do": "Record & close",
+          "why": "git + the board are the truth",
+          "how": "commit (with 'Closes #<n>'), move the item to 🔍 Verify on the board, add a CHANGELOG line",
+          "check": "the item sits in Verify awaiting your device check; you close it → Done"
+        }
+      ]
+    },
+    {
+      "id": "newapp",
+      "title": "Stand up a new app (the factory)",
+      "when": "once per app · Stages 0–1",
+      "steps": [
+        {
+          "do": "Install the factory — once, ever",
+          "why": "the factory is the machine that builds every app with the guardrails already inside. You set it up a single time and reuse it forever.",
+          "how": "Unzip _bootstrap into your Developer folder so it sits at ~/Developer/_bootstrap. You never do this step again.",
+          "check": "~/Developer/_bootstrap contains a 'newapp' file and a 'template' folder"
+        },
+        {
+          "do": "Run the factory",
+          "why": "this stamps out the app's skeleton — safety hooks, tests, the verify gate — and now also creates its private GitHub repo + Roadmap board and registers it in Tiara, all before any code exists",
+          "how": "bash ~/Developer/_bootstrap/newapp <AppName>",
+          "check": "Terminal shows '<AppName> scaffolded' plus [done] lines for the repo + board; the app appears in Tiara with its own board"
+        },
+        {
+          "do": "Create the Xcode project",
+          "why": "no script can make an Xcode project honestly, so this is the one hands-on part",
+          "how": "Xcode → File > New > Project → iOS App → SwiftUI + SwiftData, save INTO ~/Developer/<AppName>, then right-click Sources and Tests → Convert to Folder. Then set up two build configs: Debug = DEV (bundle id ending .dev, home-screen name '<AppName> DEV', development CloudKit) and Release = the clean app — so both install on your phone side by side.",
+          "check": "adding a file on disk shows up in the build with no project-file change, and a DEV build installs next to the real one"
+        },
+        {
+          "do": "Watch the canary fail, then go green",
+          "why": "a test suite that was never wired up says 'all passed' forever. Watching it fail once, on purpose, proves the tests really run.",
+          "how": "make verify",
+          "check": "you SEE a red failing test, then delete CanaryTests.swift and it goes green"
+        },
+        {
+          "do": "Write SPEC.md with Claude",
+          "why": "the spec is the part only you decide. Claude writes it in the right format, then seeds your first items onto the GitHub board so you never touch the format.",
+          "how": "cd ~/Developer/<AppName> && claude",
+          "prompt": "Read SPEC.md, docs/BLUEPRINT.md, CLAUDE.md, and the ADRs in docs/decisions. Then help me fill in SPEC.md for <AppName> — ask me ONE question at a time: what it is in a paragraph, what it is NOT, the data, the screens, and what \"done\" means. Write my answers into SPEC.md in its existing format and keep it DRAFT until I say LOCKED. Then add my first items to the GitHub board the factory already created for this app: one issue per stage, each added to the board with Lane = Up next and a priority + type. Do not write any app code yet.",
+          "check": "SPEC.md says LOCKED, and your first items appear on the board (and in Tiara)"
+        },
+        {
+          "do": "Design system + app icon",
+          "why": "lock the look before any screens exist, so nothing turns into grey stock UI. The app icon lives here — it's a design choice, not plumbing.",
+          "how": "Ask Claude to add Tokens.swift + a lint rule that rejects raw colours and sizes. Then in Xcode drop a 1024×1024 PNG into Assets.xcassets → AppIcon, and add a second set 'AppIcon-Dev' with the same art plus a DEV ribbon (drop your icon into the Tiara Helper folder as icon.png and double-click 'Make DEV icon' to stamp the ribbon for you), pointed at by the Debug config.",
+          "check": "a raw hex colour is rejected by the hook; the real icon shows on Release and the ribboned DEV icon on Debug"
+        },
+        {
+          "do": "Build the first slice",
+          "why": "prove the whole loop works on day one",
+          "how": "run the Build recipe on the top item of your queue",
+          "check": "one feature green and seen on your device"
+        }
+      ]
+    },
+    {
+      "id": "triage",
+      "title": "Triage sweep (together)",
+      "when": "weekly, or when the inbox fills",
+      "steps": [
+        {
+          "do": "Sort each inbox line",
+          "why": "dedup + sequencing at the door stops the swamp",
+          "how": "for each line: bin · duplicate · promote to the queue (with depends-on)",
+          "check": "inbox empty; new items sit ordered in the queue"
+        }
+      ]
+    }
+  ]
+}
