@@ -1,0 +1,46 @@
+name: TestFlight status
+
+# Asks App Store Connect what build is live for each app and commits
+# release-status.json, which Tiara reads to show a live ✈ TestFlight chip.
+# The .p8 key lives only in this repo's Actions secrets — never on the page.
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours
+  workflow_dispatch:         # let you run it on demand from the Actions tab
+
+permissions:
+  contents: write            # needed to commit release-status.json
+
+concurrency:
+  group: testflight-status
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Poll App Store Connect
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: node scripts/testflight-status.js
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "tiara-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add release-status.json
+          if git diff --staged --quiet; then
+            echo "No TestFlight status changes."
+          else
+            git commit -m "TestFlight status $(date -u +%FT%TZ)"
+            git push
+          fi
