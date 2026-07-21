@@ -135,6 +135,20 @@
   .onbox code{background:#f4ecff;color:var(--purple);padding:1px 6px;border-radius:6px;font-size:.85rem;}
   .onbox input{width:100%;box-sizing:border-box;font-family:'Quicksand';font-size:.95rem;border:2px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:9px;}
   .gh-msg{margin-top:8px;font-weight:700;color:var(--pink);font-size:.9rem;}
+  .checks{display:inline-flex;gap:5px;flex-wrap:wrap;align-items:center;}
+  .checkchip{font-size:.68rem;font-weight:800;padding:3px 9px;border-radius:9px;letter-spacing:.02em;white-space:nowrap;}
+  .checkchip.on{color:#2f9e6e;background:#e7f7ef;}
+  .checkchip.off{color:#b3a6c6;background:#f4f0f8;}
+  .phead{font-family:'Baloo 2';font-weight:700;font-size:1.05rem;color:#4a3a5e;margin:2px 0 14px;}
+  .phead b{color:var(--purple);}
+  .prow{display:flex;align-items:center;gap:9px;padding:9px 12px;background:#fdfaff;border:1.5px solid var(--line2);border-radius:12px;margin-bottom:7px;}
+  .prow .papp{display:inline-flex;align-items:center;gap:6px;font-family:'Baloo 2';font-weight:700;font-size:.82rem;color:#6a5a82;width:132px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .prow .papp .em{font-size:1rem;flex-shrink:0;}
+  .prow .pid{font-size:.7rem;font-weight:800;color:#fff;background:var(--purple);padding:1px 6px;border-radius:6px;flex-shrink:0;}
+  .prow .pt{flex:1;font-size:.98rem;min-width:0;}
+  .hgroup{margin-bottom:16px;}
+  .hgroup h3{font-family:'Baloo 2';font-weight:700;font-size:1rem;color:var(--brand);margin:0 0 6px;display:flex;align-items:center;gap:7px;}
+  .hgroup .hc{font-size:.9rem;color:#5a4a6e;padding:4px 2px;border-bottom:1px solid var(--line);font-family:ui-monospace,monospace;}
   footer{text-align:center;margin-top:24px;font-size:.82rem;color:var(--soft);font-weight:700;}
 </style>
 </head>
@@ -173,10 +187,14 @@
 
   <div class="tabs" id="tabs">
     <div class="tab on" id="tab-board" onclick="showTab('board')">Board</div>
+    <div class="tab" id="tab-portfolio" onclick="showTab('portfolio')">Portfolio</div>
+    <div class="tab" id="tab-history" onclick="showTab('history')">History</div>
     <div class="tab" id="tab-runbook" onclick="showTab('runbook')">Runbook</div>
   </div>
 
   <div id="board"></div>
+  <div id="portfolio" style="display:none"></div>
+  <div id="history" style="display:none"></div>
   <div id="runbook" style="display:none"></div>
 
   <footer>drop ideas → triage → queue → build · <span id="ver" style="opacity:.6"></span></footer>
@@ -203,18 +221,22 @@ const GH_BOARDS = { 'prinzaessin86/packmagic': { login:'Prinzaessin86', number:1
 const _discovered = {};             // appId -> board config, found by asking the repo for a linked Project with a Lane field
 const _version = {};                 // appId -> current version string (latest release tag, else newest git tag)
 const _testflight = {};              // appId -> true when the repo has a committed release.yml (TestFlight-enabled)
+const _bootstrap = {};               // appId -> true when the repo has a committed project.yml (factory-bootstrapped)
+const _devprod = {};                 // appId -> true when project.yml has a Dev Debug config + a Release config (DEV/PROD split)
 const _icon = {};                    // appId -> data URL of the app's AppIcon (falls back to the emoji)
 // pull each app's AppIcon PNG from its repo, so cards show the real icon instead of an emoji
 async function discoverIcons(){
   for(const a of data.apps){ const or=appOwnerRepo(a); if(!or||_icon[a.id]) continue;
     try{
       const tr=await ghApi('/repos/'+or+'/git/trees/HEAD?recursive=1'); if(!tr.ok) continue;
-      const paths=((await tr.json()).tree||[]).map(t=>t.path).filter(p=>/AppIcon[^/]*\.appiconset\/.+\.png$/i.test(p));
-      if(!paths.length) continue;
-      const prod=paths.filter(p=>!/AppIcon-?Dev/i.test(p)); const cand=prod.length?prod:paths;   // prefer the prod icon over the DEV-ribboned one
-      const pick=cand.find(p=>/1024/.test(p))||cand.sort((x,y)=>y.length-x.length)[0];
-      const cf=await ghApi('/repos/'+or+'/contents/'+pick.split('/').map(encodeURIComponent).join('/')); if(!cf.ok) continue;
-      const cj=await cf.json(); if(cj.content) _icon[a.id]='data:image/png;base64,'+cj.content.replace(/\s+/g,'');
+      const tree=((await tr.json()).tree||[]).filter(t=>t.path&&/AppIcon[^/]*\.appiconset\/.+\.png$/i.test(t.path));
+      if(!tree.length) continue;
+      const prod=tree.filter(t=>!/AppIcon-?Dev/i.test(t.path)); const cand=prod.length?prod:tree;   // prefer the prod icon over the DEV-ribboned one
+      const pick=cand.find(t=>/1024/.test(t.path))||cand.sort((x,y)=>y.path.length-x.path.length)[0];
+      // the git blob API returns base64 for any size; the Contents API caps at ~1MB and returns empty content
+      // (a 1024×1024 app icon is often >1MB — that's why SparkleReef's icon never appeared)
+      const bf=await ghApi('/repos/'+or+'/git/blobs/'+pick.sha); if(!bf.ok) continue;
+      const bj=await bf.json(); if(bj.content && bj.encoding==='base64') _icon[a.id]='data:image/png;base64,'+bj.content.replace(/\s+/g,'');
     }catch(e){}
   }
 }
@@ -232,7 +254,11 @@ async function discoverBoards(){
       const rp=d.repository; if(!rp) continue;
       if(rp.rel && rp.rel.text) _testflight[a.id]=true;   // a committed release.yml means this app is TestFlight-enabled
       let ver=''; const pyml=rp.pyml&&rp.pyml.text;
-      if(pyml){ const m=pyml.match(/MARKETING_VERSION:\s*"?([0-9][A-Za-z0-9.\-]*)"?/); if(m) ver='v'+m[1]; }   // Xcode marketing version (bumps as you develop)
+      if(pyml){ _bootstrap[a.id]=true;   // a committed project.yml means the factory bootstrap ran
+        const hasDevDebug=/[\w-]*dev[\w-]*\s*:\s*debug\b/i.test(pyml);   // e.g. "Debug-Dev: debug"
+        const hasRelease=/:\s*release\b/i.test(pyml);                     // e.g. "Release-Dev: release"
+        if(hasDevDebug && hasRelease) _devprod[a.id]=true;
+        const m=pyml.match(/MARKETING_VERSION:\s*"?([0-9][A-Za-z0-9.\-]*)"?/); if(m) ver='v'+m[1]; }   // Xcode marketing version (bumps as you develop)
       if(!ver) ver=(rp.latestRelease&&rp.latestRelease.tagName) || (rp.refs&&rp.refs.nodes&&rp.refs.nodes[0]&&rp.refs.nodes[0].name) || '';
       if(ver) _version[a.id]=ver;
       if(GH_BOARDS[or.toLowerCase()] || _discovered[a.id]) continue;   // board already known; version captured above
@@ -283,12 +309,14 @@ async function loadBoardItems(a){
       type: fieldValueByName(name:"Type"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
     } } } } }`, { login:cfg.login, num:cfg.number });
   const nodes = (d.user.projectV2.items.nodes||[]).filter(n=>n.content && n.content.number);
+  const px = a.prefix || (a.name||'').replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase() || 'ITEM';
   a.queue = nodes.map(n=>{
     const c = n.content;
-    const pack = (c.labels&&c.labels.nodes||[]).map(l=>l.name).find(nm=>/^[A-Za-z]+-\d+$/.test(nm));
+    // the migrated Linear id (if any) now lives in the title; keep it as _lid for reference only
+    const lid = (c.labels&&c.labels.nodes||[]).map(l=>l.name).find(nm=>/^[A-Za-z]+-\d+$/.test(nm));
     const lane = (n.lane&&n.lane.name) || 'Up next';
     const status = (c.state==='CLOSED') ? 'done' : (LANE2STATUS[lane.toLowerCase()] || 'todo');
-    return { id: pack || ('#'+c.number), issueNumber:c.number, itemId:n.id, url:c.url,
+    return { id: px+'#'+c.number, _lid:lid, issueNumber:c.number, itemId:n.id, url:c.url,
       title:c.title, status, done:(status==='done'),
       priority:((n.priority&&n.priority.name)||'Med').toLowerCase(),
       type:((n.type&&n.type.name)||'Task').toLowerCase(),
@@ -540,11 +568,10 @@ function exportFile(){
 function touch(){ captureOpen(); render(); if(HELPER.on) scheduleSave(); else setStatus('connect GitHub to save'); }
 
 /* ---------- tabs ---------- */
+const TABS=['board','portfolio','history','runbook'];
 function showTab(t){
-  $('#board').style.display = t==='board'?'block':'none';
-  $('#runbook').style.display = t==='runbook'?'block':'none';
-  $('#tab-board').classList.toggle('on',t==='board');
-  $('#tab-runbook').classList.toggle('on',t==='runbook');
+  TABS.forEach(x=>{ const el=$('#'+x); if(el) el.style.display=(x===t)?'block':'none';
+    const tb=document.getElementById('tab-'+x); if(tb) tb.classList.toggle('on',x===t); });
 }
 
 /* ---------- mutations ---------- */
@@ -683,6 +710,16 @@ function addApp(){
   setStatus(seed?('added '+n+' with '+count+' starter items from the runbook'):('added '+n));
 }
 
+function checkChip(on,label,title){ return `<span class="checkchip ${on?'on':'off'}" title="${esc(title)}">${on?'✓':'○'} ${label}</span>`; }
+// live project-health checkmarks, computed each load from the repo's project.yml (no cron): migrated → on the board;
+// bootstrap → project.yml committed; DEV·PROD → project.yml has a Dev Debug config + a Release config.
+function checkChips(a){
+  return `<span class="checks">`
+    + checkChip(!!boardFor(a),'migrated','on the GitHub Projects board')
+    + checkChip(!!_bootstrap[a.id],'bootstrap','factory-bootstrapped — project.yml is committed')
+    + checkChip(!!_devprod[a.id],'DEV·PROD','project.yml has a Dev Debug config + a Release config')
+    + `</span>`;
+}
 function pillStatus(a){
   const q=a.queue||[];
   if(!q.length) return a.status||'—';
@@ -698,6 +735,31 @@ function pillStatus(a){
 const dsId = id => 'ds-'+(''+id).replace(/[^a-zA-Z0-9]/g,'_');   // stable DOM id for a row's detail slot
 function detailHtml(a,q,i){ const sm=STATUS_META[q.status]||STATUS_META.todo;
   return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i})"><button onclick="addNote('${a.id}',${i})">note</button></div></div>`;
+}
+// Portfolio tab — every open item across every project, one list, sorted by priority then app
+function renderPortfolio(){
+  const el=$('#portfolio'); if(!el) return;
+  const prank={high:0,med:1,medium:1,low:2};
+  const rows=[];
+  data.apps.forEach(a=>{ (a.queue||[]).forEach(q=>{ if(itemStatus(q)!=='done') rows.push({a,q}); }); });
+  rows.sort((x,y)=>(prank[x.q.priority]??1)-(prank[y.q.priority]??1) || (x.a.name||'').localeCompare(y.a.name||''));
+  const total=rows.length;
+  const body = total ? rows.map(({a,q})=>{
+    const pm=PRIO_META[q.priority]||PRIO_META.med; const tm=TYPE_META[q.type]||TYPE_META.task;
+    const icon=_icon[a.id]?`<img class="appicon" style="width:17px;height:17px" src="${_icon[a.id]}" alt="">`:`<span class="em">${esc(a.emoji||'🫧')}</span>`;
+    return `<div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}<span class="pt">${esc(q.title||'')}</span><span class="priochip2" style="background:${pm.c}1a;color:${pm.c}" title="priority">${pm.t}</span><span class="typechip2" title="type">${tm.e} ${tm.t}</span>${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}</div>`;
+  }).join('') : '<div class="muted">no open items — every board is clear 🎉</div>';
+  el.innerHTML = `<div class="phead"><b>${total}</b> open item${total===1?'':'s'} across ${data.apps.length} project${data.apps.length===1?'':'s'} · highest priority first</div>${body}`;
+}
+// History tab — shipped work pulled from each repo's git commits (moved off the project cards)
+function renderHistory(){
+  const el=$('#history'); if(!el) return;
+  const groups=data.apps.filter(a=>(a.done&&a.done.length));
+  const body = groups.length ? groups.map(a=>{
+    const icon=_icon[a.id]?`<img class="appicon" style="width:18px;height:18px" src="${_icon[a.id]}" alt="">`:`<span>${esc(a.emoji||'🫧')}</span>`;
+    return `<div class="hgroup"><h3>${icon}${esc(a.name)} <span class="scnote">· ${a.done.length} commit${a.done.length===1?'':'s'}</span></h3>${a.done.map(c=>`<div class="hc">${esc(c)}</div>`).join('')}</div>`;
+  }).join('') : '<div class="muted">No commit history pulled yet. On the Board, open a project and press <b>⟳ pull commit history</b> to populate this.</div>';
+  el.innerHTML = `<div class="phead">Shipped work · pulled from each repo\'s git commits</div>${body}`;
 }
 function render(){
   const _scrollY = window.scrollY;   // keep the page from jumping when a re-render rebuilds the board
@@ -720,10 +782,9 @@ function render(){
       <summary><span class="app-grip" draggable="true" ondragstart="appDragStart(event,${ai})" ondragend="appDragEnd(event)" title="drag to reorder projects">⠿</span><span class="appmove"><button onclick="event.stopPropagation();moveApp('${a.id}',-1)" title="move up">▲</button><button onclick="event.stopPropagation();moveApp('${a.id}',1)" title="move down">▼</button></span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><span class="nm">${esc(a.name)}</span>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${_testflight[a.id]?`<span class="tfbadge" title="TestFlight-enabled (release.yml committed)">✈ TestFlight</span>`:''}<button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
-        ${boardFor(a)?`<div class="actions"><span class="alab">☁ github board</span><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a></div>`:((HELPER.on&&appOwnerRepo(a))?`<div class="actions"><span class="alab">☁ github</span><button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull done (commits)</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:'')}
+        ${(HELPER.on&&appOwnerRepo(a))?`<div class="actions">${checkChips(a)}${boardFor(a)?`<a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a>`:`<button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button>`}<button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull commit history</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
         <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb">${activeRows||'<div class="muted">nothing active 🎉</div>'}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><button onclick="addItem('${a.id}')">add</button></div></div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
-        ${(a.done&&a.done.length)?`<details class="lane ship" data-key="ship:${a.id}" ${openState.has('ship:'+a.id)?'open':''}><summary>Shipped · ${a.done.length} <span class="scnote">from git commits</span></summary><div class="laneb">${drows}</div></details>`:''}
         <details class="lane s" data-key="scr:${a.id}" ${openState.has('scr:'+a.id)?'open':''}><summary>Scramble <span class="scnote">private — agents never read this</span></summary><div class="laneb">${srows}<div class="addbox"><input id="scr-${a.id}" placeholder="brain-dump, anything…" onkeydown="if(event.key==='Enter')addScramble('${a.id}')"><button onclick="addScramble('${a.id}')">jot</button></div></div></details>
         <div class="scnote repoedit" style="margin-top:8px" onclick="setRepo('${a.id}')" title="click to set the GitHub repo">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
         <button class="delproj" onclick="delApp('${a.id}')">Remove project from board</button>
@@ -741,12 +802,14 @@ function render(){
     return `<details class="rec" data-key="rec:${rec.id}" ${openState.has('rec:'+rec.id)?'open':''}><summary><div class="rt">${esc(rec.title)}</div><div class="rw">${esc(rec.when)}</div></summary>${steps}</details>`;
   }).join('');
   $('#runbook').innerHTML = r;
+  renderPortfolio();
+  renderHistory();
   window.scrollTo(0, _scrollY);   // restore scroll so opening a note doesn't fling you elsewhere
 }
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v18';
+const TIARA_VERSION = 'board-v19';
 (async function init(){
   ghLoadCfg();
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
