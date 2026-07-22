@@ -166,6 +166,18 @@
   .hgroup{margin-bottom:16px;}
   .hgroup h3{font-family:'Baloo 2';font-weight:700;font-size:1rem;color:var(--brand);margin:0 0 6px;display:flex;align-items:center;gap:7px;}
   .hgroup .hc{font-size:.9rem;color:#5a4a6e;padding:4px 2px;border-bottom:1px solid var(--line);font-family:ui-monospace,monospace;}
+  .kb{max-width:760px;}
+  .kbsec{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:15px 18px;margin-bottom:12px;box-shadow:0 4px 14px rgba(155,93,229,.06);}
+  .kbsec h3{font-family:'Baloo 2';font-weight:700;font-size:1.08rem;color:var(--brand);margin:0 0 8px;display:flex;align-items:center;gap:9px;}
+  .kbnum{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;background:linear-gradient(150deg,#ff6fb5,#9b5de5);color:#fff;font-size:.8rem;flex-shrink:0;}
+  .kbsec p{font-size:.95rem;line-height:1.55;color:#4a3a5e;margin:6px 0;}
+  .kbsec b{color:var(--purple);} .kbsec i{color:#6a5a82;font-style:italic;}
+  .kbsec code{background:#f4ecff;color:var(--purple);padding:1px 6px;border-radius:6px;font-size:.85rem;font-family:ui-monospace,monospace;}
+  .kblist{margin:6px 0;padding-left:2px;list-style:none;}
+  .kblist li{font-size:.93rem;line-height:1.5;color:#4a3a5e;margin:6px 0;padding-left:16px;position:relative;}
+  .kblist li::before{content:'·';position:absolute;left:4px;color:var(--pink);font-weight:800;}
+  .kbtag{display:inline-block;font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:8px;margin-left:auto;letter-spacing:.03em;}
+  .kbtag.local{background:#e7f7ef;color:#2f9e6e;} .kbtag.cloud{background:#e6effb;color:#4a7ed6;}
   footer{text-align:center;margin-top:24px;font-size:.82rem;color:var(--soft);font-weight:700;}
 </style>
 </head>
@@ -207,12 +219,76 @@
     <div class="tab" id="tab-portfolio" onclick="showTab('portfolio')">Portfolio</div>
     <div class="tab" id="tab-history" onclick="showTab('history')">History</div>
     <div class="tab" id="tab-runbook" onclick="showTab('runbook')">Runbook</div>
+    <div class="tab" id="tab-knowledge" onclick="showTab('knowledge')">Knowledge</div>
   </div>
 
   <div id="board"></div>
   <div id="portfolio" style="display:none"></div>
   <div id="history" style="display:none"></div>
   <div id="runbook" style="display:none"></div>
+  <div id="knowledge" style="display:none">
+    <div class="kb">
+      <div class="phead">How the machine works · the full journey of one change, in plain English</div>
+
+      <div class="kbsec"><h3>The one idea</h3>
+        <p>Every change is checked by the same command, <code>make verify</code>, in three places: on your Mac while you work, again before it is allowed onto GitHub, and once more in the cloud on a brand-new computer. Same gate, three layers, so a mistake has to slip past all of them. Below is the whole journey, start to finish, from an edited line of code to a build in your testers' hands.</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">1</span> The gate itself: <code>make verify</code></h3>
+        <p>One command runs four checks in order. Each must pass, or it stops and tells you exactly what broke.</p>
+        <ul class="kblist">
+          <li><b>Format</b> · auto-tidies your code to one consistent style. Autocorrect for layout.</li>
+          <li><b>Lint</b> · checks the rules tidying cannot fix: no force-unwraps (a classic crash), no em dashes, functions not too long. "Strict", so even a warning counts as a failure.</li>
+          <li><b>Build</b> · actually compiles the app. Catches "does not even build".</li>
+          <li><b>Test</b> · runs the automated tests. Catches "builds, but behaves wrong".</li>
+        </ul>
+        <p>All four pass and it prints <b>verify: green</b>. That phrase is the entire definition of "done" in your factory.</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">2</span> Layer one, on your Mac <span class="kbtag local">local</span></h3>
+        <p>Two safety rules run on your own machine, for free, instantly.</p>
+        <ul class="kblist">
+          <li><b>The finish gate (Stop hook)</b> · when an agent tries to say "done", this quietly runs <code>make verify</code> first. If it is red, the agent is blocked; it cannot declare the work finished and has to keep fixing. So an agent can never walk away from broken code. You, the human, just run <code>make verify</code> yourself.</li>
+          <li><b>The push leash</b> · when an agent tries to send code to GitHub, this checks that <code>make verify</code> actually passed on <i>exactly this code</i>. If not, the push is blocked. The one exception is you: type the push with a <code>!</code> in front and it goes straight through. The leash is on the agents, not on you.</li>
+        </ul></div>
+
+      <div class="kbsec"><h3><span class="kbnum">3</span> Layer two, the clean room <span class="kbtag cloud">cloud</span></h3>
+        <p>Once code reaches GitHub, GitHub rents a <b>brand-new Mac</b> (for that one app only), downloads your code onto it, and runs the same <code>make verify</code> again.</p>
+        <p><b>Why run it again if it already passed?</b> Because the cloud Mac is <i>pristine</i> · no leftover files, fresh simulators, none of the years of state your own machine carries. That is how it catches "works on my machine, breaks on a clean install" bugs. It is not hypothetical: it is exactly how a real bug was caught here · an app assumed a folder already existed, which is true on your Mac but not on a fresh phone or a fresh cloud machine. Only the clean room revealed it.</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">4</span> Coverage, with a ratchet <span class="kbtag cloud">cloud</span></h3>
+        <p>Coverage is simply <b>what percentage of your code the tests actually run through</b>. 80% means the tests touch 80% of the code and 20% is untested.</p>
+        <p>The "ratchet" works like a ratchet wrench: it only turns one way. It writes down today's percentage as a floor. If someone later adds code without tests and coverage would slip below that floor, the cloud complains. If coverage goes <i>up</i>, the floor rises with it and cannot slide back. So your test coverage can only ever improve, never quietly erode. And we deliberately do <b>not</b> set a "must hit 90%" target · that only tempts fake tests to game a number. The rule is just: do not go backwards.</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">5</span> The gate canary <span class="kbtag cloud">cloud</span></h3>
+        <p>The genuinely scary failure is a safety net with an invisible hole · tests that <i>look</i> like they pass but were never wired up, so they cheerfully say "all good" forever, even when things are broken.</p>
+        <p>The canary is a smoke detector for your smoke detector. Every run it lights a tiny fire on purpose · it inserts a test designed to fail · and checks that the alarm goes off (that <code>make verify</code> turns red). If the alarm does <b>not</b> go off, your safety net itself is broken, and it says so loudly. Then it cleans up the fake failure so nothing is left behind.</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">6</span> Shipping a build: release <span class="kbtag cloud">cloud</span></h3>
+        <p>Releasing is a deliberate act, separate from all the checking above. It runs on <b>Xcode Cloud</b> (Apple's own build service) with managed signing · no certificates or secret keys to wrangle.</p>
+        <ul class="kblist">
+          <li><b>The trigger is a build-number bump, nothing else.</b> The build number lives in one file (<code>Config/Version.xcconfig</code>). Xcode Cloud is set to start only when that file changes, so ordinary commits never ship a build.</li>
+          <li><b>Set up once per app</b> (about 10 minutes in Xcode): create the workflow, point it at the "Prod" scheme, let Xcode Cloud manage signing, and send the result to your TestFlight internal group.</li>
+          <li><b>Day to day:</b> bump the build number by one, commit, push. Xcode Cloud archives, signs, and uploads on Apple's servers; your testers have it in roughly 10 to 30 minutes, with no App Review. Tiara's ✈ badge then shows the live build automatically.</li>
+        </ul>
+        <p class="muted" style="font-size:.88rem">The full step-by-step (including the gotchas · build-number collisions, the GitHub grant loop, package permissions) is in the <b>Runbook</b> tab under "Ship a build to TestFlight".</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">7</span> Keeping the cloud cheap</h3>
+        <p>Cloud Macs are billed at <b>10× the minutes</b> of ordinary runners, so the free monthly budget is small. Three things keep it in bounds:</p>
+        <ul class="kblist">
+          <li><b>Per app, per change.</b> Each app is its own repo, so the cloud only runs for the app you actually touched. Ten idle apps cost nothing.</li>
+          <li><b>Cheap checks per change, heavy checks on demand.</b> The light <code>make verify</code> runs when code changes; coverage and the canary run when you ask (or once a week), not on every commit.</li>
+          <li><b>Diagnose locally, push once.</b> Never debug by re-running the cloud over and over · reproduce on your Mac first. (This one is a standing rule for the agents.)</li>
+        </ul></div>
+
+      <div class="kbsec"><h3>The whole picture: layers, not one wall</h3>
+        <ul class="kblist">
+          <li><b>Layer 1 · your Mac</b> · <code>make verify</code> + the finish gate. Instant, free, catches almost everything before code leaves your laptop.</li>
+          <li><b>Layer 2 · the leash</b> · unverified code cannot be pushed by an agent.</li>
+          <li><b>Layer 3 · the clean room</b> · a pristine double-check for environment bugs, plus "is coverage holding?" and "is the safety net even working?".</li>
+          <li><b>Then release</b> · a deliberate build-number bump ships to TestFlight.</li>
+        </ul>
+        <p>A real problem has to sneak past all three layers. That is the whole point.</p></div>
+    </div>
+  </div>
 
   <footer>drop ideas → triage → queue → build · <span id="ver" style="opacity:.6"></span></footer>
 </div>
@@ -605,7 +681,7 @@ function exportFile(){
 function touch(){ captureOpen(); render(); if(HELPER.on) scheduleSave(); else setStatus('connect GitHub to save'); }
 
 /* ---------- tabs ---------- */
-const TABS=['board','portfolio','history','runbook'];
+const TABS=['board','portfolio','history','runbook','knowledge'];
 function showTab(t){
   TABS.forEach(x=>{ const el=$('#'+x); if(el) el.style.display=(x===t)?'block':'none';
     const tb=document.getElementById('tab-'+x); if(tb) tb.classList.toggle('on',x===t); });
@@ -901,7 +977,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v26';
+const TIARA_VERSION = 'board-v27';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
