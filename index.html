@@ -261,65 +261,51 @@
   <div id="compliance" style="display:none"></div>
   <div id="knowledge" style="display:none">
     <div class="kb">
-      <div class="phead">How the machine works · the full journey of one change, in plain English</div>
+      <div class="phead">Change process · the full journey of one change</div>
 
-      <div class="kbsec"><h3>The one idea</h3>
-        <p>Every change is checked by the same command, <code>make verify</code>, in three places: on your Mac while you work, again before it is allowed onto GitHub, and once more in the cloud on a brand-new computer. Same gate, three layers, so a mistake has to slip past all of them. Below is the whole journey, start to finish, from an edited line of code to a build in your testers' hands.</p></div>
-
-      <div class="kbsec"><h3><span class="kbnum">1</span> The gate itself: <code>make verify</code></h3>
-        <p>One command runs four checks in order. Each must pass, or it stops and tells you exactly what broke.</p>
+      <div class="kbsec"><h3><span class="kbnum">1</span> The one rule</h3>
+        <p>Nothing is finished until two things are true:</p>
         <ul class="kblist">
-          <li><b>Format</b> · auto-tidies your code to one consistent style. Autocorrect for layout.</li>
-          <li><b>Lint</b> · checks the rules tidying cannot fix: no force-unwraps (a classic crash), no em dashes, functions not too long. "Strict", so even a warning counts as a failure.</li>
-          <li><b>Build</b> · actually compiles the app. Catches "does not even build".</li>
-          <li><b>Test</b> · runs the automated tests. Catches "builds, but behaves wrong".</li>
-        </ul>
-        <p>All four pass and it prints <b>verify: green</b>. That phrase is the entire definition of "done" in your factory.</p></div>
-
-      <div class="kbsec"><h3><span class="kbnum">2</span> Layer one, on your Mac <span class="kbtag local">local</span></h3>
-        <p>Two safety rules run on your own machine, for free, instantly.</p>
-        <ul class="kblist">
-          <li><b>The finish gate (Stop hook)</b> · when an agent tries to say "done", this quietly runs <code>make verify</code> first. If it is red, the agent is blocked; it cannot declare the work finished and has to keep fixing. So an agent can never walk away from broken code. You, the human, just run <code>make verify</code> yourself.</li>
-          <li><b>The push leash</b> · when an agent tries to send code to GitHub, this checks that <code>make verify</code> actually passed on <i>exactly this code</i>. If not, the push is blocked. The one exception is you: type the push with a <code>!</code> in front and it goes straight through. The leash is on the agents, not on you.</li>
+          <li>the gate comes back green (<code>make verify</code>)</li>
+          <li>the change works in the app on a phone (watched on a real device)</li>
         </ul></div>
 
-      <div class="kbsec"><h3><span class="kbnum">3</span> Layer two, the clean room <span class="kbtag cloud">cloud</span></h3>
-        <p>Once code reaches GitHub, GitHub rents a <b>brand-new Mac</b> (for that one app only), downloads your code onto it, and runs the same <code>make verify</code> again.</p>
-        <p><b>Why run it again if it already passed?</b> Because the cloud Mac is <i>pristine</i> · no leftover files, fresh simulators, none of the years of state your own machine carries. That is how it catches "works on my machine, breaks on a clean install" bugs. It is not hypothetical: it is exactly how a real bug was caught here · an app assumed a folder already existed, which is true on your Mac but not on a fresh phone or a fresh cloud machine. Only the clean room revealed it.</p></div>
-
-      <div class="kbsec"><h3><span class="kbnum">4</span> Coverage, with a ratchet <span class="kbtag cloud">cloud</span></h3>
-        <p>Coverage is simply <b>what percentage of your code the tests actually run through</b>. 80% means the tests touch 80% of the code and 20% is untested.</p>
-        <p>The "ratchet" works like a ratchet wrench: it only turns one way. It writes down today's percentage as a floor. If someone later adds code without tests and coverage would slip below that floor, the cloud complains. If coverage goes <i>up</i>, the floor rises with it and cannot slide back. So your test coverage can only ever improve, never quietly erode. And we deliberately do <b>not</b> set a "must hit 90%" target · that only tempts fake tests to game a number. The rule is just: do not go backwards.</p></div>
-
-      <div class="kbsec"><h3><span class="kbnum">5</span> The gate canary <span class="kbtag cloud">cloud</span></h3>
-        <p>The genuinely scary failure is a safety net with an invisible hole · tests that <i>look</i> like they pass but were never wired up, so they cheerfully say "all good" forever, even when things are broken.</p>
-        <p>The canary is a smoke detector for your smoke detector. Every run it lights a tiny fire on purpose · it inserts a test designed to fail · and checks that the alarm goes off (that <code>make verify</code> turns red). If the alarm does <b>not</b> go off, your safety net itself is broken, and it says so loudly. Then it cleans up the fake failure so nothing is left behind.</p></div>
-
-      <div class="kbsec"><h3><span class="kbnum">6</span> Shipping a build: release <span class="kbtag cloud">cloud</span></h3>
-        <p>Releasing is a deliberate act, separate from all the checking above. It runs on <b>Xcode Cloud</b> (Apple's own build service) with managed signing · no certificates or secret keys to wrangle.</p>
+      <div class="kbsec"><h3><span class="kbnum">2</span> The gate</h3>
+        <p>Every change goes through one command, <code>make verify</code>. It runs four quick checks in order, cheapest first, so a problem surfaces in two seconds instead of after a long build:</p>
         <ul class="kblist">
-          <li><b>The trigger is a build-number bump, nothing else.</b> The build number lives in one file (<code>Config/Version.xcconfig</code>). Xcode Cloud is set to start only when that file changes, so ordinary commits never ship a build.</li>
-          <li><b>Set up once per app</b> (about 10 minutes in Xcode): create the workflow, point it at the "Prod" scheme, let Xcode Cloud manage signing, and send the result to your TestFlight internal group.</li>
-          <li><b>Day to day:</b> bump the build number by one, commit, push. Xcode Cloud archives, signs, and uploads on Apple's servers; your testers have it in roughly 10 to 30 minutes, with no App Review. Tiara's ✈ badge then shows the live build automatically.</li>
+          <li><b>Tidy</b> (<code>swiftformat</code>): the code is re-formatted to the house style, so spacing is never an argument.</li>
+          <li><b>Rules</b> (<code>swiftlint --strict</code>): the things formatting can't check: no banned patterns, no stray colours or magic numbers, no forbidden shortcuts.</li>
+          <li><b>Build</b> (<code>xcodegen</code> + <code>xcodebuild</code>): the app compiles.</li>
+          <li><b>Test</b> (Swift Testing + XCUITest): the tests run.</li>
         </ul>
-        <p class="muted" style="font-size:.88rem">The full step-by-step (including the gotchas · build-number collisions, the GitHub grant loop, package permissions) is in the <b>Runbook</b> tab under "Ship a build to TestFlight".</p></div>
+        <p>All four passing is the moment a change is allowed to exist. If any one fails, the change is simply not done yet.</p></div>
 
-      <div class="kbsec"><h3><span class="kbnum">7</span> Keeping the cloud cheap</h3>
-        <p>Cloud Macs are billed at <b>10× the minutes</b> of ordinary runners, so the free monthly budget is small. Three things keep it in bounds:</p>
+      <div class="kbsec"><h3><span class="kbnum">3</span> The safety nets underneath</h3>
+        <p>Three guards keep the gate honest:</p>
         <ul class="kblist">
-          <li><b>Per app, per change.</b> Each app is its own repo, so the cloud only runs for the app you actually touched. Ten idle apps cost nothing.</li>
-          <li><b>Cheap checks per change, heavy checks on demand.</b> The light <code>make verify</code> runs when code changes; coverage and the canary run when you ask (or once a week), not on every commit.</li>
-          <li><b>Diagnose locally, push once.</b> Never debug by re-running the cloud over and over · reproduce on your Mac first. (This one is a standing rule for the agents.)</li>
+          <li><b>The push leash</b> (<code>guard-bash.sh</code> + the <code>.verify-pass</code> fingerprint): the automated helper cannot send code to GitHub unless the gate passed on exactly that code. The leash applies only to code edited and pushed by AI, never to a person at the keyboard.</li>
+          <li><b>The canary</b> (<code>scripts/gate-canary.sh</code>): every so often a test is deliberately broken to confirm the gate still catches it. A gate that cannot fail is worthless, so it is proven, on purpose.</li>
+          <li><b>No surprises from time or chance</b> (an injected <code>Now</code> clock + <code>SeededRandomNumberGenerator</code>): tests run on a fixed clock and fixed dice, so a test never passes one day and fails the next for no reason.</li>
         </ul></div>
 
-      <div class="kbsec"><h3>The whole picture: layers, not one wall</h3>
+      <div class="kbsec"><h3><span class="kbnum">4</span> The deeper checks, run on demand</h3>
+        <p>Beyond the quick gate sit heavier checks, each on its own, run when the relevant area changes:</p>
         <ul class="kblist">
-          <li><b>Layer 1 · your Mac</b> · <code>make verify</code> + the finish gate. Instant, free, catches almost everything before code leaves your laptop.</li>
-          <li><b>Layer 2 · the leash</b> · unverified code cannot be pushed by an agent.</li>
-          <li><b>Layer 3 · the clean room</b> · a pristine double-check for environment bugs, plus "is coverage holding?" and "is the safety net even working?".</li>
-          <li><b>Then release</b> · a deliberate build-number bump ships to TestFlight.</li>
-        </ul>
-        <p>A real problem has to sneak past all three layers. That is the whole point.</p></div>
+          <li><b>Concurrency</b> (<code>make tsan</code>, Thread Sanitizer): hunts for the bug where two things happen at once and collide.</li>
+          <li><b>Accessibility</b> (<code>make a11y</code>: a WCAG contrast test + <code>performAccessibilityAudit</code>): confirms text has enough contrast and the screen works with assistive tools. Text must also grow when the system font size is raised (Dynamic Type); that one is a firm rule for every app. These findings are a to-do list, not a blocked build (advisory vs. blocker).</li>
+          <li><b>Design snapshots</b> (<code>make snapshot</code>, <code>ImageRenderer</code> pixel checks): confirm the colours and components still match how they were defined, so nothing quietly drifts to grey.</li>
+          <li><b>Deep correctness</b> (property tests + API contract tests): extra tests that hammer the important logic across many combinations, plus a check that any API still answers in the shape the app expects.</li>
+          <li><b>Speed</b> (<code>make perf</code>, <code>XCTest measure</code>): measures how fast the heavy paths run, so a slowdown shows as a trend.</li>
+        </ul></div>
+
+      <div class="kbsec"><h3><span class="kbnum">5</span> Why almost nothing runs in the cloud automatically</h3>
+        <p>Quick tests can run locally and frequently. The cloud (Xcode Cloud) has one job: a clean-room second opinion, building the app from scratch the way a brand-new computer would, to catch the "worked on one machine" surprises. It runs only when triggered by an increase in build number in the config file (<code>CURRENT_PROJECT_VERSION</code> in <code>Config/Version.xcconfig</code>).</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">6</span> Shipping to testers</h3>
+        <p>Changing one number, the build number (<code>CURRENT_PROJECT_VERSION</code> in <code>Config/Version.xcconfig</code>), and pushing is the only thing that triggers a release. That, and nothing else, tells the cloud to build the app, sign it, and hand it to TestFlight (Xcode Cloud archive plus TestFlight deploy). Ordinary commits never ship. Shipping is a deliberate, one-number act, and not every app needs it: it is opt-in (marked by <code>release.yml</code>).</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">7</span> How every app is born with all of this</h3>
+        <p>None of this is set up by hand per app. One command (<code>newapp</code>, from the factory template) stamps out a new app that already carries the gate, the safety nets, the deeper checks, the dev-and-real split (separate DEV and PROD schemes, bundle ids, and CloudKit containers), and the written-down rules (the ADRs). Every app inherits the whole machine on day one, so quality is never bolted on later during a scary audit. The <b>Compliance</b> tab shows, at a glance, how far along each app is across all of it.</p></div>
     </div>
   </div>
 
@@ -1121,7 +1107,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v38';
+const TIARA_VERSION = 'board-v39';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
