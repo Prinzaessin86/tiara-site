@@ -194,6 +194,7 @@
   .cpill.cnone{background:#f1eef6;color:#8a7a98;}
   .cpill.cna{background:#eef4fb;color:#6a86a8;}
   .cnote{font-size:.8rem;color:#6a86a8;line-height:1.5;font-style:italic;}
+  .ccov{font-size:.68rem;font-weight:800;color:#2f7a52;background:#dff5ea;padding:3px 8px;border-radius:9px;white-space:nowrap;}
   .crow{background:#fff;border-radius:16px;margin-bottom:10px;box-shadow:0 2px 10px rgba(240,111,164,.08);overflow:hidden;}
   .crow>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
   .crow>summary::-webkit-details-marker{display:none;}
@@ -1007,10 +1008,13 @@ function renderCompliance(){
             const mk=ch.unknown?'?':(ch.pass?'✓':'✗');
             return `<div class="cchk ${st}"><span class="cmk">${mk}</span>${esc(ch.label)}</div>`;
           }).join('');
-      return `<div class="ccol"><div class="ccolh">${dm[1]} ${compPill(dim.status)}</div>${inner}</div>`;
+      const covLine=(dm[0]==='tests'&&dim.coverage!=null)?`<span class="ccov" title="line coverage ratchet floor (a guaranteed lower bound)">${dim.coverage}% cov</span>`:'';
+      return `<div class="ccol"><div class="ccolh">${dm[1]} ${compPill(dim.status)} ${covLine}</div>${inner}</div>`;
     }).join('');
     const tag=a.modern?'':'<span class="clegacy">legacy</span>';
-    return `<details class="crow" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${esc(a.name)} ${tag}</span><span class="cpills">${pills}</span></summary><div class="cbody">${body}</div></details>`;
+    const cov=(d.tests&&d.tests.coverage!=null)?d.tests.coverage:null;
+    const covChip=cov!=null?`<span class="ccov" title="line coverage ratchet floor (make coverage); a guaranteed lower bound">${cov}% cov</span>`:'';
+    return `<details class="crow" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${esc(a.name)} ${tag}</span><span class="cpills">${covChip}${pills}</span></summary><div class="cbody">${body}</div></details>`;
   }).join('');
   let when=''; try{ when=c.generatedAt?new Date(c.generatedAt).toLocaleString():''; }catch(e){}
   const note=c.keyed?'':' · no Xcode Cloud key present, so CI/CD cloud checks show as unknown';
@@ -1107,7 +1111,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v39';
+const TIARA_VERSION = 'board-v40';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}

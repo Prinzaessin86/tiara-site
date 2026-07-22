@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T15:31:53.419Z",
+  "generatedAt": "2026-07-22T18:14:23.831Z",
   "keyed": true,
   "apps": [
     {
@@ -154,7 +154,8 @@
               "label": "WP8 perf lane + suite",
               "pass": false
             }
-          ]
+          ],
+          "coverage": null
         }
       }
     },
@@ -310,7 +311,8 @@
               "label": "WP8 perf lane + suite",
               "pass": false
             }
-          ]
+          ],
+          "coverage": null
         }
       }
     },
@@ -466,7 +468,8 @@
               "label": "WP8 perf lane + suite",
               "pass": false
             }
-          ]
+          ],
+          "coverage": null
         }
       }
     },
@@ -622,7 +625,8 @@
               "label": "WP8 perf lane + suite",
               "pass": false
             }
-          ]
+          ],
+          "coverage": null
         }
       }
     },
@@ -777,7 +781,8 @@
               "label": "WP8 perf lane + suite",
               "pass": true
             }
-          ]
+          ],
+          "coverage": 20
         }
       }
     },
@@ -931,7 +936,8 @@
               "label": "WP8 perf lane + suite",
               "pass": false
             }
-          ]
+          ],
+          "coverage": null
         }
       }
     },
@@ -1050,7 +1056,7 @@
             {
               "id": "gate_green",
               "label": "make verify green on current tree",
-              "pass": false
+              "pass": true
             },
             {
               "id": "coverage_floor",
@@ -1087,7 +1093,8 @@
               "label": "WP8 perf lane + suite",
               "pass": false
             }
-          ]
+          ],
+          "coverage": 18
         }
       }
     },
@@ -1243,7 +1250,8 @@
               "label": "WP8 perf lane + suite",
               "pass": false
             }
-          ]
+          ],
+          "coverage": null
         }
       }
     },
@@ -1397,7 +1405,8 @@
               "label": "WP8 perf lane + suite",
               "pass": false
             }
-          ]
+          ],
+          "coverage": null
         }
       }
     },
@@ -1553,7 +1562,8 @@
               "label": "WP8 perf lane + suite",
               "pass": false
             }
-          ]
+          ],
+          "coverage": 81
         }
       }
     }
