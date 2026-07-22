@@ -195,6 +195,11 @@
   .cpill.cna{background:#eef4fb;color:#6a86a8;}
   .cnote{font-size:.8rem;color:#6a86a8;line-height:1.5;font-style:italic;}
   .ccov{font-size:.68rem;font-weight:800;color:#2f7a52;background:#dff5ea;padding:3px 8px;border-radius:9px;white-space:nowrap;}
+  .chide{border:none;background:none;color:#c9b8d6;font-size:1.15rem;line-height:1;cursor:pointer;padding:2px 6px;flex:0 0 auto;}
+  .chide:hover{color:#c0396a;}
+  .crow.chidden{opacity:.5;}
+  .chidetoggle{border:none;background:#f1eef6;color:#8a7a98;font-size:.72rem;font-weight:800;padding:3px 10px;border-radius:9px;cursor:pointer;}
+  .chidetoggle:hover{background:#e7e0f0;color:#6a5a82;}
   .crow{background:#fff;border-radius:16px;margin-bottom:10px;box-shadow:0 2px 10px rgba(240,111,164,.08);overflow:hidden;}
   .crow>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
   .crow>summary::-webkit-details-marker{display:none;}
@@ -970,6 +975,18 @@ function saveCompOrder(){
   _compOrder=order; try{ localStorage.setItem('tiaraCompOrder', JSON.stringify(order)); }catch(e){}
   setStatus('compliance order saved');
 }
+// Per-app exclude: a view filter only (no data touched). Hidden apps drop off the Compliance tab
+// until "show hidden" is toggled; the set persists in localStorage.
+let _compHidden = new Set();
+try{ _compHidden = new Set(JSON.parse(localStorage.getItem('tiaraCompHidden')||'[]')); }catch(e){}
+let _compShowHidden = false;
+function saveCompHidden(){ try{ localStorage.setItem('tiaraCompHidden', JSON.stringify([..._compHidden])); }catch(e){} }
+function toggleCompHidden(name){
+  if(_compHidden.has(name)){ _compHidden.delete(name); setStatus('“'+name+'” shown on the compliance board'); }
+  else { _compHidden.add(name); setStatus('“'+name+'” hidden from the compliance board'); }
+  saveCompHidden(); renderCompliance(); initSortables();
+}
+function toggleCompShowHidden(){ _compShowHidden=!_compShowHidden; renderCompliance(); initSortables(); }
 async function loadCompliance(){
   try{
     const r = await fetch('compliance.json?t='+Date.now()); if(!r.ok) return;   // absent before first scan — fine
@@ -994,8 +1011,11 @@ function renderCompliance(){
     if(ia<0&&ib<0) return a.name.localeCompare(b.name);
     if(ia<0) return 1; if(ib<0) return -1; return ia-ib;
   });
-  const rows=ordered.map(a=>{
+  const hiddenCount=ordered.filter(a=>_compHidden.has(a.name)).length;
+  const visible=ordered.filter(a=>_compShowHidden || !_compHidden.has(a.name));
+  const rows=visible.map(a=>{
     const d=a.dimensions||{};
+    const isHidden=_compHidden.has(a.name);
     const pills=dims.map(dm=>compPill((d[dm[0]]||{}).status)).join('');
     const body=dims.map(dm=>{
       const dim=d[dm[0]]||{checks:[]};
@@ -1014,13 +1034,14 @@ function renderCompliance(){
     const tag=a.modern?'':'<span class="clegacy">legacy</span>';
     const cov=(d.tests&&d.tests.coverage!=null)?d.tests.coverage:null;
     const covChip=cov!=null?`<span class="ccov" title="line coverage ratchet floor (make coverage); a guaranteed lower bound">${cov}% cov</span>`:'';
-    return `<details class="crow" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${esc(a.name)} ${tag}</span><span class="cpills">${covChip}${pills}</span></summary><div class="cbody">${body}</div></details>`;
+    const hideBtn=`<button class="chide" onclick="event.stopPropagation();toggleCompHidden('${esc(a.name)}')" title="${isHidden?'show on the compliance board':'hide from the compliance board'}">${isHidden?'＋':'×'}</button>`;
+    return `<details class="crow${isHidden?' chidden':''}" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${esc(a.name)} ${tag}</span><span class="cpills">${covChip}${pills}</span>${hideBtn}</summary><div class="cbody">${body}</div></details>`;
   }).join('');
   let when=''; try{ when=c.generatedAt?new Date(c.generatedAt).toLocaleString():''; }catch(e){}
   const note=c.keyed?'':' · no Xcode Cloud key present, so CI/CD cloud checks show as unknown';
   el.innerHTML=`<div class="phead">Compliance · where each product stands, auto-checked</div>
     <div class="cmeta">Snapshot ${esc(when)}${esc(note)}. Every status is the rollup of the concrete checks below; open a product to see exactly what is missing. Regenerate with <code>node scripts/compliance.mjs</code> in _bootstrap.</div>
-    <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place &nbsp; ${compPill('na')} optional, not set up (cloud CI or TestFlight)</div>
+    <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place &nbsp; ${compPill('na')} optional, not set up (cloud CI or TestFlight) ${hiddenCount?`&nbsp; <button class="chidetoggle" onclick="toggleCompShowHidden()">${_compShowHidden?'hide':'show'} ${hiddenCount} hidden</button>`:''}</div>
     <div id="complist">${rows}</div>`;
 }
 
@@ -1111,7 +1132,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v41';
+const TIARA_VERSION = 'board-v42';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
