@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T15:07:09.057Z",
+  "generatedAt": "2026-07-22T15:31:53.419Z",
   "keyed": true,
   "apps": [
     {
@@ -52,7 +52,43 @@
             }
           ]
         },
-        "cicd": {
+        "ci": {
+          "status": "na",
+          "checks": [
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_workflow",
+              "label": "a CI / test workflow",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
+              "pass": false
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ],
+          "optIn": false,
+          "note": "Cloud CI not set up (optional: local make verify is the gate). Add an Xcode Cloud test workflow for clean-room CI."
+        },
+        "release": {
           "status": "na",
           "checks": [
             {
@@ -66,31 +102,8 @@
               "pass": false
             },
             {
-              "id": "ci_post_clone",
-              "label": "ci_scripts/ci_post_clone.sh",
-              "pass": false
-            },
-            {
-              "id": "product",
-              "label": "Xcode Cloud product exists",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "not_tangled",
-              "label": "product's repo matches this app",
-              "pass": false,
-              "unknown": true
-            },
-            {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "last_build_green",
-              "label": "last cloud build succeeded",
               "pass": false,
               "unknown": true
             }
@@ -195,7 +208,43 @@
             }
           ]
         },
-        "cicd": {
+        "ci": {
+          "status": "na",
+          "checks": [
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_workflow",
+              "label": "a CI / test workflow",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
+              "pass": false
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ],
+          "optIn": false,
+          "note": "Cloud CI not set up (optional: local make verify is the gate). Add an Xcode Cloud test workflow for clean-room CI."
+        },
+        "release": {
           "status": "na",
           "checks": [
             {
@@ -209,31 +258,8 @@
               "pass": false
             },
             {
-              "id": "ci_post_clone",
-              "label": "ci_scripts/ci_post_clone.sh",
-              "pass": false
-            },
-            {
-              "id": "product",
-              "label": "Xcode Cloud product exists",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "not_tangled",
-              "label": "product's repo matches this app",
-              "pass": false,
-              "unknown": true
-            },
-            {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "last_build_green",
-              "label": "last cloud build succeeded",
               "pass": false,
               "unknown": true
             }
@@ -338,7 +364,43 @@
             }
           ]
         },
-        "cicd": {
+        "ci": {
+          "status": "na",
+          "checks": [
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_workflow",
+              "label": "a CI / test workflow",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
+              "pass": false
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ],
+          "optIn": false,
+          "note": "Cloud CI not set up (optional: local make verify is the gate). Add an Xcode Cloud test workflow for clean-room CI."
+        },
+        "release": {
           "status": "na",
           "checks": [
             {
@@ -352,31 +414,8 @@
               "pass": false
             },
             {
-              "id": "ci_post_clone",
-              "label": "ci_scripts/ci_post_clone.sh",
-              "pass": false
-            },
-            {
-              "id": "product",
-              "label": "Xcode Cloud product exists",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "not_tangled",
-              "label": "product's repo matches this app",
-              "pass": false,
-              "unknown": true
-            },
-            {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "last_build_green",
-              "label": "last cloud build succeeded",
               "pass": false,
               "unknown": true
             }
@@ -481,7 +520,43 @@
             }
           ]
         },
-        "cicd": {
+        "ci": {
+          "status": "na",
+          "checks": [
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_workflow",
+              "label": "a CI / test workflow",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
+              "pass": false
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ],
+          "optIn": false,
+          "note": "Cloud CI not set up (optional: local make verify is the gate). Add an Xcode Cloud test workflow for clean-room CI."
+        },
+        "release": {
           "status": "na",
           "checks": [
             {
@@ -495,31 +570,8 @@
               "pass": false
             },
             {
-              "id": "ci_post_clone",
-              "label": "ci_scripts/ci_post_clone.sh",
-              "pass": false
-            },
-            {
-              "id": "product",
-              "label": "Xcode Cloud product exists",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "not_tangled",
-              "label": "product's repo matches this app",
-              "pass": false,
-              "unknown": true
-            },
-            {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "last_build_green",
-              "label": "last cloud build succeeded",
               "pass": false,
               "unknown": true
             }
@@ -624,7 +676,42 @@
             }
           ]
         },
-        "cicd": {
+        "ci": {
+          "status": "ok",
+          "checks": [
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "ci_workflow",
+              "label": "a CI / test workflow",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
+              "pass": true
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": true,
+              "unknown": false
+            }
+          ],
+          "optIn": true
+        },
+        "release": {
           "status": "na",
           "checks": [
             {
@@ -638,32 +725,9 @@
               "pass": false
             },
             {
-              "id": "ci_post_clone",
-              "label": "ci_scripts/ci_post_clone.sh",
-              "pass": true
-            },
-            {
-              "id": "product",
-              "label": "Xcode Cloud product exists",
-              "pass": true,
-              "unknown": false
-            },
-            {
-              "id": "not_tangled",
-              "label": "product's repo matches this app",
-              "pass": true,
-              "unknown": false
-            },
-            {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
               "pass": false,
-              "unknown": false
-            },
-            {
-              "id": "last_build_green",
-              "label": "last cloud build succeeded",
-              "pass": true,
               "unknown": false
             }
           ],
@@ -671,12 +735,12 @@
           "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
-          "status": "ok",
+          "status": "partial",
           "checks": [
             {
               "id": "gate_green",
               "label": "make verify green on current tree",
-              "pass": true
+              "pass": false
             },
             {
               "id": "coverage_floor",
@@ -767,7 +831,42 @@
             }
           ]
         },
-        "cicd": {
+        "ci": {
+          "status": "partial",
+          "checks": [
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "ci_workflow",
+              "label": "a CI / test workflow",
+              "pass": false,
+              "unknown": false
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
+              "pass": true
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": true,
+              "unknown": false
+            }
+          ],
+          "optIn": true
+        },
+        "release": {
           "status": "ok",
           "checks": [
             {
@@ -781,31 +880,8 @@
               "pass": true
             },
             {
-              "id": "ci_post_clone",
-              "label": "ci_scripts/ci_post_clone.sh",
-              "pass": true
-            },
-            {
-              "id": "product",
-              "label": "Xcode Cloud product exists",
-              "pass": true,
-              "unknown": false
-            },
-            {
-              "id": "not_tangled",
-              "label": "product's repo matches this app",
-              "pass": true,
-              "unknown": false
-            },
-            {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
-              "pass": true,
-              "unknown": false
-            },
-            {
-              "id": "last_build_green",
-              "label": "last cloud build succeeded",
               "pass": true,
               "unknown": false
             }
@@ -909,7 +985,43 @@
             }
           ]
         },
-        "cicd": {
+        "ci": {
+          "status": "na",
+          "checks": [
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_workflow",
+              "label": "a CI / test workflow",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
+              "pass": false
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ],
+          "optIn": false,
+          "note": "Cloud CI not set up (optional: local make verify is the gate). Add an Xcode Cloud test workflow for clean-room CI."
+        },
+        "release": {
           "status": "na",
           "checks": [
             {
@@ -923,31 +1035,8 @@
               "pass": false
             },
             {
-              "id": "ci_post_clone",
-              "label": "ci_scripts/ci_post_clone.sh",
-              "pass": false
-            },
-            {
-              "id": "product",
-              "label": "Xcode Cloud product exists",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "not_tangled",
-              "label": "product's repo matches this app",
-              "pass": false,
-              "unknown": true
-            },
-            {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "last_build_green",
-              "label": "last cloud build succeeded",
               "pass": false,
               "unknown": true
             }
@@ -1052,7 +1141,43 @@
             }
           ]
         },
-        "cicd": {
+        "ci": {
+          "status": "na",
+          "checks": [
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_workflow",
+              "label": "a CI / test workflow",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
+              "pass": false
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ],
+          "optIn": false,
+          "note": "Cloud CI not set up (optional: local make verify is the gate). Add an Xcode Cloud test workflow for clean-room CI."
+        },
+        "release": {
           "status": "na",
           "checks": [
             {
@@ -1066,31 +1191,8 @@
               "pass": false
             },
             {
-              "id": "ci_post_clone",
-              "label": "ci_scripts/ci_post_clone.sh",
-              "pass": false
-            },
-            {
-              "id": "product",
-              "label": "Xcode Cloud product exists",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "not_tangled",
-              "label": "product's repo matches this app",
-              "pass": false,
-              "unknown": true
-            },
-            {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "last_build_green",
-              "label": "last cloud build succeeded",
               "pass": false,
               "unknown": true
             }
@@ -1195,8 +1297,43 @@
             }
           ]
         },
-        "cicd": {
+        "ci": {
           "status": "partial",
+          "checks": [
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "ci_workflow",
+              "label": "a CI / test workflow",
+              "pass": false,
+              "unknown": false
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
+              "pass": true
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": false
+            }
+          ],
+          "optIn": true
+        },
+        "release": {
+          "status": "ok",
           "checks": [
             {
               "id": "release_yml",
@@ -1209,32 +1346,9 @@
               "pass": true
             },
             {
-              "id": "ci_post_clone",
-              "label": "ci_scripts/ci_post_clone.sh",
-              "pass": true
-            },
-            {
-              "id": "product",
-              "label": "Xcode Cloud product exists",
-              "pass": true,
-              "unknown": false
-            },
-            {
-              "id": "not_tangled",
-              "label": "product's repo matches this app",
-              "pass": true,
-              "unknown": false
-            },
-            {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
               "pass": true,
-              "unknown": false
-            },
-            {
-              "id": "last_build_green",
-              "label": "last cloud build succeeded",
-              "pass": false,
               "unknown": false
             }
           ],
@@ -1337,7 +1451,43 @@
             }
           ]
         },
-        "cicd": {
+        "ci": {
+          "status": "na",
+          "checks": [
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_workflow",
+              "label": "a CI / test workflow",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
+              "pass": false
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ],
+          "optIn": false,
+          "note": "Cloud CI not set up (optional: local make verify is the gate). Add an Xcode Cloud test workflow for clean-room CI."
+        },
+        "release": {
           "status": "na",
           "checks": [
             {
@@ -1351,31 +1501,8 @@
               "pass": false
             },
             {
-              "id": "ci_post_clone",
-              "label": "ci_scripts/ci_post_clone.sh",
-              "pass": false
-            },
-            {
-              "id": "product",
-              "label": "Xcode Cloud product exists",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "not_tangled",
-              "label": "product's repo matches this app",
-              "pass": false,
-              "unknown": true
-            },
-            {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
-              "pass": false,
-              "unknown": true
-            },
-            {
-              "id": "last_build_green",
-              "label": "last cloud build succeeded",
               "pass": false,
               "unknown": true
             }

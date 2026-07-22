@@ -1000,7 +1000,7 @@ function renderCompliance(){
     el.innerHTML=`<div class="phead">Compliance · where each product stands</div><div class="muted">No snapshot yet. In <code>_bootstrap</code> run <code>. scripts/xcc.env &amp;&amp; node scripts/compliance.mjs</code>, then commit <code>compliance.json</code> here.</div>`;
     return;
   }
-  const dims=[['bootstrap','🏭 Bootstrap'],['cicd','☁️ CI/CD'],['tests','🧪 Tests']];
+  const dims=[['bootstrap','🏭 Bootstrap'],['ci','☁️ CI'],['release','🚀 Release'],['tests','🧪 Tests']];
   // apply the saved drag order (by product name); unknown/new apps fall to the end alphabetically
   const ordered=[...c.apps].sort((a,b)=>{
     const ia=_compOrder.indexOf(a.name), ib=_compOrder.indexOf(b.name);
@@ -1030,7 +1030,7 @@ function renderCompliance(){
   const note=c.keyed?'':' · no Xcode Cloud key present, so CI/CD cloud checks show as unknown';
   el.innerHTML=`<div class="phead">Compliance · where each product stands, auto-checked</div>
     <div class="cmeta">Snapshot ${esc(when)}${esc(note)}. Every status is the rollup of the concrete checks below; open a product to see exactly what is missing. Regenerate with <code>node scripts/compliance.mjs</code> in _bootstrap.</div>
-    <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place &nbsp; ${compPill('na')} optional, not enabled (e.g. TestFlight)</div>
+    <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place &nbsp; ${compPill('na')} optional, not set up (cloud CI or TestFlight)</div>
     <div id="complist">${rows}</div>`;
 }
 
@@ -1121,12 +1121,14 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v37';
+const TIARA_VERSION = 'board-v38';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
-  loadCompliance().then(()=>render());   // fetch the compliance snapshot (no token needed), then paint
+  // Fill ONLY the Compliance tab when its snapshot arrives; never call the full render() here,
+  // that rebuilds the board and would collapse any card the user had expanded.
+  loadCompliance().then(()=>{ try{ renderCompliance(); initSortables(); }catch(e){} });
   render();
   if(GH.token){
     HELPER.on=true; showOnboard(false);
