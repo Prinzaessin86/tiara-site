@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T14:49:19.512Z",
+  "generatedAt": "2026-07-22T15:07:09.057Z",
   "keyed": true,
   "apps": [
     {
@@ -53,7 +53,7 @@
           ]
         },
         "cicd": {
-          "status": "none",
+          "status": "na",
           "checks": [
             {
               "id": "release_yml",
@@ -94,7 +94,9 @@
               "pass": false,
               "unknown": true
             }
-          ]
+          ],
+          "optIn": false,
+          "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
           "status": "none",
@@ -194,7 +196,7 @@
           ]
         },
         "cicd": {
-          "status": "none",
+          "status": "na",
           "checks": [
             {
               "id": "release_yml",
@@ -235,7 +237,9 @@
               "pass": false,
               "unknown": true
             }
-          ]
+          ],
+          "optIn": false,
+          "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
           "status": "none",
@@ -335,7 +339,7 @@
           ]
         },
         "cicd": {
-          "status": "none",
+          "status": "na",
           "checks": [
             {
               "id": "release_yml",
@@ -376,7 +380,9 @@
               "pass": false,
               "unknown": true
             }
-          ]
+          ],
+          "optIn": false,
+          "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
           "status": "none",
@@ -476,7 +482,7 @@
           ]
         },
         "cicd": {
-          "status": "none",
+          "status": "na",
           "checks": [
             {
               "id": "release_yml",
@@ -517,7 +523,9 @@
               "pass": false,
               "unknown": true
             }
-          ]
+          ],
+          "optIn": false,
+          "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
           "status": "none",
@@ -617,7 +625,7 @@
           ]
         },
         "cicd": {
-          "status": "partial",
+          "status": "na",
           "checks": [
             {
               "id": "release_yml",
@@ -658,7 +666,9 @@
               "pass": true,
               "unknown": false
             }
-          ]
+          ],
+          "optIn": false,
+          "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
           "status": "ok",
@@ -799,7 +809,8 @@
               "pass": true,
               "unknown": false
             }
-          ]
+          ],
+          "optIn": true
         },
         "tests": {
           "status": "none",
@@ -899,7 +910,7 @@
           ]
         },
         "cicd": {
-          "status": "none",
+          "status": "na",
           "checks": [
             {
               "id": "release_yml",
@@ -940,7 +951,9 @@
               "pass": false,
               "unknown": true
             }
-          ]
+          ],
+          "optIn": false,
+          "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
           "status": "partial",
@@ -1040,7 +1053,7 @@
           ]
         },
         "cicd": {
-          "status": "none",
+          "status": "na",
           "checks": [
             {
               "id": "release_yml",
@@ -1081,7 +1094,9 @@
               "pass": false,
               "unknown": true
             }
-          ]
+          ],
+          "optIn": false,
+          "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
           "status": "none",
@@ -1222,7 +1237,8 @@
               "pass": false,
               "unknown": false
             }
-          ]
+          ],
+          "optIn": true
         },
         "tests": {
           "status": "none",
@@ -1322,7 +1338,7 @@
           ]
         },
         "cicd": {
-          "status": "none",
+          "status": "na",
           "checks": [
             {
               "id": "release_yml",
@@ -1363,7 +1379,9 @@
               "pass": false,
               "unknown": true
             }
-          ]
+          ],
+          "optIn": false,
+          "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
           "status": "partial",
