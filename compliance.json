@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T20:26:55.492Z",
+  "generatedAt": "2026-07-22T22:53:07.537Z",
   "keyed": true,
   "apps": [
     {
@@ -739,12 +739,12 @@
           "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
-          "status": "partial",
+          "status": "ok",
           "checks": [
             {
               "id": "gate_green",
               "label": "make verify green on current tree",
-              "pass": false
+              "pass": true
             },
             {
               "id": "coverage_floor",
@@ -1056,7 +1056,7 @@
             {
               "id": "gate_green",
               "label": "make verify green on current tree",
-              "pass": false
+              "pass": true
             },
             {
               "id": "coverage_floor",
@@ -1094,7 +1094,7 @@
               "pass": false
             }
           ],
-          "coverage": 78
+          "coverage": 79
         }
       }
     },
@@ -1525,7 +1525,7 @@
             {
               "id": "gate_green",
               "label": "make verify green on current tree",
-              "pass": false
+              "pass": true
             },
             {
               "id": "coverage_floor",
