@@ -80,9 +80,9 @@
   .appmove button:hover{color:var(--pink);}
   .appver{font-size:.66rem;font-weight:800;color:#2f9e6e;background:#e7f7ef;padding:2px 8px;border-radius:9px;flex-shrink:0;letter-spacing:.02em;}
   .appicon{width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;}
-  .tfbadge{font-size:.6rem;font-weight:800;color:#4a7ed6;background:#e6effb;padding:2px 8px;border-radius:9px;flex-shrink:0;letter-spacing:.02em;white-space:nowrap;}
-  .tfbadge.live{color:#2f6fd0;background:#dcebff;box-shadow:inset 0 0 0 1px #b9d4fb;}
-  .tfbadge.live.expired{color:#9a6a2f;background:#fbeedc;box-shadow:inset 0 0 0 1px #f0d3a8;}
+  .tfbadge{font-size:.76rem;font-weight:800;color:#245fb8;background:#dcebff;padding:4px 11px;border-radius:11px;flex-shrink:0;letter-spacing:.02em;white-space:nowrap;box-shadow:inset 0 0 0 1px #b9d4fb;}
+  .tfbadge.live{color:#1f5bc0;background:#cfe3ff;box-shadow:inset 0 0 0 1.5px #8fbcf5;}
+  .tfbadge.live.expired{color:#8a5e20;background:#fbeedc;box-shadow:inset 0 0 0 1.5px #eec98f;}
   /* SortableJS drag states — soft pastel, styled to match (not stock) */
   .tiara-ghost{opacity:.45;outline:2px dashed var(--pink);outline-offset:2px;border-radius:12px;background:#fdeef7;}
   .tiara-ghost *{visibility:hidden;}
@@ -939,7 +939,6 @@ function addApp(){
   setStatus(seed?('added '+n+' with '+count+' starter items from the runbook'):('added '+n));
 }
 
-function checkChip(on,label,title){ return `<span class="checkchip ${on?'on':'off'}" title="${esc(title)}">${on?'✓':'○'} ${label}</span>`; }
 // TestFlight badge: live build number when App Store Connect reports one (release-status.json),
 // else the plain "TestFlight-enabled" badge when a release.yml is committed, else nothing.
 function tfBadge(a){
@@ -951,15 +950,8 @@ function tfBadge(a){
   }
   return _testflight[a.id]?`<span class="tfbadge" title="TestFlight-enabled (release.yml committed)">✈ TestFlight</span>`:'';
 }
-// live project-health checkmarks, computed each load from the repo's project.yml (no cron): migrated → on the board;
-// bootstrap → project.yml committed; DEV·PROD → project.yml has a Dev Debug config + a Release config.
-function checkChips(a){
-  return `<span class="checks">`
-    + checkChip(!!boardFor(a),'migrated','on the GitHub Projects board')
-    + checkChip(!!_bootstrap[a.id],'bootstrap','factory-bootstrapped — project.yml is committed')
-    + checkChip(!!_devprod[a.id],'DEV·PROD','project.yml has a Dev Debug config + a Release config')
-    + `</span>`;
-}
+// Per-app "where it stands" (bootstrap, DEV/PROD, tests, CI/CD) now lives in the Compliance tab,
+// which checks it in far more detail; the old board checkChips were a coarse duplicate, removed.
 function pillStatus(a){
   const q=a.queue||[];
   if(!q.length) return a.status||'—';
@@ -1100,7 +1092,7 @@ function render(){
       <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="appmove"><button onclick="event.stopPropagation();moveApp('${a.id}',-1)" title="move up">▲</button><button onclick="event.stopPropagation();moveApp('${a.id}',1)" title="move down">▼</button></span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><span class="nm">${esc(a.name)}</span>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<button class="tftoggle${a.bundleId?' on':''}" title="${a.bundleId?'TestFlight badge on — click to change or turn off':'show a live TestFlight badge — pick which App Store Connect app this is'}" onclick="event.stopPropagation();tfToggle('${a.id}')">✈</button><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
-        ${(HELPER.on&&appOwnerRepo(a))?`<div class="actions">${checkChips(a)}${boardFor(a)?`<a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a>`:`<button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button>`}<button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull commit history</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
+        ${(HELPER.on&&appOwnerRepo(a))?`<div class="actions">${boardFor(a)?`<a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} Roadmap ↗</a>`:`<button class="runbtn" onclick="pullRoadmap('${a.id}')">⟲ pull from roadmap.md</button>`}<button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull commit history</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
         <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||'<div class="muted">nothing active 🎉</div>'}</div><div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><button onclick="addItem('${a.id}')">add</button></div></div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         <details class="lane s" data-key="scr:${a.id}" ${openState.has('scr:'+a.id)?'open':''}><summary>Scramble <span class="scnote">private — agents never read this</span></summary><div class="laneb">${srows}<div class="addbox"><input id="scr-${a.id}" placeholder="brain-dump, anything…" onkeydown="if(event.key==='Enter')addScramble('${a.id}')"><button onclick="addScramble('${a.id}')">jot</button></div></div></details>
@@ -1129,7 +1121,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v36';
+const TIARA_VERSION = 'board-v37';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
