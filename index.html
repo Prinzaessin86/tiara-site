@@ -159,6 +159,10 @@
   .prow .papp .em{font-size:1rem;flex-shrink:0;}
   .prow .pid{font-size:.7rem;font-weight:800;color:#fff;background:var(--purple);padding:1px 6px;border-radius:6px;flex-shrink:0;}
   .prow .pt{flex:1;font-size:.98rem;min-width:0;}
+  .prow a.pt{color:inherit;text-decoration:none;cursor:pointer;}
+  .prow a.pt:hover{color:var(--purple);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--pink);}
+  .prow span.pt.pttap{cursor:pointer;}
+  .prow span.pt.pttap:hover{color:var(--purple);}
   .hsubbar{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 15px;}
   .hsub{display:inline-flex;align-items:center;gap:6px;font-family:'Quicksand';font-weight:700;font-size:.8rem;border:1.5px solid var(--line);background:#fff;color:#6a5a82;border-radius:11px;padding:5px 12px;cursor:pointer;}
   .hsub:hover{border-color:var(--pink);}
@@ -948,7 +952,7 @@ function renderPortfolio(){
     const pm=PRIO_META[q.priority]||PRIO_META.med; const tm=TYPE_META[q.type]||TYPE_META.task;
     const icon=_icon[a.id]?`<img class="appicon" style="width:17px;height:17px" src="${_icon[a.id]}" alt="">`:`<span class="em">${esc(a.emoji||'🫧')}</span>`;
     const det=openState.has('item:'+q.id)?detailHtml(a,q,i,'p'):'';
-    return `<div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}<span class="pt">${esc(q.title||'')}</span><span class="priochip2" style="background:${pm.c}1a;color:${pm.c}" title="priority">${pm.t}</span><span class="typechip2" title="type">${tm.e} ${tm.t}</span>${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="togglePortDetail('${esc(q.id)}',this)" title="details & notes">${openState.has('item:'+q.id)?'▾':'▸'}</button></div><div class="pdslot" id="pds-${dsId(q.id)}">${det}</div>`;
+    return `<div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}${q.url?`<a class="pt" href="${q.url}" target="_blank" title="open issue #${q.issueNumber} on GitHub">${esc(q.title||'')}</a>`:`<span class="pt pttap" onclick="togglePortDetail('${esc(q.id)}',this.parentNode.querySelector('.dots'))" title="show details">${esc(q.title||'')}</span>`}<span class="priochip2" style="background:${pm.c}1a;color:${pm.c}" title="priority">${pm.t}</span><span class="typechip2" title="type">${tm.e} ${tm.t}</span>${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="togglePortDetail('${esc(q.id)}',this)" title="details & notes">${openState.has('item:'+q.id)?'▾':'▸'}</button></div><div class="pdslot" id="pds-${dsId(q.id)}">${det}</div>`;
   }).join('') : '<div class="muted">no open items — every board is clear 🎉</div>';
   el.innerHTML = `<div class="phead"><b>${total}</b> open item${total===1?'':'s'} across ${data.apps.length} project${data.apps.length===1?'':'s'} · ${auto?'highest priority first':'your project order'}</div>${toggle}${body}`;
 }
@@ -1016,7 +1020,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v32';
+const TIARA_VERSION = 'board-v33';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
