@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T18:14:23.831Z",
+  "generatedAt": "2026-07-22T20:26:55.492Z",
   "keyed": true,
   "apps": [
     {
@@ -782,7 +782,7 @@
               "pass": true
             }
           ],
-          "coverage": 20
+          "coverage": 82
         }
       }
     },
@@ -1015,7 +1015,7 @@
             {
               "id": "ci_post_clone",
               "label": "ci_scripts/ci_post_clone.sh (runner regenerates project)",
-              "pass": false
+              "pass": true
             },
             {
               "id": "last_build_green",
@@ -1056,7 +1056,7 @@
             {
               "id": "gate_green",
               "label": "make verify green on current tree",
-              "pass": true
+              "pass": false
             },
             {
               "id": "coverage_floor",
@@ -1094,7 +1094,7 @@
               "pass": false
             }
           ],
-          "coverage": 18
+          "coverage": 78
         }
       }
     },
@@ -1563,7 +1563,7 @@
               "pass": false
             }
           ],
-          "coverage": 81
+          "coverage": 80
         }
       }
     }
