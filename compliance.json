@@ -1,0 +1,1416 @@
+{
+  "generatedAt": "2026-07-22T14:49:19.512Z",
+  "keyed": true,
+  "apps": [
+    {
+      "name": "BloopPoop",
+      "repo": "prinzaessin86/blooppoop",
+      "modern": false,
+      "dimensions": {
+        "bootstrap": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "projectyml",
+              "label": "project.yml is the source of truth",
+              "pass": false
+            },
+            {
+              "id": "xcodeproj_ignored",
+              "label": ".xcodeproj gitignored",
+              "pass": false
+            },
+            {
+              "id": "no_secrets",
+              "label": "no secrets committed",
+              "pass": true
+            },
+            {
+              "id": "verify_gate",
+              "label": "make verify gate exists",
+              "pass": false
+            },
+            {
+              "id": "dev_scheme",
+              "label": "ADR 0007 DEV scheme \"BloopPoop DEV\"",
+              "pass": false
+            },
+            {
+              "id": "prod_scheme",
+              "label": "ADR 0007 PROD scheme \"BloopPoop\"",
+              "pass": false
+            },
+            {
+              "id": "bundle_split",
+              "label": "DEV/PROD bundle-id split (.dev)",
+              "pass": false
+            },
+            {
+              "id": "no_emdash",
+              "label": "no em dashes in Sources",
+              "pass": true
+            }
+          ]
+        },
+        "cicd": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "release_yml",
+              "label": "release.yml opt-in present",
+              "pass": false
+            },
+            {
+              "id": "version_xcconfig",
+              "label": "Config/Version.xcconfig trigger file",
+              "pass": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh",
+              "pass": false
+            },
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "release_workflow",
+              "label": "release workflow (archive + version-bump)",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ]
+        },
+        "tests": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "gate_green",
+              "label": "make verify green on current tree",
+              "pass": false
+            },
+            {
+              "id": "coverage_floor",
+              "label": "coverage floor set",
+              "pass": false
+            },
+            {
+              "id": "property_tests",
+              "label": "property tests present",
+              "pass": false
+            },
+            {
+              "id": "contract_tests",
+              "label": "API-contract test present",
+              "pass": false
+            },
+            {
+              "id": "wp4_tsan",
+              "label": "WP4 concurrency lane",
+              "pass": false
+            },
+            {
+              "id": "wp5_a11y",
+              "label": "WP5 accessibility lane + suites",
+              "pass": false
+            },
+            {
+              "id": "wp6_snapshot",
+              "label": "WP6 snapshot lane + suite",
+              "pass": false
+            },
+            {
+              "id": "wp8_perf",
+              "label": "WP8 perf lane + suite",
+              "pass": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Bubbles",
+      "repo": "prinzaessin86/bubbles",
+      "modern": true,
+      "dimensions": {
+        "bootstrap": {
+          "status": "partial",
+          "checks": [
+            {
+              "id": "projectyml",
+              "label": "project.yml is the source of truth",
+              "pass": true
+            },
+            {
+              "id": "xcodeproj_ignored",
+              "label": ".xcodeproj gitignored",
+              "pass": true
+            },
+            {
+              "id": "no_secrets",
+              "label": "no secrets committed",
+              "pass": true
+            },
+            {
+              "id": "verify_gate",
+              "label": "make verify gate exists",
+              "pass": false
+            },
+            {
+              "id": "dev_scheme",
+              "label": "ADR 0007 DEV scheme \"Bubbles DEV\"",
+              "pass": true
+            },
+            {
+              "id": "prod_scheme",
+              "label": "ADR 0007 PROD scheme \"Bubbles\"",
+              "pass": true
+            },
+            {
+              "id": "bundle_split",
+              "label": "DEV/PROD bundle-id split (.dev)",
+              "pass": true
+            },
+            {
+              "id": "no_emdash",
+              "label": "no em dashes in Sources",
+              "pass": false
+            }
+          ]
+        },
+        "cicd": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "release_yml",
+              "label": "release.yml opt-in present",
+              "pass": false
+            },
+            {
+              "id": "version_xcconfig",
+              "label": "Config/Version.xcconfig trigger file",
+              "pass": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh",
+              "pass": false
+            },
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "release_workflow",
+              "label": "release workflow (archive + version-bump)",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ]
+        },
+        "tests": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "gate_green",
+              "label": "make verify green on current tree",
+              "pass": false
+            },
+            {
+              "id": "coverage_floor",
+              "label": "coverage floor set",
+              "pass": false
+            },
+            {
+              "id": "property_tests",
+              "label": "property tests present",
+              "pass": false
+            },
+            {
+              "id": "contract_tests",
+              "label": "API-contract test present",
+              "pass": false
+            },
+            {
+              "id": "wp4_tsan",
+              "label": "WP4 concurrency lane",
+              "pass": false
+            },
+            {
+              "id": "wp5_a11y",
+              "label": "WP5 accessibility lane + suites",
+              "pass": false
+            },
+            {
+              "id": "wp6_snapshot",
+              "label": "WP6 snapshot lane + suite",
+              "pass": false
+            },
+            {
+              "id": "wp8_perf",
+              "label": "WP8 perf lane + suite",
+              "pass": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Dailylog",
+      "repo": "prinzaessin86/dailylog",
+      "modern": true,
+      "dimensions": {
+        "bootstrap": {
+          "status": "partial",
+          "checks": [
+            {
+              "id": "projectyml",
+              "label": "project.yml is the source of truth",
+              "pass": true
+            },
+            {
+              "id": "xcodeproj_ignored",
+              "label": ".xcodeproj gitignored",
+              "pass": false
+            },
+            {
+              "id": "no_secrets",
+              "label": "no secrets committed",
+              "pass": true
+            },
+            {
+              "id": "verify_gate",
+              "label": "make verify gate exists",
+              "pass": false
+            },
+            {
+              "id": "dev_scheme",
+              "label": "ADR 0007 DEV scheme \"Dailylog DEV\"",
+              "pass": false
+            },
+            {
+              "id": "prod_scheme",
+              "label": "ADR 0007 PROD scheme \"Dailylog\"",
+              "pass": true
+            },
+            {
+              "id": "bundle_split",
+              "label": "DEV/PROD bundle-id split (.dev)",
+              "pass": false
+            },
+            {
+              "id": "no_emdash",
+              "label": "no em dashes in Sources",
+              "pass": true
+            }
+          ]
+        },
+        "cicd": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "release_yml",
+              "label": "release.yml opt-in present",
+              "pass": false
+            },
+            {
+              "id": "version_xcconfig",
+              "label": "Config/Version.xcconfig trigger file",
+              "pass": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh",
+              "pass": false
+            },
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "release_workflow",
+              "label": "release workflow (archive + version-bump)",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ]
+        },
+        "tests": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "gate_green",
+              "label": "make verify green on current tree",
+              "pass": false
+            },
+            {
+              "id": "coverage_floor",
+              "label": "coverage floor set",
+              "pass": false
+            },
+            {
+              "id": "property_tests",
+              "label": "property tests present",
+              "pass": false
+            },
+            {
+              "id": "contract_tests",
+              "label": "API-contract test present",
+              "pass": false
+            },
+            {
+              "id": "wp4_tsan",
+              "label": "WP4 concurrency lane",
+              "pass": false
+            },
+            {
+              "id": "wp5_a11y",
+              "label": "WP5 accessibility lane + suites",
+              "pass": false
+            },
+            {
+              "id": "wp6_snapshot",
+              "label": "WP6 snapshot lane + suite",
+              "pass": false
+            },
+            {
+              "id": "wp8_perf",
+              "label": "WP8 perf lane + suite",
+              "pass": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Dressie",
+      "repo": "prinzaessin86/dressie",
+      "modern": false,
+      "dimensions": {
+        "bootstrap": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "projectyml",
+              "label": "project.yml is the source of truth",
+              "pass": false
+            },
+            {
+              "id": "xcodeproj_ignored",
+              "label": ".xcodeproj gitignored",
+              "pass": false
+            },
+            {
+              "id": "no_secrets",
+              "label": "no secrets committed",
+              "pass": true
+            },
+            {
+              "id": "verify_gate",
+              "label": "make verify gate exists",
+              "pass": false
+            },
+            {
+              "id": "dev_scheme",
+              "label": "ADR 0007 DEV scheme \"Dressie DEV\"",
+              "pass": false
+            },
+            {
+              "id": "prod_scheme",
+              "label": "ADR 0007 PROD scheme \"Dressie\"",
+              "pass": false
+            },
+            {
+              "id": "bundle_split",
+              "label": "DEV/PROD bundle-id split (.dev)",
+              "pass": false
+            },
+            {
+              "id": "no_emdash",
+              "label": "no em dashes in Sources",
+              "pass": true
+            }
+          ]
+        },
+        "cicd": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "release_yml",
+              "label": "release.yml opt-in present",
+              "pass": false
+            },
+            {
+              "id": "version_xcconfig",
+              "label": "Config/Version.xcconfig trigger file",
+              "pass": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh",
+              "pass": false
+            },
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "release_workflow",
+              "label": "release workflow (archive + version-bump)",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ]
+        },
+        "tests": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "gate_green",
+              "label": "make verify green on current tree",
+              "pass": false
+            },
+            {
+              "id": "coverage_floor",
+              "label": "coverage floor set",
+              "pass": false
+            },
+            {
+              "id": "property_tests",
+              "label": "property tests present",
+              "pass": false
+            },
+            {
+              "id": "contract_tests",
+              "label": "API-contract test present",
+              "pass": false
+            },
+            {
+              "id": "wp4_tsan",
+              "label": "WP4 concurrency lane",
+              "pass": false
+            },
+            {
+              "id": "wp5_a11y",
+              "label": "WP5 accessibility lane + suites",
+              "pass": false
+            },
+            {
+              "id": "wp6_snapshot",
+              "label": "WP6 snapshot lane + suite",
+              "pass": false
+            },
+            {
+              "id": "wp8_perf",
+              "label": "WP8 perf lane + suite",
+              "pass": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "PackMagic",
+      "repo": "prinzaessin86/packmagic",
+      "modern": true,
+      "dimensions": {
+        "bootstrap": {
+          "status": "ok",
+          "checks": [
+            {
+              "id": "projectyml",
+              "label": "project.yml is the source of truth",
+              "pass": true
+            },
+            {
+              "id": "xcodeproj_ignored",
+              "label": ".xcodeproj gitignored",
+              "pass": true
+            },
+            {
+              "id": "no_secrets",
+              "label": "no secrets committed",
+              "pass": true
+            },
+            {
+              "id": "verify_gate",
+              "label": "make verify gate exists",
+              "pass": true
+            },
+            {
+              "id": "dev_scheme",
+              "label": "ADR 0007 DEV scheme \"PackMagic DEV\"",
+              "pass": true
+            },
+            {
+              "id": "prod_scheme",
+              "label": "ADR 0007 PROD scheme \"PackMagic\"",
+              "pass": true
+            },
+            {
+              "id": "bundle_split",
+              "label": "DEV/PROD bundle-id split (.dev)",
+              "pass": true
+            },
+            {
+              "id": "no_emdash",
+              "label": "no em dashes in Sources",
+              "pass": true
+            }
+          ]
+        },
+        "cicd": {
+          "status": "partial",
+          "checks": [
+            {
+              "id": "release_yml",
+              "label": "release.yml opt-in present",
+              "pass": false
+            },
+            {
+              "id": "version_xcconfig",
+              "label": "Config/Version.xcconfig trigger file",
+              "pass": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh",
+              "pass": true
+            },
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "release_workflow",
+              "label": "release workflow (archive + version-bump)",
+              "pass": false,
+              "unknown": false
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": true,
+              "unknown": false
+            }
+          ]
+        },
+        "tests": {
+          "status": "ok",
+          "checks": [
+            {
+              "id": "gate_green",
+              "label": "make verify green on current tree",
+              "pass": true
+            },
+            {
+              "id": "coverage_floor",
+              "label": "coverage floor set",
+              "pass": true
+            },
+            {
+              "id": "property_tests",
+              "label": "property tests present",
+              "pass": true
+            },
+            {
+              "id": "contract_tests",
+              "label": "API-contract test present",
+              "pass": true
+            },
+            {
+              "id": "wp4_tsan",
+              "label": "WP4 concurrency lane",
+              "pass": true
+            },
+            {
+              "id": "wp5_a11y",
+              "label": "WP5 accessibility lane + suites",
+              "pass": true
+            },
+            {
+              "id": "wp6_snapshot",
+              "label": "WP6 snapshot lane + suite",
+              "pass": true
+            },
+            {
+              "id": "wp8_perf",
+              "label": "WP8 perf lane + suite",
+              "pass": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "PagingDrDaddy",
+      "repo": "prinzaessin86/pagingdrdaddy",
+      "modern": true,
+      "dimensions": {
+        "bootstrap": {
+          "status": "partial",
+          "checks": [
+            {
+              "id": "projectyml",
+              "label": "project.yml is the source of truth",
+              "pass": true
+            },
+            {
+              "id": "xcodeproj_ignored",
+              "label": ".xcodeproj gitignored",
+              "pass": true
+            },
+            {
+              "id": "no_secrets",
+              "label": "no secrets committed",
+              "pass": true
+            },
+            {
+              "id": "verify_gate",
+              "label": "make verify gate exists",
+              "pass": false
+            },
+            {
+              "id": "dev_scheme",
+              "label": "ADR 0007 DEV scheme \"PagingDrDaddy DEV\"",
+              "pass": false
+            },
+            {
+              "id": "prod_scheme",
+              "label": "ADR 0007 PROD scheme \"PagingDrDaddy\"",
+              "pass": true
+            },
+            {
+              "id": "bundle_split",
+              "label": "DEV/PROD bundle-id split (.dev)",
+              "pass": false
+            },
+            {
+              "id": "no_emdash",
+              "label": "no em dashes in Sources",
+              "pass": true
+            }
+          ]
+        },
+        "cicd": {
+          "status": "ok",
+          "checks": [
+            {
+              "id": "release_yml",
+              "label": "release.yml opt-in present",
+              "pass": true
+            },
+            {
+              "id": "version_xcconfig",
+              "label": "Config/Version.xcconfig trigger file",
+              "pass": true
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh",
+              "pass": true
+            },
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "release_workflow",
+              "label": "release workflow (archive + version-bump)",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": true,
+              "unknown": false
+            }
+          ]
+        },
+        "tests": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "gate_green",
+              "label": "make verify green on current tree",
+              "pass": false
+            },
+            {
+              "id": "coverage_floor",
+              "label": "coverage floor set",
+              "pass": false
+            },
+            {
+              "id": "property_tests",
+              "label": "property tests present",
+              "pass": false
+            },
+            {
+              "id": "contract_tests",
+              "label": "API-contract test present",
+              "pass": false
+            },
+            {
+              "id": "wp4_tsan",
+              "label": "WP4 concurrency lane",
+              "pass": false
+            },
+            {
+              "id": "wp5_a11y",
+              "label": "WP5 accessibility lane + suites",
+              "pass": false
+            },
+            {
+              "id": "wp6_snapshot",
+              "label": "WP6 snapshot lane + suite",
+              "pass": false
+            },
+            {
+              "id": "wp8_perf",
+              "label": "WP8 perf lane + suite",
+              "pass": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "PodaKnows",
+      "repo": "prinzaessin86/podaknows",
+      "modern": true,
+      "dimensions": {
+        "bootstrap": {
+          "status": "partial",
+          "checks": [
+            {
+              "id": "projectyml",
+              "label": "project.yml is the source of truth",
+              "pass": true
+            },
+            {
+              "id": "xcodeproj_ignored",
+              "label": ".xcodeproj gitignored",
+              "pass": true
+            },
+            {
+              "id": "no_secrets",
+              "label": "no secrets committed",
+              "pass": true
+            },
+            {
+              "id": "verify_gate",
+              "label": "make verify gate exists",
+              "pass": true
+            },
+            {
+              "id": "dev_scheme",
+              "label": "ADR 0007 DEV scheme \"PodaKnows DEV\"",
+              "pass": false
+            },
+            {
+              "id": "prod_scheme",
+              "label": "ADR 0007 PROD scheme \"PodaKnows\"",
+              "pass": true
+            },
+            {
+              "id": "bundle_split",
+              "label": "DEV/PROD bundle-id split (.dev)",
+              "pass": true
+            },
+            {
+              "id": "no_emdash",
+              "label": "no em dashes in Sources",
+              "pass": true
+            }
+          ]
+        },
+        "cicd": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "release_yml",
+              "label": "release.yml opt-in present",
+              "pass": false
+            },
+            {
+              "id": "version_xcconfig",
+              "label": "Config/Version.xcconfig trigger file",
+              "pass": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh",
+              "pass": false
+            },
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "release_workflow",
+              "label": "release workflow (archive + version-bump)",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ]
+        },
+        "tests": {
+          "status": "partial",
+          "checks": [
+            {
+              "id": "gate_green",
+              "label": "make verify green on current tree",
+              "pass": false
+            },
+            {
+              "id": "coverage_floor",
+              "label": "coverage floor set",
+              "pass": true
+            },
+            {
+              "id": "property_tests",
+              "label": "property tests present",
+              "pass": false
+            },
+            {
+              "id": "contract_tests",
+              "label": "API-contract test present",
+              "pass": false
+            },
+            {
+              "id": "wp4_tsan",
+              "label": "WP4 concurrency lane",
+              "pass": false
+            },
+            {
+              "id": "wp5_a11y",
+              "label": "WP5 accessibility lane + suites",
+              "pass": false
+            },
+            {
+              "id": "wp6_snapshot",
+              "label": "WP6 snapshot lane + suite",
+              "pass": false
+            },
+            {
+              "id": "wp8_perf",
+              "label": "WP8 perf lane + suite",
+              "pass": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "PodaProject",
+      "repo": "prinzaessin86/podaproject",
+      "modern": false,
+      "dimensions": {
+        "bootstrap": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "projectyml",
+              "label": "project.yml is the source of truth",
+              "pass": false
+            },
+            {
+              "id": "xcodeproj_ignored",
+              "label": ".xcodeproj gitignored",
+              "pass": false
+            },
+            {
+              "id": "no_secrets",
+              "label": "no secrets committed",
+              "pass": true
+            },
+            {
+              "id": "verify_gate",
+              "label": "make verify gate exists",
+              "pass": false
+            },
+            {
+              "id": "dev_scheme",
+              "label": "ADR 0007 DEV scheme \"PodaProject DEV\"",
+              "pass": false
+            },
+            {
+              "id": "prod_scheme",
+              "label": "ADR 0007 PROD scheme \"PodaProject\"",
+              "pass": false
+            },
+            {
+              "id": "bundle_split",
+              "label": "DEV/PROD bundle-id split (.dev)",
+              "pass": false
+            },
+            {
+              "id": "no_emdash",
+              "label": "no em dashes in Sources",
+              "pass": true
+            }
+          ]
+        },
+        "cicd": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "release_yml",
+              "label": "release.yml opt-in present",
+              "pass": false
+            },
+            {
+              "id": "version_xcconfig",
+              "label": "Config/Version.xcconfig trigger file",
+              "pass": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh",
+              "pass": false
+            },
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "release_workflow",
+              "label": "release workflow (archive + version-bump)",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ]
+        },
+        "tests": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "gate_green",
+              "label": "make verify green on current tree",
+              "pass": false
+            },
+            {
+              "id": "coverage_floor",
+              "label": "coverage floor set",
+              "pass": false
+            },
+            {
+              "id": "property_tests",
+              "label": "property tests present",
+              "pass": false
+            },
+            {
+              "id": "contract_tests",
+              "label": "API-contract test present",
+              "pass": false
+            },
+            {
+              "id": "wp4_tsan",
+              "label": "WP4 concurrency lane",
+              "pass": false
+            },
+            {
+              "id": "wp5_a11y",
+              "label": "WP5 accessibility lane + suites",
+              "pass": false
+            },
+            {
+              "id": "wp6_snapshot",
+              "label": "WP6 snapshot lane + suite",
+              "pass": false
+            },
+            {
+              "id": "wp8_perf",
+              "label": "WP8 perf lane + suite",
+              "pass": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "SparkleReef",
+      "repo": "prinzaessin86/sparklereef",
+      "modern": true,
+      "dimensions": {
+        "bootstrap": {
+          "status": "partial",
+          "checks": [
+            {
+              "id": "projectyml",
+              "label": "project.yml is the source of truth",
+              "pass": true
+            },
+            {
+              "id": "xcodeproj_ignored",
+              "label": ".xcodeproj gitignored",
+              "pass": true
+            },
+            {
+              "id": "no_secrets",
+              "label": "no secrets committed",
+              "pass": true
+            },
+            {
+              "id": "verify_gate",
+              "label": "make verify gate exists",
+              "pass": false
+            },
+            {
+              "id": "dev_scheme",
+              "label": "ADR 0007 DEV scheme \"SparkleReef DEV\"",
+              "pass": false
+            },
+            {
+              "id": "prod_scheme",
+              "label": "ADR 0007 PROD scheme \"SparkleReef\"",
+              "pass": true
+            },
+            {
+              "id": "bundle_split",
+              "label": "DEV/PROD bundle-id split (.dev)",
+              "pass": false
+            },
+            {
+              "id": "no_emdash",
+              "label": "no em dashes in Sources",
+              "pass": true
+            }
+          ]
+        },
+        "cicd": {
+          "status": "partial",
+          "checks": [
+            {
+              "id": "release_yml",
+              "label": "release.yml opt-in present",
+              "pass": true
+            },
+            {
+              "id": "version_xcconfig",
+              "label": "Config/Version.xcconfig trigger file",
+              "pass": true
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh",
+              "pass": true
+            },
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "release_workflow",
+              "label": "release workflow (archive + version-bump)",
+              "pass": true,
+              "unknown": false
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": false
+            }
+          ]
+        },
+        "tests": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "gate_green",
+              "label": "make verify green on current tree",
+              "pass": false
+            },
+            {
+              "id": "coverage_floor",
+              "label": "coverage floor set",
+              "pass": false
+            },
+            {
+              "id": "property_tests",
+              "label": "property tests present",
+              "pass": false
+            },
+            {
+              "id": "contract_tests",
+              "label": "API-contract test present",
+              "pass": false
+            },
+            {
+              "id": "wp4_tsan",
+              "label": "WP4 concurrency lane",
+              "pass": false
+            },
+            {
+              "id": "wp5_a11y",
+              "label": "WP5 accessibility lane + suites",
+              "pass": false
+            },
+            {
+              "id": "wp6_snapshot",
+              "label": "WP6 snapshot lane + suite",
+              "pass": false
+            },
+            {
+              "id": "wp8_perf",
+              "label": "WP8 perf lane + suite",
+              "pass": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "rainybow",
+      "repo": "prinzaessin86/rainybow",
+      "modern": false,
+      "dimensions": {
+        "bootstrap": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "projectyml",
+              "label": "project.yml is the source of truth",
+              "pass": false
+            },
+            {
+              "id": "xcodeproj_ignored",
+              "label": ".xcodeproj gitignored",
+              "pass": false
+            },
+            {
+              "id": "no_secrets",
+              "label": "no secrets committed",
+              "pass": true
+            },
+            {
+              "id": "verify_gate",
+              "label": "make verify gate exists",
+              "pass": true
+            },
+            {
+              "id": "dev_scheme",
+              "label": "ADR 0007 DEV scheme \"rainybow DEV\"",
+              "pass": false
+            },
+            {
+              "id": "prod_scheme",
+              "label": "ADR 0007 PROD scheme \"rainybow\"",
+              "pass": false
+            },
+            {
+              "id": "bundle_split",
+              "label": "DEV/PROD bundle-id split (.dev)",
+              "pass": false
+            },
+            {
+              "id": "no_emdash",
+              "label": "no em dashes in Sources",
+              "pass": true
+            }
+          ]
+        },
+        "cicd": {
+          "status": "none",
+          "checks": [
+            {
+              "id": "release_yml",
+              "label": "release.yml opt-in present",
+              "pass": false
+            },
+            {
+              "id": "version_xcconfig",
+              "label": "Config/Version.xcconfig trigger file",
+              "pass": false
+            },
+            {
+              "id": "ci_post_clone",
+              "label": "ci_scripts/ci_post_clone.sh",
+              "pass": false
+            },
+            {
+              "id": "product",
+              "label": "Xcode Cloud product exists",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "not_tangled",
+              "label": "product's repo matches this app",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "release_workflow",
+              "label": "release workflow (archive + version-bump)",
+              "pass": false,
+              "unknown": true
+            },
+            {
+              "id": "last_build_green",
+              "label": "last cloud build succeeded",
+              "pass": false,
+              "unknown": true
+            }
+          ]
+        },
+        "tests": {
+          "status": "partial",
+          "checks": [
+            {
+              "id": "gate_green",
+              "label": "make verify green on current tree",
+              "pass": false
+            },
+            {
+              "id": "coverage_floor",
+              "label": "coverage floor set",
+              "pass": true
+            },
+            {
+              "id": "property_tests",
+              "label": "property tests present",
+              "pass": false
+            },
+            {
+              "id": "contract_tests",
+              "label": "API-contract test present",
+              "pass": false
+            },
+            {
+              "id": "wp4_tsan",
+              "label": "WP4 concurrency lane",
+              "pass": false
+            },
+            {
+              "id": "wp5_a11y",
+              "label": "WP5 accessibility lane + suites",
+              "pass": false
+            },
+            {
+              "id": "wp6_snapshot",
+              "label": "WP6 snapshot lane + suite",
+              "pass": false
+            },
+            {
+              "id": "wp8_perf",
+              "label": "WP8 perf lane + suite",
+              "pass": false
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
