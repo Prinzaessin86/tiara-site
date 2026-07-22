@@ -192,12 +192,16 @@
   .cpill.cok{background:#dff5ea;color:#1f7a4d;}
   .cpill.cpart{background:#fdeecd;color:#9a6a12;}
   .cpill.cnone{background:#f1eef6;color:#8a7a98;}
+  .cpill.cna{background:#eef4fb;color:#6a86a8;}
+  .cnote{font-size:.8rem;color:#6a86a8;line-height:1.5;font-style:italic;}
   .crow{background:#fff;border-radius:16px;margin-bottom:10px;box-shadow:0 2px 10px rgba(240,111,164,.08);overflow:hidden;}
   .crow>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
   .crow>summary::-webkit-details-marker{display:none;}
+  .cgrip{cursor:grab;color:#c9b8d6;font-size:1rem;line-height:1;padding:2px 4px;user-select:none;touch-action:none;}
+  .cgrip:active{cursor:grabbing;}
   .cname{font-family:'Baloo 2';font-weight:700;font-size:1rem;color:#4a3a5e;display:flex;align-items:center;gap:8px;}
   .clegacy{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:#f1eef6;color:#8a7a98;padding:2px 7px;border-radius:8px;}
-  .cpills{display:flex;gap:6px;flex-wrap:wrap;}
+  .cpills{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;}
   .cbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;padding:4px 16px 18px;}
   .ccol{background:#faf7fc;border-radius:12px;padding:12px;}
   .ccolh{font-weight:800;font-size:.82rem;color:#4a3a5e;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -742,6 +746,8 @@ function initSortables(){
     document.querySelectorAll('.qlist').forEach(el=>{
       _sortables.push(Sortable.create(el,{ ...opts, handle:'.grip', draggable:'.qitem', onEnd:e=>onRowReorder(e,el.getAttribute('data-app')) }));
     });
+    const compEl=document.getElementById('complist');
+    if(compEl) _sortables.push(Sortable.create(compEl,{ ...opts, handle:'.cgrip', draggable:'.crow', onEnd:saveCompOrder }));
   }catch(e){ /* never let drag setup break render */ }
 }
 function onAppReorder(){
@@ -978,6 +984,13 @@ function detailHtml(a,q,i,scope){ scope=scope||''; const sm=STATUS_META[q.status
 // page (same origin, no token). Shape: { generatedAt, keyed, apps:[{name,repo,modern,
 // dimensions:{bootstrap|cicd|tests:{status:'ok|partial|none', checks:[{id,label,pass,unknown}]}}}] }.
 let _compliance = null;
+let _compOrder = [];
+try{ _compOrder = JSON.parse(localStorage.getItem('tiaraCompOrder')||'[]'); }catch(e){}
+function saveCompOrder(){
+  const order=[...document.querySelectorAll('#complist > details.crow')].map(d=>(d.getAttribute('data-key')||'').replace(/^comp:/,''));
+  _compOrder=order; try{ localStorage.setItem('tiaraCompOrder', JSON.stringify(order)); }catch(e){}
+  setStatus('compliance order saved');
+}
 async function loadCompliance(){
   try{
     const r = await fetch('compliance.json?t='+Date.now()); if(!r.ok) return;   // absent before first scan — fine
@@ -985,7 +998,7 @@ async function loadCompliance(){
   }catch(e){}   // never let a missing/bad file break load
 }
 function compPill(s){
-  const map={ok:['✓ done','cok'],partial:['◐ partial','cpart'],none:['○ not started','cnone']};
+  const map={ok:['✓ done','cok'],partial:['◐ partial','cpart'],none:['○ not started','cnone'],na:['– not needed','cna']};
   const v=map[s]||map.none; return `<span class="cpill ${v[1]}">${v[0]}</span>`;
 }
 function renderCompliance(){
@@ -996,27 +1009,37 @@ function renderCompliance(){
     return;
   }
   const dims=[['bootstrap','🏭 Bootstrap'],['cicd','☁️ CI/CD'],['tests','🧪 Tests']];
-  const rows=c.apps.map(a=>{
+  // apply the saved drag order (by product name); unknown/new apps fall to the end alphabetically
+  const ordered=[...c.apps].sort((a,b)=>{
+    const ia=_compOrder.indexOf(a.name), ib=_compOrder.indexOf(b.name);
+    if(ia<0&&ib<0) return a.name.localeCompare(b.name);
+    if(ia<0) return 1; if(ib<0) return -1; return ia-ib;
+  });
+  const rows=ordered.map(a=>{
     const d=a.dimensions||{};
     const pills=dims.map(dm=>compPill((d[dm[0]]||{}).status)).join('');
     const body=dims.map(dm=>{
       const dim=d[dm[0]]||{checks:[]};
-      const checks=(dim.checks||[]).map(ch=>{
-        const st=ch.unknown?'cunknown':(ch.pass?'cyes':'cno');
-        const mk=ch.unknown?'?':(ch.pass?'✓':'✗');
-        return `<div class="cchk ${st}"><span class="cmk">${mk}</span>${esc(ch.label)}</div>`;
-      }).join('');
-      return `<div class="ccol"><div class="ccolh">${dm[1]} ${compPill(dim.status)}</div>${checks}</div>`;
+      // Opt-out dimensions (e.g. an app that does not ship to TestFlight) show a friendly note,
+      // not a list of red crosses for things it never needed.
+      const inner = (dim.status==='na')
+        ? `<div class="cnote">${esc(dim.note||'Not applicable for this app.')}</div>`
+        : (dim.checks||[]).map(ch=>{
+            const st=ch.unknown?'cunknown':(ch.pass?'cyes':'cno');
+            const mk=ch.unknown?'?':(ch.pass?'✓':'✗');
+            return `<div class="cchk ${st}"><span class="cmk">${mk}</span>${esc(ch.label)}</div>`;
+          }).join('');
+      return `<div class="ccol"><div class="ccolh">${dm[1]} ${compPill(dim.status)}</div>${inner}</div>`;
     }).join('');
     const tag=a.modern?'':'<span class="clegacy">legacy</span>';
-    return `<details class="crow" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cname">${esc(a.name)} ${tag}</span><span class="cpills">${pills}</span></summary><div class="cbody">${body}</div></details>`;
+    return `<details class="crow" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${esc(a.name)} ${tag}</span><span class="cpills">${pills}</span></summary><div class="cbody">${body}</div></details>`;
   }).join('');
   let when=''; try{ when=c.generatedAt?new Date(c.generatedAt).toLocaleString():''; }catch(e){}
   const note=c.keyed?'':' · no Xcode Cloud key present, so CI/CD cloud checks show as unknown';
   el.innerHTML=`<div class="phead">Compliance · where each product stands, auto-checked</div>
     <div class="cmeta">Snapshot ${esc(when)}${esc(note)}. Every status is the rollup of the concrete checks below; open a product to see exactly what is missing. Regenerate with <code>node scripts/compliance.mjs</code> in _bootstrap.</div>
-    <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place</div>
-    ${rows}`;
+    <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place &nbsp; ${compPill('na')} optional, not enabled (e.g. TestFlight)</div>
+    <div id="complist">${rows}</div>`;
 }
 
 let portfolioSort = 'auto';
@@ -1106,7 +1129,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v35';
+const TIARA_VERSION = 'board-v36';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
