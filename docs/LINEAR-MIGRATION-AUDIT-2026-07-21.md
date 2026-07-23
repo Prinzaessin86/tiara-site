@@ -40,7 +40,7 @@ Verdicts: STILL OPEN · PARTIALLY DONE · ALREADY DONE · OBSOLETE.
 - **PRI-60: Per-app daily usage time limit** — **STILL OPEN.** No `applicationUsageThreshold`/`eventDidReachThreshold`; blocking is all-or-nothing. **Keep open.** Prototype `DeviceActivityEvent` thresholds.
 - **PRI-41: Intention gate (algebra + reason via App Intents)** — **STILL OPEN.** No App Intents/gate code. **Keep open** — large; start with one `AppIntent`.
 - **PRI-57: Verify meds taken with optional photo** — **STILL OPEN.** No photo/camera code; `DoseRecord` has no image. **Keep open.** Add `photoFilename` + PhotosPicker.
-- **PRI-56: GitHub Actions CI** — **STILL OPEN.** No `.github/` dir; tests exist but nothing runs them. **Keep open.** Add `ci.yml` running `xcodebuild test`.
+- **PRI-56: Xcode Cloud CI** — **STILL OPEN.** Tests exist but no cloud CI runs them. **Keep open.** Onboard Xcode Cloud with a test workflow on the DEV scheme (no GitHub Actions; CI/CD is Xcode Cloud only).
 - **PRI-39: Haptics/sound overhaul** — **STILL OPEN, deferred.** `FeedbackManager` unchanged; `[self]` asyncAfter captures still present (safe only because singleton). Gated behind v1.1. **Keep parked.**
 - **PRI-26: 10pm shield cross-midnight interval may misfire** — **STILL OPEN, verify.** `scheduleTenPmShield` builds the single `22→0` interval (not split). **Keep open.** Run the repro; split into two monitors only if it misfires.
 
