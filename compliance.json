@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T10:37:38.572Z",
+  "generatedAt": "2026-07-24T11:16:27.220Z",
   "keyed": true,
   "apps": [
     {
@@ -1080,7 +1080,7 @@
           "note": "TestFlight not enabled for this app (optional; run make testflight-init to opt in)."
         },
         "tests": {
-          "status": "partial",
+          "status": "ok",
           "checks": [
             {
               "id": "gate_green",
@@ -1095,12 +1095,12 @@
             {
               "id": "property_tests",
               "label": "property tests present",
-              "pass": false
+              "pass": true
             },
             {
               "id": "contract_tests",
               "label": "API-contract test present",
-              "pass": false
+              "pass": true
             },
             {
               "id": "wp4_tsan",
@@ -1110,7 +1110,7 @@
             {
               "id": "wp5_a11y",
               "label": "WP5 accessibility lane + suites",
-              "pass": false
+              "pass": true
             },
             {
               "id": "dynamic_type",
@@ -1120,12 +1120,12 @@
             {
               "id": "wp6_snapshot",
               "label": "WP6 snapshot lane + suite",
-              "pass": false
+              "pass": true
             },
             {
               "id": "wp8_perf",
               "label": "WP8 perf lane + suite",
-              "pass": false
+              "pass": true
             }
           ],
           "coverage": 79
