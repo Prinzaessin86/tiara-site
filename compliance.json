@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-22T22:57:07.175Z",
+  "generatedAt": "2026-07-24T10:37:38.572Z",
   "keyed": true,
   "apps": [
     {
@@ -977,7 +977,7 @@
       "modern": true,
       "dimensions": {
         "bootstrap": {
-          "status": "partial",
+          "status": "ok",
           "checks": [
             {
               "id": "projectyml",
@@ -1002,7 +1002,7 @@
             {
               "id": "dev_scheme",
               "label": "ADR 0007 DEV scheme \"PodaKnows DEV\"",
-              "pass": false
+              "pass": true
             },
             {
               "id": "prod_scheme",
@@ -1022,25 +1022,25 @@
           ]
         },
         "ci": {
-          "status": "na",
+          "status": "ok",
           "checks": [
             {
               "id": "product",
               "label": "Xcode Cloud product exists",
-              "pass": false,
-              "unknown": true
+              "pass": true,
+              "unknown": false
             },
             {
               "id": "ci_workflow",
               "label": "a CI / test workflow",
-              "pass": false,
-              "unknown": true
+              "pass": true,
+              "unknown": false
             },
             {
               "id": "not_tangled",
               "label": "product's repo matches this app",
-              "pass": false,
-              "unknown": true
+              "pass": true,
+              "unknown": false
             },
             {
               "id": "ci_post_clone",
@@ -1050,12 +1050,11 @@
             {
               "id": "last_build_green",
               "label": "last cloud build succeeded",
-              "pass": false,
-              "unknown": true
+              "pass": true,
+              "unknown": false
             }
           ],
-          "optIn": false,
-          "note": "Cloud CI not set up (optional: local make verify is the gate). Add an Xcode Cloud test workflow for clean-room CI."
+          "optIn": true
         },
         "release": {
           "status": "na",
@@ -1074,7 +1073,7 @@
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
               "pass": false,
-              "unknown": true
+              "unknown": false
             }
           ],
           "optIn": false,
@@ -1106,7 +1105,7 @@
             {
               "id": "wp4_tsan",
               "label": "WP4 concurrency lane",
-              "pass": false
+              "pass": true
             },
             {
               "id": "wp5_a11y",
@@ -1346,25 +1345,25 @@
           ]
         },
         "ci": {
-          "status": "partial",
+          "status": "na",
           "checks": [
             {
               "id": "product",
               "label": "Xcode Cloud product exists",
-              "pass": true,
-              "unknown": false
+              "pass": false,
+              "unknown": true
             },
             {
               "id": "ci_workflow",
               "label": "a CI / test workflow",
               "pass": false,
-              "unknown": false
+              "unknown": true
             },
             {
               "id": "not_tangled",
               "label": "product's repo matches this app",
-              "pass": true,
-              "unknown": false
+              "pass": false,
+              "unknown": true
             },
             {
               "id": "ci_post_clone",
@@ -1375,10 +1374,11 @@
               "id": "last_build_green",
               "label": "last cloud build succeeded",
               "pass": false,
-              "unknown": false
+              "unknown": true
             }
           ],
-          "optIn": true
+          "optIn": false,
+          "note": "Cloud CI not set up (optional: local make verify is the gate). Add an Xcode Cloud test workflow for clean-room CI."
         },
         "release": {
           "status": "ok",
@@ -1396,8 +1396,8 @@
             {
               "id": "release_workflow",
               "label": "release workflow (archive + version-bump)",
-              "pass": true,
-              "unknown": false
+              "pass": false,
+              "unknown": true
             }
           ],
           "optIn": true
