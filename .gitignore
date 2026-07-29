@@ -1,0 +1,11 @@
+# Private-tier data must never land in this PUBLIC repo.
+# tiara-data.json lives in the private `tiara` repo and is read via the
+# authenticated Contents API. Backups and exports of it are never committed here.
+backups/
+tiara-data*.json
+*.backup-*.json
+
+# Stale duplicates left by editors and one-off scripts
+*.pre-board-backup
+
+.DS_Store
