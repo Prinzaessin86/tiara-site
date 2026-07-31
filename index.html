@@ -254,7 +254,6 @@
   <div class="tabs" id="tabs">
     <div class="tab on" id="tab-board" onclick="showTab('board')">Board</div>
     <div class="tab" id="tab-portfolio" onclick="showTab('portfolio')">Portfolio</div>
-    <div class="tab" id="tab-history" onclick="showTab('history')">History</div>
     <div class="tab" id="tab-runbook" onclick="showTab('runbook')">Runbook</div>
     <div class="tab" id="tab-knowledge" onclick="showTab('knowledge')">Knowledge</div>
     <div class="tab" id="tab-compliance" onclick="showTab('compliance')">Compliance</div>
@@ -262,7 +261,6 @@
 
   <div id="board"></div>
   <div id="portfolio" style="display:none"></div>
-  <div id="history" style="display:none"></div>
   <div id="runbook" style="display:none"></div>
   <div id="compliance" style="display:none"></div>
   <div id="knowledge" style="display:none">
@@ -587,7 +585,7 @@ async function ghSave(){
     // on every load) gets written straight back into the file, which is exactly how 848 lines of
     // board tickets landed in tiara-data.json on 21 July and deleted 44 real items.
     const out=JSON.parse(JSON.stringify(data));
-    (out.apps||[]).forEach(a=>{ delete a.queue; delete a.inbox; delete a.scramble; delete a._jsonQueueBackup; delete a._boardTotal; delete a._boardLoaded; delete a._boardDropped; });
+    (out.apps||[]).forEach(a=>{ delete a.queue; delete a.inbox; delete a.scramble; delete a.done; delete a._jsonQueueBackup; delete a._boardTotal; delete a._boardLoaded; delete a._boardDropped; });
     const body=JSON.stringify(out,null,2);
     if(/"issueNumber"|"itemId"/.test(body)) throw new Error('refusing to save: a ticket got into tiara-data.json');
     GH.boardSha = await ghPutFile(GH.owner+'/'+GH.boardRepo,'tiara-data.json', body, GH.boardSha, 'Tiara board update');
@@ -597,14 +595,6 @@ async function ghSave(){
 }
 async function refreshBoard(){ if(!HELPER.on) return; try{ await loadFromGitHub(); render(); setStatus('🔄 refreshed from GitHub'); }catch(e){ setStatus('⚠ '+e.message); } }
 
-async function pullDone(appId){
-  const a=app(appId); const or=appOwnerRepo(a); if(!or){ setStatus('no repo set for '+a.name); return; }
-  try{ const r=await ghApi('/repos/'+or+'/commits?per_page=15'); if(!r.ok){ setStatus('⚠ GitHub '+r.status+' for '+a.name); return; }
-    const commits=await r.json(); a.done=a.done||[]; let added=0;
-    commits.forEach(c=>{ const s=((c.commit&&c.commit.message)||'').split('\n')[0]; if(s&&!a.done.some(e=>e===s)){ a.done.unshift(s); added++; } });
-    setStatus(added?('pulled '+added+' done from GitHub for '+a.name):('no new commits for '+a.name)); touch();
-  }catch(e){ setStatus('⚠ '+e.message); }
-}
 // Polling (D45): the board you have open, every 2 minutes. Every board, once an hour.
 // Tiara used to read only when you pressed Refresh, so two devices drifted apart in silence.
 let polling=false, lastFullPoll=0;
@@ -726,7 +716,7 @@ function exportFile(){
 function touch(){ captureOpen(); render(); if(HELPER.on) scheduleSave(); else setStatus('connect GitHub to save'); }
 
 /* ---------- tabs ---------- */
-const TABS=['board','portfolio','history','runbook','compliance','knowledge'];
+const TABS=['board','portfolio','runbook','compliance','knowledge'];
 function showTab(t){
   TABS.forEach(x=>{ const el=$('#'+x); if(el) el.style.display=(x===t)?'block':'none';
     const tb=document.getElementById('tab-'+x); if(tb) tb.classList.toggle('on',x===t); });
@@ -932,7 +922,7 @@ function addApp(){
   const e=prompt('An emoji for it?','🫧')||'🫧';
   const p=(prompt('Short tag prefix for its items? (e.g. RB)', n.replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase())||'ITEM').toUpperCase().replace(/[^A-Z0-9]/g,'');
   const repo=(prompt('Its GitHub repo as owner/name (or leave blank to add later):', (GH.owner||'')+'/'+n.replace(/\s+/g,''))||'').trim()||'(new)';
-  const a={id:n.toLowerCase().replace(/\s+/g,''),prefix:p,name:n,emoji:e,color:'sky',repo:repo,status:'Stage 0 · factory',done:[]};   // D39/D41/D44: no queue, no inbox, no scramble
+  const a={id:n.toLowerCase().replace(/\s+/g,''),prefix:p,name:n,emoji:e,color:'sky',repo:repo,status:'Stage 0 · factory'};   // D39/D41/D44/D46: metadata only
   data.apps.push(a);
   ensurePrefixes();
   const seed=confirm('Seed its queue with the factory checklist from the runbook?\n\n(install → run factory → Xcode project → canary → SPEC + roadmap → design system + icon → first slice — each step personalized with this app’s name)');
@@ -1079,20 +1069,6 @@ function renderPortfolio(){
   el.innerHTML = `<div class="phead"><b>${total}</b> open item${total===1?'':'s'} across ${data.apps.length} project${data.apps.length===1?'':'s'} · ${auto?'highest priority first':'your project order'}</div>${toggle}${body}`;
 }
 // History tab — shipped work pulled from each repo's git commits, kept per-project behind sub-tabs
-let historyApp = null;
-function setHistoryApp(id){ historyApp=id; renderHistory(); }
-function renderHistory(){
-  const el=$('#history'); if(!el) return;
-  const apps=data.apps.filter(a=>(a.done&&a.done.length));
-  if(!apps.length){ el.innerHTML=`<div class="phead">Shipped work · from each repo\'s git commits</div><div class="muted">No commit history pulled yet. On the Board, open a project and press <b>⟳ pull commit history</b> to populate this.</div>`; return; }
-  if(!historyApp || !apps.some(a=>a.id===historyApp)) historyApp=apps[0].id;   // keep the selection valid
-  const tabs=apps.map(a=>{ const on=a.id===historyApp;
-    const icon=_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:`<span>${esc(a.emoji||'🫧')}</span>`;
-    return `<button class="hsub ${on?'on':''}" onclick="setHistoryApp('${a.id}')">${icon}${esc(a.name)} <span class="hsc">${a.done.length}</span></button>`; }).join('');
-  const a=apps.find(x=>x.id===historyApp);
-  const list=(a.done||[]).map(c=>`<div class="hc">${esc(c)}</div>`).join('');
-  el.innerHTML = `<div class="phead">Shipped work · from each repo\'s git commits</div><div class="hsubbar">${tabs}</div><div class="hgroup">${list}</div>`;
-}
 function render(){
   const _scrollY = window.scrollY;   // keep the page from jumping when a re-render rebuilds the board
   migrate();
@@ -1107,12 +1083,11 @@ function render(){
     let activeRows='', doneRows='';
     a.queue.forEach((q,i)=>{ if(q.status==='done') doneRows+=rowHtml(q,i); else activeRows+=rowHtml(q,i); });
     const doneFold = doneRows ? `<details class="donefold" data-key="done:${a.id}" ${openState.has('done:'+a.id)?'open':''}><summary>✅ Done · ${dn}</summary>${doneRows}</details>` : '';
-    const drows = (a.done||[]).map(t=>`<div class="row done"><span class="t">${esc(t)}</span></div>`).join('') || '<div class="muted">—</div>';
     return `<details class="app" data-key="app:${a.id}" ${openState.has('app:'+a.id)?'open':''}>
       <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="appmove"><button onclick="event.stopPropagation();moveApp('${a.id}',-1)" title="move up">▲</button><button onclick="event.stopPropagation();moveApp('${a.id}',1)" title="move down">▼</button></span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><span class="nm">${esc(a.name)}</span>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<button class="tftoggle${a.bundleId?' on':''}" title="${a.bundleId?'TestFlight badge on — click to change or turn off':'show a live TestFlight badge — pick which App Store Connect app this is'}" onclick="event.stopPropagation();tfToggle('${a.id}')">✈</button><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
-        ${(HELPER.on&&appOwnerRepo(a)&&boardFor(a))?`<div class="actions"><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} board ↗</a><button class="runbtn" onclick="pullDone('${a.id}')">⟳ pull commit history</button><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
+        ${(HELPER.on&&appOwnerRepo(a)&&boardFor(a))?`<div class="actions"><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} board ↗</a><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
         <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||'<div class="muted">nothing active 🎉</div>'}</div><div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}">${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><button onclick="addItem('${a.id}')">add</button></div></div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         <div class="scnote repoedit" style="margin-top:8px" onclick="setRepo('${a.id}')" title="click to set the GitHub repo">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
@@ -1132,7 +1107,6 @@ function render(){
   }).join('');
   $('#runbook').innerHTML = r;
   renderPortfolio();
-  renderHistory();
   renderCompliance();
   initSortables();   // (re)wire drag-to-reorder onto the freshly-built board
   window.scrollTo(0, _scrollY);   // restore scroll so opening a note doesn't fling you elsewhere
@@ -1140,7 +1114,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v47';
+const TIARA_VERSION = 'board-v48';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
