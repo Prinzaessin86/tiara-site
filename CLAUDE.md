@@ -73,4 +73,4 @@ The board's truth is spread across this Mac, GitHub, the live page and the priva
 A background LaunchAgent (`com.princess.tiara.autosync`) also runs `--auto` every 30 min.
 
 ## Work tracking (canonical rule)
-Tiara tracks its **own** tasks the same way every app does: as **GitHub Issues** on its own Projects v2 board (`Tiara`, user project #11), linked to this repo. Never Linear (retired 2026-07-21), and never a file. **There is no `roadmap.md`, `inbox.md` or `scramble.md` here or in any repo.** Do not read them, do not write them, do not recreate them (D39, D40, D41, D44). App tickets live as GitHub Issues in each app's own repo, on that app's board. Full rule: user-level `~/.claude/CLAUDE.md`.
+Tiara tracks its **own** tasks the same way every app does: as **GitHub Issues** on its own Projects v2 board (`Tiara`, user project #11), linked to this repo. Never Linear (retired 2026-07-21), and never a file. **There is no queue file, inbox file or scratch file here or in any repo, and there must never be one.** (D39, D40, D41, D44). App tickets live as GitHub Issues in each app's own repo, on that app's board. Full rule: user-level `~/.claude/CLAUDE.md`.
