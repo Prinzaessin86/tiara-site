@@ -361,7 +361,7 @@ async function discoverIcons(){
       // (a 1024×1024 app icon is often >1MB — that's why SparkleReef's icon never appeared)
       const bf=await ghApi('/repos/'+or+'/git/blobs/'+pick.sha); if(!bf.ok) continue;
       const bj=await bf.json(); if(bj.content && bj.encoding==='base64') _icon[a.id]='data:image/png;base64,'+bj.content.replace(/\s+/g,'');
-    }catch(e){}
+    }catch(e){ noted('app icons',e); }
   }
 }
 function boardFor(a){ if(!a) return null; const or=appOwnerRepo(a); if(!or) return null; return GH_BOARDS[or.toLowerCase()] || _discovered[a.id] || null; }
@@ -373,7 +373,7 @@ async function loadTFStatus(){
     const j=await r.json(); const apps=(j&&j.apps)||{};
     Object.keys(_tfstatus).forEach(k=>delete _tfstatus[k]);
     for(const b of Object.keys(apps)) _tfstatus[b]=apps[b];
-  }catch(e){}   // never let a missing/bad status file break load
+  }catch(e){ noted('TestFlight status file',e,'stale'); }   // never let a missing/bad status file break load
 }
 // the live TestFlight build for an app, or null. Opt-in: only apps that declare a
 // `bundleId` in tiara-data.json show the badge (the field is both the allowlist flag and
@@ -408,7 +408,7 @@ async function discoverBoards(){
       const nodes=(rp.projectsV2&&rp.projectsV2.nodes)||[];
       const board=nodes.find(n=>(n.fields.nodes||[]).some(f=>f&&f.name&&f.name.toLowerCase()==='lane'));
       if(board) _discovered[a.id]={ login:owner, number:board.number, url:'https://github.com/users/'+owner+'/projects/'+board.number };
-    }catch(e){}
+    }catch(e){ noted('board and version discovery',e,'tell'); }
   }
 }
 const _boardMeta = {};              // appId -> { projectId, fields:{lane,priority,type}{id,opts{name:id}} }
@@ -444,14 +444,35 @@ async function resolveBoard(a){
 // load the board's items into a.queue (replaces the local queue for board apps)
 async function loadBoardItems(a){
   const cfg = boardFor(a); await resolveBoard(a);
-  const d = await ghGraphQL(`query($login:String!,$num:Int!){ user(login:$login){ projectV2(number:$num){ items(first:100){ nodes{
+  // PAGINATE. `items(first:100)` with no cursor is a hard cap, not a page size: a board with more
+  // than 100 items showed the first 100 and said nothing at all. One board was hiding 42 items,
+  // 14 of them open work. A bounded query states its bound and its total (D13), so this walks
+  // every page and then compares what it got against totalCount.
+  const raw = []; let after = null, pages = 0, totalCount = 0;
+  do {
+    const d = await ghGraphQL(`query($login:String!,$num:Int!,$after:String){ user(login:$login){ projectV2(number:$num){ items(first:100, after:$after){
+      totalCount
+      pageInfo{ hasNextPage endCursor }
+      nodes{
       id
       content{ ... on Issue { number title body state url comments{ totalCount } labels(first:20){ nodes{ name } } } }
       lane: fieldValueByName(name:"Lane"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
       priority: fieldValueByName(name:"Priority"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
       type: fieldValueByName(name:"Type"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
-    } } } } }`, { login:cfg.login, num:cfg.number });
-  const nodes = (d.user.projectV2.items.nodes||[]).filter(n=>n.content && n.content.number);
+    } } } } }`, { login:cfg.login, num:cfg.number, after });
+    const page = d.user.projectV2.items;
+    totalCount = page.totalCount;
+    raw.push(...(page.nodes||[]));
+    after = (page.pageInfo && page.pageInfo.hasNextPage) ? page.pageInfo.endCursor : null;
+    if(++pages > 25) throw new Error('board '+a.name+': pagination did not terminate after 25 pages');
+  } while(after);
+  // Items with no Issue content (drafts) are dropped. That was the SECOND silent truncation in
+  // this one function, so it is counted rather than assumed away.
+  const nodes = raw.filter(n=>n.content && n.content.number);
+  a._boardTotal = totalCount; a._boardLoaded = nodes.length; a._boardDropped = raw.length - nodes.length;
+  if(raw.length !== totalCount || a._boardDropped)
+    setStatus('\u26a0 '+a.name+': loaded '+raw.length+' of '+totalCount+' board items'
+      + (a._boardDropped ? ', '+a._boardDropped+' draft(s) with no issue not shown' : ''));
   const px = a.prefix || (a.name||'').replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase() || 'ITEM';
   a.queue = nodes.map(n=>{
     const c = n.content;
@@ -514,7 +535,7 @@ async function diagnose(id){ const a=app(id); let out='DIAGNOSE (runs the real c
   }catch(e){ out+='THREW: '+e.message; }
   alert(out); }
 
-function ghLoadCfg(){ try{ const c=JSON.parse(localStorage.getItem('tiaraGH')||'{}'); GH.token=c.token||''; GH.owner=c.owner||''; GH.boardRepo=c.boardRepo||'tiara'; }catch(e){} }
+function ghLoadCfg(){ try{ const c=JSON.parse(localStorage.getItem('tiaraGH')||'{}'); GH.token=c.token||''; GH.owner=c.owner||''; GH.boardRepo=c.boardRepo||'tiara'; }catch(e){ noted('saved GitHub config',e); } }
 function ghSaveCfg(){ localStorage.setItem('tiaraGH', JSON.stringify({token:GH.token,owner:GH.owner,boardRepo:GH.boardRepo})); }
 function ghDisconnect(){ localStorage.removeItem('tiaraGH'); GH.token=''; GH.owner=''; HELPER.on=false; showOnboard(true); render(); setStatus('disconnected'); }
 
@@ -534,7 +555,15 @@ async function ghPutFile(ownerRepo, path, text, sha, message){
   const body={ message: message||('Tiara update '+path), content:b64enc(text) };
   if(sha) body.sha=sha;
   const r=await ghApi('/repos/'+ownerRepo+'/contents/'+path, { method:'PUT', body:JSON.stringify(body) });
-  if(!r.ok){ const t=await r.text(); throw new Error('GitHub '+r.status+' writing '+path+': '+t.slice(0,120)); }
+  if(!r.ok){ const t=await r.text();
+    const e=new Error('GitHub '+r.status+' writing '+path+': '+t.slice(0,120));
+    // 409, and 422 for a stale sha, both mean SOMEONE ELSE CHANGED THIS FILE. Flagged separately
+    // from "some error" because the right response differs: a network blip may be retried, a
+    // conflict must not be, since retrying is last-write-wins and would silently discard the
+    // other device's change. That is the same data loss this fix exists to stop.
+    e.conflict = (r.status===409 || r.status===422);
+    e.status = r.status;
+    throw e; }
   const j=await r.json(); return j.content && j.content.sha;
 }
 function appOwnerRepo(a){ let r=(a.repo||'').trim(); if(!r||r.startsWith('(')) return null; if(r.startsWith('http')) r=r.replace(/^https?:\/\/github.com\//,'').replace(/\.git$/,''); r=r.split(/\s/)[0]; return r.includes('/')?r:(GH.owner+'/'+r); }
@@ -596,7 +625,7 @@ async function ghSave(){
     for(const a of data.apps){ if(boardFor(a)) continue;   // no roadmap.md mirror for board apps
       const or=appOwnerRepo(a); if(!or) continue;
       const md=roadmapRender(a); if(mdCache[a.id]===md) continue;
-      try{ const cur=await ghGetFile(or,'roadmap.md'); if(cur.missing||cur.text!==md){ await ghPutFile(or,'roadmap.md',md,cur.missing?null:cur.sha,'Tiara: update roadmap'); mirrored++; } mdCache[a.id]=md; mdSeen[a.id]=md; }catch(e){}
+      try{ const cur=await ghGetFile(or,'roadmap.md'); if(cur.missing||cur.text!==md){ await ghPutFile(or,'roadmap.md',md,cur.missing?null:cur.sha,'Tiara: update roadmap'); mirrored++; } mdCache[a.id]=md; mdSeen[a.id]=md; }catch(e){ noted('roadmap.md write',e,'tell'); }
     }
     setStatus('🟢 saved to GitHub'+(mirrored?(' · synced '+mirrored+' roadmap'+(mirrored>1?'s':'')):'')+' · '+new Date().toLocaleTimeString());
   }catch(e){ setStatus('save failed: '+e.message); }
@@ -633,11 +662,12 @@ async function pullRoadmap(appId){
 // Auto-sync: quietly check each connected repo's roadmap.md for changes (Claude Code's work)
 // and pull them in. Guarded so it never runs while you are mid-edit, and never clobbers on first sight.
 let syncing=false;
+let boardDirty=false;   // a board write failed, so nothing may claim it is saved
 async function autoSync(){
   if(!HELPER.on || saving || saveTimer || syncing) return;
   syncing=true;
   try{
-    let changed=0;
+    let changed=0; const failed=[];
     for(const a of data.apps){ if(boardFor(a)) continue;   // board apps refresh via the Refresh button, not roadmap.md
       const or=appOwnerRepo(a); if(!or) continue;
       let f; try{ f=await ghGetFile(or,'roadmap.md'); }catch(e){ continue; }
@@ -645,15 +675,41 @@ async function autoSync(){
       if(mdSeen[a.id]===undefined){ mdSeen[a.id]=f.text; continue; }   // first sight: baseline only, never clobber
       if(f.text!==mdSeen[a.id]){
         applyRoadmap(a,f.text); const md=roadmapRender(a);
-        try{ await ghPutFile(or,'roadmap.md',md,f.sha,'Tiara: sync / mark verify'); }catch(e){}
-        mdSeen[a.id]=md; mdCache[a.id]=md; changed++;
+        // Only record the write as done if it actually landed. The old code advanced mdSeen
+        // regardless, so a failed write was never retried and never mentioned again.
+        try{
+          await ghPutFile(or,'roadmap.md',md,f.sha,'Tiara: sync / mark verify');
+          mdSeen[a.id]=md; mdCache[a.id]=md; changed++;
+        }catch(e){ failed.push(a.name+': roadmap.md '+(e.conflict?'conflict':e.message)); }
       }
     }
-    if(changed){ render();
-      try{ GH.boardSha=await ghPutFile(GH.owner+'/'+GH.boardRepo,'tiara-data.json',JSON.stringify(data,null,2),GH.boardSha,'Tiara auto-sync'); }catch(e){}
-      setStatus('🔄 auto-synced '+changed+' app'+(changed>1?'s':'')+' from GitHub · '+new Date().toLocaleTimeString());
+    if(changed) render();
+    if(changed){
+      try{
+        GH.boardSha=await ghPutFile(GH.owner+'/'+GH.boardRepo,'tiara-data.json',JSON.stringify(data,null,2),GH.boardSha,'Tiara auto-sync');
+        boardDirty=false;
+      }catch(e){
+        // THE BUG. This write was wrapped in `catch(e){}` and the success message printed
+        // immediately after it, so a sync that saved nothing announced that it had synced.
+        // And because GH.boardSha only advances on success, one conflict left a stale sha and
+        // every later write 409'd forever, invisibly.
+        boardDirty = true;
+        setStatus(e.conflict
+          ? '\u26d4 board NOT saved: another device changed it. Press Refresh to take their version, then redo your change.'
+          : '\u26d4 board NOT saved: '+e.message);
+        syncing=false; return;
+      }
     }
-  }catch(e){}
+    if(failed.length){
+      setStatus('\u26d4 '+failed.length+' write'+(failed.length>1?'s':'')+' failed \u00b7 '+failed[0]+(failed.length>1?' (and others)':''));
+    } else if(changed){
+      setStatus('\ud83d\udd04 auto-synced '+changed+' app'+(changed>1?'s':'')+' from GitHub \u00b7 '+new Date().toLocaleTimeString());
+    }
+  }catch(e){
+    // The outer catch swallowed everything too, so a throw anywhere in the sync was
+    // indistinguishable from a quiet successful pass.
+    setStatus('\u26d4 auto-sync failed: '+(e && e.message ? e.message : e));
+  }
   syncing=false;
 }
 async function connectGitHub(){
@@ -676,6 +732,27 @@ async function connectGitHub(){
 }
 const $ = s => document.querySelector(s);
 const esc = s => (s+'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// ---------------------------------------------------------------------------------------------
+// noted(): a failure is never simply thrown away. `try{...}catch(e){}` discards the error, so a
+// failure and a success look identical from the outside. That is what let a board save fail while
+// the screen said "auto-synced", and it is why the reason SparkleReef's icon never appeared ended
+// up in a code COMMENT instead of anywhere you could see it.
+//
+// Silent and correct are different questions. Some of these must not interrupt you; none of them
+// should destroy the evidence. Three levels:
+//   'tell'  something you needed and did not get. Say so on screen.
+//   'stale' data on screen is now older than it looks. Flag it, do not interrupt.
+//   default record it in the console and carry on. Costs nothing, and it is there next time
+//           something behaves oddly.
+const _failures = [];                 // everything, in order, for when you need to look
+const _stale = {};                    // what is showing older data than it appears to
+function noted(where, e, level){
+  const msg = (e && e.message) ? e.message : String(e);
+  _failures.push({ where, msg, at: new Date().toISOString() });
+  try{ console.warn('[tiara] ' + where + ': ' + msg); }catch(_){}
+  if(level === 'stale'){ _stale[where] = msg; }
+  if(level === 'tell'){ try{ setStatus('\u26a0 ' + where + ' failed: ' + msg); }catch(_){} }
+}
 function setStatus(t){ $('#status').textContent = t; }
 const openState = new Set(['rec:stages']);
 const collapsed = new Set(); // for default-OPEN sections (the Queue): tracks which the user closed
@@ -729,7 +806,7 @@ function nextId(a){ let max=0; const rx=new RegExp('^'+a.prefix+'-(\\d+)$','i');
 let _sortables=[];
 function initSortables(){
   try{
-    _sortables.forEach(s=>{ try{s.destroy();}catch(e){} }); _sortables=[];
+    _sortables.forEach(s=>{ try{s.destroy();}catch(e){ noted('drag teardown',e); } }); _sortables=[];
     if(typeof Sortable==='undefined') return;   // library missing → board still renders, just no drag
     const opts={ animation:150, ghostClass:'tiara-ghost', chosenClass:'tiara-chosen', dragClass:'tiara-drag',
       delayOnTouchOnly:true, delay:120, touchStartThreshold:6, fallbackOnBody:true };
@@ -969,18 +1046,18 @@ function detailHtml(a,q,i,scope){ scope=scope||''; const sm=STATUS_META[q.status
 // dimensions:{bootstrap|cicd|tests:{status:'ok|partial|none', checks:[{id,label,pass,unknown}]}}}] }.
 let _compliance = null;
 let _compOrder = [];
-try{ _compOrder = JSON.parse(localStorage.getItem('tiaraCompOrder')||'[]'); }catch(e){}
+try{ _compOrder = JSON.parse(localStorage.getItem('tiaraCompOrder')||'[]'); }catch(e){ noted('compliance column order (load)',e); }
 function saveCompOrder(){
   const order=[...document.querySelectorAll('#complist > details.crow')].map(d=>(d.getAttribute('data-key')||'').replace(/^comp:/,''));
-  _compOrder=order; try{ localStorage.setItem('tiaraCompOrder', JSON.stringify(order)); }catch(e){}
+  _compOrder=order; try{ localStorage.setItem('tiaraCompOrder', JSON.stringify(order)); }catch(e){ noted('compliance column order (save)',e); }
   setStatus('compliance order saved');
 }
 // Per-app exclude: a view filter only (no data touched). Hidden apps drop off the Compliance tab
 // until "show hidden" is toggled; the set persists in localStorage.
 let _compHidden = new Set();
-try{ _compHidden = new Set(JSON.parse(localStorage.getItem('tiaraCompHidden')||'[]')); }catch(e){}
+try{ _compHidden = new Set(JSON.parse(localStorage.getItem('tiaraCompHidden')||'[]')); }catch(e){ noted('hidden compliance checks (load)',e); }
 let _compShowHidden = false;
-function saveCompHidden(){ try{ localStorage.setItem('tiaraCompHidden', JSON.stringify([..._compHidden])); }catch(e){} }
+function saveCompHidden(){ try{ localStorage.setItem('tiaraCompHidden', JSON.stringify([..._compHidden])); }catch(e){ noted('hidden compliance checks (save)',e); } }
 function toggleCompHidden(name){
   if(_compHidden.has(name)){ _compHidden.delete(name); setStatus('“'+name+'” shown on the compliance board'); }
   else { _compHidden.add(name); setStatus('“'+name+'” hidden from the compliance board'); }
@@ -991,7 +1068,7 @@ async function loadCompliance(){
   try{
     const r = await fetch('compliance.json?t='+Date.now()); if(!r.ok) return;   // absent before first scan — fine
     _compliance = await r.json();
-  }catch(e){}   // never let a missing/bad file break load
+  }catch(e){ noted('compliance scan file',e,'stale'); }   // never let a missing/bad file break load
 }
 function compPill(s){
   const map={ok:['✓ done','cok'],partial:['◐ partial','cpart'],none:['○ not started','cnone'],na:['– not needed','cna']};
@@ -1037,7 +1114,7 @@ function renderCompliance(){
     const hideBtn=`<button class="chide" onclick="event.stopPropagation();toggleCompHidden('${esc(a.name)}')" title="${isHidden?'show on the compliance board':'hide from the compliance board'}">${isHidden?'＋':'×'}</button>`;
     return `<details class="crow${isHidden?' chidden':''}" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${esc(a.name)} ${tag}</span><span class="cpills">${covChip}${pills}</span>${hideBtn}</summary><div class="cbody">${body}</div></details>`;
   }).join('');
-  let when=''; try{ when=c.generatedAt?new Date(c.generatedAt).toLocaleString():''; }catch(e){}
+  let when=''; try{ when=c.generatedAt?new Date(c.generatedAt).toLocaleString():''; }catch(e){ noted('scan timestamp format',e); }
   const note=c.keyed?'':' · no Xcode Cloud key present, so CI/CD cloud checks show as unknown';
   el.innerHTML=`<div class="phead">Compliance · where each product stands, auto-checked</div>
     <div class="cmeta">Snapshot ${esc(when)}${esc(note)}. Every status is the rollup of the concrete checks below; open a product to see exactly what is missing. Regenerate with <code>node scripts/compliance.mjs</code> in _bootstrap.</div>
@@ -1046,7 +1123,7 @@ function renderCompliance(){
 }
 
 let portfolioSort = 'auto';
-function setPortfolioSort(m){ portfolioSort=m; try{localStorage.setItem('tiaraPortfolioSort',m);}catch(e){} renderPortfolio(); }
+function setPortfolioSort(m){ portfolioSort=m; try{localStorage.setItem('tiaraPortfolioSort',m);}catch(e){ noted('portfolio sort (save)',e); } renderPortfolio(); }
 function renderPortfolio(){
   const el=$('#portfolio'); if(!el) return;
   const auto = portfolioSort!=='manual';
@@ -1132,14 +1209,14 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v43';
+const TIARA_VERSION = 'board-v44';
 (async function init(){
   ghLoadCfg();
-  try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){}
+  try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
   const ve=document.getElementById('ver'); if(ve) ve.textContent=TIARA_VERSION;
   // Fill ONLY the Compliance tab when its snapshot arrives; never call the full render() here,
   // that rebuilds the board and would collapse any card the user had expanded.
-  loadCompliance().then(()=>{ try{ renderCompliance(); initSortables(); }catch(e){} });
+  loadCompliance().then(()=>{ try{ renderCompliance(); initSortables(); }catch(e){ noted('drawing the Compliance tab',e,'tell'); } });
   render();
   if(GH.token){
     HELPER.on=true; showOnboard(false);
