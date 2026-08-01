@@ -820,6 +820,7 @@ async function loadFromGitHub(){
   normaliseApps();
   data.runbook = JSON.parse(JSON.stringify(SEED.runbook));  // runbook is code-sourced reference content — always use the latest from the build (also prevents the old data.runbook.map crash)
   await loadTFStatus();    // pull the TestFlight status file (release-status.json) the poller commits
+  await loadCompliance();  // pull the compliance snapshot from the private tiara repo (#56), token-gated like the board
   await discoverBoards();  // find each app's linked board so boardFor() knows which apps are on GitHub
   await loadBoardApps();   // board apps: replace their live queue with the GitHub Project
   discoverIcons().then(()=>render()).catch(()=>{});   // fetch real app icons in the background, then repaint
@@ -1393,8 +1394,10 @@ function saveCompOrder(){
 try{ localStorage.removeItem('tiaraCompHidden'); }catch(e){ noted('clearing the retired compliance hide list',e); }
 async function loadCompliance(){
   try{
-    const r = await fetch('compliance.json?t='+Date.now()); if(!r.ok) return;   // absent before first scan — fine
-    _compliance = await r.json();
+    if(!GH.token) return;   // compliance.json now lives in the private tiara repo (#56); it needs your token, same as the board. Absent before sign-in is fine.
+    const f = await ghGetFile(GH.owner+'/'+GH.boardRepo, 'compliance.json');
+    if(f.missing) return;   // absent before the first scan is fine
+    _compliance = JSON.parse(f.text);
   }catch(e){ noted('compliance scan file',e,'stale'); }   // never let a missing/bad file break load
 }
 function compPill(s){
@@ -1413,7 +1416,7 @@ function renderCompliance(){
   const el=$('#compliance'); if(!el) return;
   const c=_compliance;
   if(!c || !Array.isArray(c.apps)){
-    el.innerHTML=`<div class="phead">Compliance · where each product stands</div><div class="muted">No snapshot yet. In <code>_bootstrap</code> run <code>. scripts/xcc.env &amp;&amp; node scripts/compliance.mjs</code>, then commit <code>compliance.json</code> here.</div>`;
+    el.innerHTML=`<div class="phead">Compliance · where each product stands</div><div class="muted">No snapshot yet. In <code>_bootstrap</code> run <code>bash scripts/compliance-refresh.sh</code> to scan and publish to your private tiara repo.</div>`;
     return;
   }
   const dims=[['bootstrap','🏭 Bootstrap'],['ci','☁️ CI'],['release','🚀 Release'],['tests','🧪 Tests'],['privacy','🔒 Privacy']];
@@ -1565,7 +1568,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v60';
+const TIARA_VERSION = 'board-v61';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }

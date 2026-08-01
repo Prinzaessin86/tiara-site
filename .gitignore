@@ -9,3 +9,6 @@ tiara-data*.json
 *.pre-board-backup
 
 .DS_Store
+
+# Compliance snapshot now lives in the private `tiara` repo (#56), fetched via the token.
+compliance.json
