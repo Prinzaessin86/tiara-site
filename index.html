@@ -271,6 +271,8 @@
      rest of the time. :has() is Safari 15.4+; where it is missing this simply does nothing. */
   .ccol:has(.cchkx[open]){grid-column:1/-1;}
   .ccol:has(.cchkx[open]) .cexp{max-width:var(--w-read);}
+  .crow.cflat{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;padding:.6rem .9rem;}
+  .cflatnote{font-size:.8rem;color:var(--ink-3,#6f6188);line-height:1.5;flex:1 1 20rem;}
   .cexp{margin:.4rem 0 .6rem 1.1rem;padding:.5rem .65rem;background:#fff;border:1.5px solid var(--line2);
         border-radius:var(--r-md,.85rem);}
   .cexp p{margin:0 0 .35rem;font-size:.78rem;line-height:1.55;color:var(--ink-2,#5d5175);}
@@ -284,11 +286,6 @@
             padding:.6rem .8rem;margin:0 0 .8rem;font-size:.82rem;color:#a32f56;line-height:1.6;}
   .cexpfix{color:var(--ink-2,#5d5175);}
   .ccov{font-size:.68rem;font-weight:800;color:var(--done-i,#1a7d50);background:#dff5ea;padding:.18rem .5rem;border-radius:999px;white-space:nowrap;}
-  .chide{border:none;background:none;color:#c9b8d6;font-size:1.15rem;line-height:1;cursor:pointer;padding:.12rem .4rem;flex:0 0 auto;}
-  .chide:hover{color:#c0396a;}
-  .crow.chidden{opacity:.5;}
-  .chidetoggle{border:none;background:#f1eef6;color:var(--ink-3,#6f6188);font-size:.72rem;font-weight:800;padding:.18rem .6rem;border-radius:999px;cursor:pointer;}
-  .chidetoggle:hover{background:#e7e0f0;color:#6a5a82;}
   .crow{background:#fff;border:1.5px solid var(--line);border-radius:var(--r-lg,1.15rem);margin-bottom:.65rem;box-shadow:0 .12rem .6rem rgba(240,111,164,.08);overflow:hidden;}
   .crow>summary{list-style:none;cursor:pointer;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;}
   .crow>summary::-webkit-details-marker{display:none;}
@@ -1260,18 +1257,11 @@ function saveCompOrder(){
   _compOrder=order; try{ localStorage.setItem('tiaraCompOrder', JSON.stringify(order)); }catch(e){ noted('compliance column order (save)',e); }
   setStatus('compliance order saved');
 }
-// Per-app exclude: a view filter only (no data touched). Hidden apps drop off the Compliance tab
-// until "show hidden" is toggled; the set persists in localStorage.
-let _compHidden = new Set();
-try{ _compHidden = new Set(JSON.parse(localStorage.getItem('tiaraCompHidden')||'[]')); }catch(e){ noted('hidden compliance checks (load)',e); }
-let _compShowHidden = false;
-function saveCompHidden(){ try{ localStorage.setItem('tiaraCompHidden', JSON.stringify([..._compHidden])); }catch(e){ noted('hidden compliance checks (save)',e); } }
-function toggleCompHidden(name){
-  if(_compHidden.has(name)){ _compHidden.delete(name); setStatus('“'+name+'” shown on the compliance board'); }
-  else { _compHidden.add(name); setStatus('“'+name+'” hidden from the compliance board'); }
-  saveCompHidden(); renderCompliance(); initSortables();
-}
-function toggleCompShowHidden(){ _compShowHidden=!_compShowHidden; renderCompliance(); initSortables(); }
+// The per-app hide button is deleted (D48). Every registered app must be on the compliance board,
+// and a per-browser localStorage filter was a third way for one to disappear, after the scanner's
+// EXCLUDE set and its .xcodeproj heuristic. The stored key is removed on load so an app hidden
+// before this version comes back rather than staying hidden by a setting with no control left.
+try{ localStorage.removeItem('tiaraCompHidden'); }catch(e){ noted('clearing the retired compliance hide list',e); }
 async function loadCompliance(){
   try{
     const r = await fetch('compliance.json?t='+Date.now()); if(!r.ok) return;   // absent before first scan — fine
@@ -1304,11 +1294,16 @@ function renderCompliance(){
     if(ia<0&&ib<0) return a.name.localeCompare(b.name);
     if(ia<0) return 1; if(ib<0) return -1; return ia-ib;
   });
-  const hiddenCount=ordered.filter(a=>_compHidden.has(a.name)).length;
-  const visible=ordered.filter(a=>_compShowHidden || !_compHidden.has(a.name));
-  const rows=visible.map(a=>{
+  const rows=ordered.map(a=>{
     const d=a.dimensions||{};
-    const isHidden=_compHidden.has(a.name);
+    // Two shapes that are not a scan, and must not be rendered as if they were. Infrastructure is
+    // Tiara itself, which is not an app and cannot be scored against per app checks. Missing is a
+    // product registered on the board with no repo of that name on this machine, where nothing
+    // could be checked. Neither is green and neither is silence. (D48)
+    if(a.kind==='infrastructure' || a.missing){
+      const word=a.missing?'not checked':'infrastructure';
+      return `<div class="crow cflat"><span class="cname">${compIcon(a)}${esc(a.name)}</span><span class="cpill ${a.missing?'cno':'cna'}">${word}</span><span class="cflatnote">${esc(a.note||'')}</span></div>`;
+    }
     const pills=dims.map(dm=>compPill((d[dm[0]]||{}).status)).join('');
     const body=dims.map(dm=>{
       const dim=d[dm[0]]||{checks:[]};
@@ -1336,8 +1331,7 @@ function renderCompliance(){
     const tag=a.modern?'':'<span class="clegacy">legacy</span>';
     const cov=(d.tests&&d.tests.coverage!=null)?d.tests.coverage:null;
     const covChip=cov!=null?`<span class="ccov" title="line coverage ratchet floor (make coverage); a guaranteed lower bound">${cov}% cov</span>`:'';
-    const hideBtn=`<button class="chide" onclick="event.stopPropagation();toggleCompHidden('${esc(a.name)}')" title="${isHidden?'show on the compliance board':'hide from the compliance board'}">${isHidden?'＋':'×'}</button>`;
-    return `<details class="crow${isHidden?' chidden':''}" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${compIcon(a)}${esc(a.name)} ${tag}</span><span class="cpills">${covChip}${pills}</span>${hideBtn}</summary><div class="cbody">${body}</div></details>`;
+    return `<details class="crow" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${compIcon(a)}${esc(a.name)} ${tag}</span><span class="cpills">${covChip}${pills}</span></summary><div class="cbody">${body}</div></details>`;
   }).join('');
   let when=''; try{ when=c.generatedAt?new Date(c.generatedAt).toLocaleString():''; }catch(e){ noted('scan timestamp format',e); }
   const note=c.keyed?'':' · no Xcode Cloud key present, so CI/CD cloud checks show as unknown';
@@ -1356,7 +1350,7 @@ function renderCompliance(){
         return `<div class="cexpwarn">\u26d4 The explanations below may not match the checks.<br>${bits.join('<br>')}
           <br><span class="cexpfix">Re-read them, then: <code>node scripts/explain-lock.mjs --write</code></span></div>`;
       })()}
-    <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place &nbsp; ${compPill('na')} optional, not set up (cloud CI or TestFlight) ${hiddenCount?`&nbsp; <button class="chidetoggle" onclick="toggleCompShowHidden()">${_compShowHidden?'hide':'show'} ${hiddenCount} hidden</button>`:''}</div>
+    <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place &nbsp; ${compPill('na')} optional, not set up (cloud CI or TestFlight)</div>
     <div id="complist">${rows}</div>`;
 }
 
@@ -1428,7 +1422,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v58';
+const TIARA_VERSION = 'board-v59';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
