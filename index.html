@@ -262,6 +262,22 @@
   .cpill.cnone{background:#f1eef6;color:#8a7a98;}
   .cpill.cna{background:#eef4fb;color:#6a86a8;}
   .cnote{font-size:.8rem;color:var(--ink-3,#6f6188);line-height:1.5;font-style:italic;}
+  .cchkx>summary{list-style:none;cursor:pointer;display:flex;gap:.4rem;align-items:flex-start;}
+  .cchkx>summary::-webkit-details-marker{display:none;}
+  .cchkx>summary:hover{color:var(--brand);}
+  .cchkx[open]>summary{font-weight:700;}
+  .cexp{margin:.4rem 0 .6rem 1.1rem;padding:.5rem .65rem;background:#fff;border:1.5px solid var(--line2);
+        border-radius:var(--r-md,.85rem);}
+  .cexp p{margin:0 0 .35rem;font-size:.78rem;line-height:1.55;color:var(--ink-2,#5d5175);}
+  .cexp p:last-child{margin-bottom:0;}
+  .cexp b{color:var(--ink-1,#3a2d4d);}
+  .cexp code{font-family:ui-monospace,monospace;font-size:.72rem;background:#faf7fc;padding:.1rem .3rem;
+             border-radius:.3rem;word-break:break-all;}
+  .cnoexp{font-size:.62rem;font-weight:800;text-transform:uppercase;background:#fbe7ee;color:#a32f56;
+          padding:.1rem .38rem;border-radius:.45rem;margin-left:.35rem;}
+  .cexpwarn{background:#fbe7ee;border:1.5px solid #f0c9d6;border-radius:var(--r-md,.85rem);
+            padding:.6rem .8rem;margin:0 0 .8rem;font-size:.82rem;color:#a32f56;line-height:1.6;}
+  .cexpfix{color:var(--ink-2,#5d5175);}
   .ccov{font-size:.68rem;font-weight:800;color:var(--done-i,#1a7d50);background:#dff5ea;padding:.18rem .5rem;border-radius:999px;white-space:nowrap;}
   .chide{border:none;background:none;color:#c9b8d6;font-size:1.15rem;line-height:1;cursor:pointer;padding:.12rem .4rem;flex:0 0 auto;}
   .chide:hover{color:#c0396a;}
@@ -1298,7 +1314,16 @@ function renderCompliance(){
         : (dim.checks||[]).map(ch=>{
             const st=ch.unknown?'cunknown':(ch.pass?'cyes':'cno');
             const word=ch.unknown?'unknown':(ch.pass?'ok':'missing');
-            return `<div class="cchk ${st}"><span class="cstate">${word}</span>${esc(ch.label)}</div>`;
+            const x=ch.explain;
+            if(!x) return `<div class="cchk ${st}"><span class="cstate">${word}</span>${esc(ch.label)}
+              <span class="cnoexp" title="this check has no explanation, which the scanner should have refused">unexplained</span></div>`;
+            return `<details class="cchk cchkx ${st}"><summary><span class="cstate">${word}</span>${esc(ch.label)}</summary>
+              <div class="cexp">
+                <p><b>What it means.</b> ${esc(x.means)}</p>
+                <p><b>How it is decided.</b> ${esc(x.how)}</p>
+                <p><b>See for yourself.</b> <code>${esc(x.verify)}</code></p>
+                <p><b>How to get to green.</b> ${esc(x.fix)}</p>
+              </div></details>`;
           }).join('');
       const covLine=(dm[0]==='tests'&&dim.coverage!=null)?`<span class="ccov" title="line coverage ratchet floor (a guaranteed lower bound)">${dim.coverage}% cov</span>`:'';
       return `<div class="ccol"><div class="ccolh">${dm[1]} ${compPill(dim.status)} ${covLine}</div>${inner}</div>`;
@@ -1313,6 +1338,19 @@ function renderCompliance(){
   const note=c.keyed?'':' · no Xcode Cloud key present, so CI/CD cloud checks show as unknown';
   el.innerHTML=`<div class="phead">Compliance · where each product stands, auto-checked</div>
     <div class="cmeta">Snapshot ${esc(when)}${esc(note)}. Every status is the rollup of the concrete checks below; open a product to see exactly what is missing. Regenerate with <code>node scripts/compliance.mjs</code> in _bootstrap.</div>
+    ${(function(){
+        const ea=c.explainAudit;
+        if(!ea) return '<div class="cexpwarn">This scan predates check explanations. Regenerate it to get them.</div>';
+        if(ea.ok) return '';
+        const bits=[];
+        if(ea.missing&&ea.missing.length)  bits.push(`<b>${ea.missing.length} with no explanation:</b> ${esc(ea.missing.join(', '))}`);
+        if(ea.drifted&&ea.drifted.length)  bits.push(`<b>${ea.drifted.length} whose code changed since the explanation was written:</b> ${esc(ea.drifted.join(', '))}`);
+        if(ea.unlocked&&ea.unlocked.length)bits.push(`<b>${ea.unlocked.length} never locked:</b> ${esc(ea.unlocked.join(', '))}`);
+        if(ea.orphan&&ea.orphan.length)    bits.push(`<b>${ea.orphan.length} explaining a check that no longer exists:</b> ${esc(ea.orphan.join(', '))}`);
+        if(ea.note) bits.push(esc(ea.note));
+        return `<div class="cexpwarn">\u26d4 The explanations below may not match the checks.<br>${bits.join('<br>')}
+          <br><span class="cexpfix">Re-read them, then: <code>node scripts/explain-lock.mjs --write</code></span></div>`;
+      })()}
     <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place &nbsp; ${compPill('na')} optional, not set up (cloud CI or TestFlight) ${hiddenCount?`&nbsp; <button class="chidetoggle" onclick="toggleCompShowHidden()">${_compShowHidden?'hide':'show'} ${hiddenCount} hidden</button>`:''}</div>
     <div id="complist">${rows}</div>`;
 }
@@ -1385,7 +1423,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v56';
+const TIARA_VERSION = 'board-v57';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
