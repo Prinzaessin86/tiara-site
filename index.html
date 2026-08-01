@@ -666,6 +666,11 @@ async function loadFromGitHub(){
   const f=await ghGetFile(GH.owner+'/'+GH.boardRepo,'tiara-data.json');
   if(f.missing){ GH.boardSha=null; await ghSave(); return; }
   try{ data=JSON.parse(f.text); GH.boardSha=f.sha; }catch(e){ setStatus('the board file on GitHub is not valid JSON'); return; }
+  // Since v47 the saved file holds NO queue key: tickets live on GitHub and are stripped on save.
+  // So between parsing here and loadBoardApps() filling them, a.queue does not exist, and anything
+  // that renders in that window throws. Normalise the shape once, at the seam, rather than
+  // guarding twenty call sites.
+  normaliseApps();
   data.runbook = JSON.parse(JSON.stringify(SEED.runbook));  // runbook is code-sourced reference content — always use the latest from the build (also prevents the old data.runbook.map crash)
   await loadTFStatus();    // pull the TestFlight status file (release-status.json) the poller commits
   await discoverBoards();  // find each app's linked board so boardFor() knows which apps are on GitHub
@@ -721,7 +726,7 @@ async function pollBoards(){
       else if(ok)       setStatus('\ud83d\udd04 '+ok+' board'+(ok>1?'s':'')+' up to date \u00b7 '+new Date().toLocaleTimeString());
     }
   }catch(e){
-    setStatus('\u26d4 poll failed: '+(e && e.message ? e.message : e));
+    setStatus('\u26d4 poll failed: '+(e && e.message ? e.message : e)+' \u00b7 the board on screen may be behind');
   }
   polling=false;
 }
@@ -1024,7 +1029,16 @@ function onRowReorder(ev,appId){
 }
 const STATUS_ORDER=['todo','doing','verify','blocked','done'];
 const STATUS_META={new:{e:'🆕',t:'new',c:'#9b5de5'},todo:{e:'◻',t:'to do',c:'#8877a0'},doing:{e:'🔨',t:'doing',c:'#e0932b'},verify:{e:'🔍',t:'verify',c:'#4ea8ff'},blocked:{e:'⛔',t:'blocked',c:'#d0567f'},done:{e:'✅',t:'done',c:'#2fbf7e'}};
-function migrate(){ ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>{ if(!q.id) q.id=nextId(a); if(!q.status) q.status=q.done?'done':'todo'; q.done=(q.status==='done'); if(q.type==null) q.type=''; if(!q.priority) q.priority='med'; if(!Array.isArray(q.notes)) q.notes=[]; }); }); }
+// Every app carries the fields the rest of the code assumes. Cheap, idempotent, and the one
+// place that decides what an app minimally is.
+function normaliseApps(){
+  if(!data || !Array.isArray(data.apps)) return;
+  data.apps.forEach(a=>{
+    if(!Array.isArray(a.queue)) a.queue=[];
+    if(!a.prefix) a.prefix=(a.name||'ITEM').replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase()||'ITEM';
+  });
+}
+function migrate(){ normaliseApps(); ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>{ if(!q.id) q.id=nextId(a); if(!q.status) q.status=q.done?'done':'todo'; q.done=(q.status==='done'); if(q.type==null) q.type=''; if(!q.priority) q.priority='med'; if(!Array.isArray(q.notes)) q.notes=[]; }); }); }
 const TYPE_ORDER=['bug','feature','chore'];   // 'task' deleted at the root (D42)
 const TYPE_META={none:{e:'',t:'no type',c:'#8877a0'},bug:{e:'🐞',t:'bug',c:'#d0567f'},feature:{e:'✨',t:'feature',c:'#9b5de5'},chore:{e:'🧹',t:'chore',c:'#4ea8ff'}};
 function cycleType(id,i){ const a=app(id); const q=a.queue[i]; const idx=TYPE_ORDER.indexOf(q.type||''); const nv=TYPE_ORDER[(idx+1)%3];
@@ -1371,7 +1385,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v55';
+const TIARA_VERSION = 'board-v56';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
