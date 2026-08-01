@@ -23,14 +23,16 @@
 
     /* Width is a decision per view, not one number for every tab. Dense views get the screen;
        prose gets about 74 characters. Pinning 820px everywhere is why the other tabs felt wrong. */
-    --w-dense: min(1500px, 95vw);
+    /* Wide enough that the board is not a narrow strip, narrow enough that it does not read as
+       crowded. 1500px edge to edge was too much: the rows here are lighter than the mockup's. */
+    --w-dense: min(1180px, 92vw);
     --w-read: 74ch;
   }
   /* Type, icons, spacing and columns grow together on a large screen instead of the page
      staying a narrow column in the middle of it. */
   html{font-size:clamp(17.5px, .55vw + 15.4px, 23px);}
   *{box-sizing:border-box;}
-  body{margin:0; padding:22px 14px 70px; font-family:'Quicksand',system-ui,sans-serif; color:var(--ink); font-size:1rem; line-height:1.5;
+  body{margin:0; padding:1.3rem clamp(.9rem, 2.5vw, 2rem) 4rem; font-family:'Quicksand',system-ui,sans-serif; color:var(--ink); font-size:1rem; line-height:1.5;
     background:radial-gradient(900px 420px at 6% -5%,#ffe0f0 0,transparent 60%),radial-gradient(900px 420px at 100% 3%,#e6ddfc 0,transparent 55%),linear-gradient(180deg,#fff4fb,#f4ecff);}
   .wrap{max-width:var(--w-dense);margin:0 auto;}
   /* prose panes read at a comfortable measure rather than stretching across a wide screen */
@@ -243,32 +245,42 @@
   .kbtag.local{background:#e7f7ef;color:#2f9e6e;} .kbtag.cloud{background:#e6effb;color:#4a7ed6;}
   footer{text-align:center;margin-top:24px;font-size:.82rem;color:var(--soft);font-weight:700;}
   /* Compliance tab */
-  .cmeta{font-size:.82rem;color:var(--soft);margin:0 0 10px;line-height:1.5;}
-  .clegend{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:.76rem;color:var(--soft);margin-bottom:14px;}
-  .cpill{font-size:.72rem;font-weight:800;padding:3px 10px;border-radius:11px;white-space:nowrap;}
+  .cmeta{font-size:.82rem;color:var(--ink-3,#6f6188);margin:0 0 .65rem;line-height:1.5;max-width:78ch;}
+  .clegend{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;font-size:.76rem;color:var(--ink-3,#6f6188);margin-bottom:.9rem;}
+  .cpill{font-size:.72rem;font-weight:800;padding:.18rem .6rem;border-radius:999px;white-space:nowrap;}
   .cpill.cok{background:#dff5ea;color:#1f7a4d;}
   .cpill.cpart{background:#fdeecd;color:#9a6a12;}
   .cpill.cnone{background:#f1eef6;color:#8a7a98;}
   .cpill.cna{background:#eef4fb;color:#6a86a8;}
-  .cnote{font-size:.8rem;color:#6a86a8;line-height:1.5;font-style:italic;}
-  .ccov{font-size:.68rem;font-weight:800;color:#2f7a52;background:#dff5ea;padding:3px 8px;border-radius:9px;white-space:nowrap;}
-  .chide{border:none;background:none;color:#c9b8d6;font-size:1.15rem;line-height:1;cursor:pointer;padding:2px 6px;flex:0 0 auto;}
+  .cnote{font-size:.8rem;color:var(--ink-3,#6f6188);line-height:1.5;font-style:italic;}
+  .ccov{font-size:.68rem;font-weight:800;color:var(--done-i,#1a7d50);background:#dff5ea;padding:.18rem .5rem;border-radius:999px;white-space:nowrap;}
+  .chide{border:none;background:none;color:#c9b8d6;font-size:1.15rem;line-height:1;cursor:pointer;padding:.12rem .4rem;flex:0 0 auto;}
   .chide:hover{color:#c0396a;}
   .crow.chidden{opacity:.5;}
-  .chidetoggle{border:none;background:#f1eef6;color:#8a7a98;font-size:.72rem;font-weight:800;padding:3px 10px;border-radius:9px;cursor:pointer;}
+  .chidetoggle{border:none;background:#f1eef6;color:var(--ink-3,#6f6188);font-size:.72rem;font-weight:800;padding:.18rem .6rem;border-radius:999px;cursor:pointer;}
   .chidetoggle:hover{background:#e7e0f0;color:#6a5a82;}
-  .crow{background:#fff;border-radius:16px;margin-bottom:10px;box-shadow:0 2px 10px rgba(240,111,164,.08);overflow:hidden;}
-  .crow>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .crow{background:#fff;border:1.5px solid var(--line);border-radius:var(--r-lg,1.15rem);margin-bottom:.65rem;box-shadow:0 .12rem .6rem rgba(240,111,164,.08);overflow:hidden;}
+  .crow>summary{list-style:none;cursor:pointer;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;}
   .crow>summary::-webkit-details-marker{display:none;}
-  .cgrip{cursor:grab;color:#c9b8d6;font-size:1rem;line-height:1;padding:2px 4px;user-select:none;touch-action:none;}
+  .cgrip{cursor:grab;color:#c9b8d6;font-size:1rem;line-height:1;padding:.12rem .25rem;user-select:none;touch-action:none;}
   .cgrip:active{cursor:grabbing;}
-  .cname{font-family:'Baloo 2';font-weight:700;font-size:1rem;color:#4a3a5e;display:flex;align-items:center;gap:8px;}
-  .clegacy{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:#f1eef6;color:#8a7a98;padding:2px 7px;border-radius:8px;}
-  .cpills{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;}
-  .cbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;padding:4px 16px 18px;}
-  .ccol{background:#faf7fc;border-radius:12px;padding:12px;}
-  .ccolh{font-weight:800;font-size:.82rem;color:#4a3a5e;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .cchk{font-size:.8rem;color:#5a4a68;line-height:1.5;display:flex;gap:7px;align-items:flex-start;padding:2px 0;}
+  .cname{font-family:'Baloo 2';font-weight:700;font-size:1rem;color:var(--ink-1,#3a2d4d);display:flex;align-items:center;gap:.5rem;}
+  /* the same icon tile the project cards use, so a product looks like itself on every screen */
+  .cname .emojitile{width:1.6rem;height:1.6rem;flex:none;border-radius:.45rem;background:#f6f0ff;
+                    display:flex;align-items:center;justify-content:center;font-size:.95rem;overflow:hidden;}
+  .cname .appicon{width:100%;height:100%;object-fit:cover;border-radius:.45rem;display:block;}
+  .clegacy{font-size:.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:#f1eef6;color:var(--ink-3,#6f6188);padding:.12rem .45rem;border-radius:.5rem;}
+  .cpills{display:flex;gap:.4rem;flex-wrap:wrap;margin-left:auto;}
+  .cbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.9rem;padding:.25rem 1rem 1.1rem;}
+  .ccol{background:#faf7fc;border:1.5px solid var(--line2);border-radius:var(--r-md,.85rem);padding:.75rem;}
+  .ccolh{font-weight:800;font-size:.82rem;color:var(--ink-1,#3a2d4d);margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
+  .cchk{font-size:.8rem;color:var(--ink-2,#5d5175);line-height:1.5;display:flex;gap:.4rem;align-items:flex-start;padding:.12rem 0;}
+  /* D37: a state is a word. The mark may reinforce it and may never carry it alone. */
+  .cstate{font-size:.62rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;
+          padding:.1rem .38rem;border-radius:.45rem;flex:0 0 auto;margin-top:.12rem;}
+  .cchk.cyes .cstate{background:#e7f7ef;color:#1a7d50;}
+  .cchk.cno  .cstate{background:#fbe7ee;color:#a32f56;}
+  .cchk.cunknown .cstate{background:#f1eef6;color:#6f6188;}
   .cchk .cmk{font-weight:900;flex:0 0 auto;}
   .cchk.cyes .cmk{color:#1f7a4d;} .cchk.cyes{color:#6a7a70;}
   .cchk.cno .cmk{color:#c0396a;} .cchk.cno{color:#7a4a5e;font-weight:600;}
@@ -1194,6 +1206,14 @@ function compPill(s){
   const map={ok:['✓ done','cok'],partial:['◐ partial','cpart'],none:['○ not started','cnone'],na:['– not needed','cna']};
   const v=map[s]||map.none; return `<span class="cpill ${v[1]}">${v[0]}</span>`;
 }
+// compliance.json keys products by repo, tiara-data by name, and the two disagree
+// ("SparkleReef" vs "Sparkle Reef"). Match on the repo, lowercased, or you silently get no icon.
+function compIcon(ca){
+  const r=(ca.repo||'').toLowerCase();
+  const a=data.apps.find(x=>((appOwnerRepo(x)||'').toLowerCase())===r);
+  if(!a) return '';
+  return `<span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:(a.emoji||'')}</span>`;
+}
 function renderCompliance(){
   const el=$('#compliance'); if(!el) return;
   const c=_compliance;
@@ -1222,8 +1242,8 @@ function renderCompliance(){
         ? `<div class="cnote">${esc(dim.note||'Not applicable for this app.')}</div>`
         : (dim.checks||[]).map(ch=>{
             const st=ch.unknown?'cunknown':(ch.pass?'cyes':'cno');
-            const mk=ch.unknown?'?':(ch.pass?'✓':'✗');
-            return `<div class="cchk ${st}"><span class="cmk">${mk}</span>${esc(ch.label)}</div>`;
+            const word=ch.unknown?'unknown':(ch.pass?'ok':'missing');
+            return `<div class="cchk ${st}"><span class="cstate">${word}</span>${esc(ch.label)}</div>`;
           }).join('');
       const covLine=(dm[0]==='tests'&&dim.coverage!=null)?`<span class="ccov" title="line coverage ratchet floor (a guaranteed lower bound)">${dim.coverage}% cov</span>`:'';
       return `<div class="ccol"><div class="ccolh">${dm[1]} ${compPill(dim.status)} ${covLine}</div>${inner}</div>`;
@@ -1232,7 +1252,7 @@ function renderCompliance(){
     const cov=(d.tests&&d.tests.coverage!=null)?d.tests.coverage:null;
     const covChip=cov!=null?`<span class="ccov" title="line coverage ratchet floor (make coverage); a guaranteed lower bound">${cov}% cov</span>`:'';
     const hideBtn=`<button class="chide" onclick="event.stopPropagation();toggleCompHidden('${esc(a.name)}')" title="${isHidden?'show on the compliance board':'hide from the compliance board'}">${isHidden?'＋':'×'}</button>`;
-    return `<details class="crow${isHidden?' chidden':''}" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${esc(a.name)} ${tag}</span><span class="cpills">${covChip}${pills}</span>${hideBtn}</summary><div class="cbody">${body}</div></details>`;
+    return `<details class="crow${isHidden?' chidden':''}" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${compIcon(a)}${esc(a.name)} ${tag}</span><span class="cpills">${covChip}${pills}</span>${hideBtn}</summary><div class="cbody">${body}</div></details>`;
   }).join('');
   let when=''; try{ when=c.generatedAt?new Date(c.generatedAt).toLocaleString():''; }catch(e){ noted('scan timestamp format',e); }
   const note=c.keyed?'':' · no Xcode Cloud key present, so CI/CD cloud checks show as unknown';
@@ -1310,7 +1330,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v52';
+const TIARA_VERSION = 'board-v53';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
