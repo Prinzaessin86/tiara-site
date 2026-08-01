@@ -61,6 +61,11 @@
   .nmlink:hover{color:var(--brand);border-bottom-color:var(--brand);}
   .pjback{display:inline-block;font-size:.85rem;color:var(--brand);text-decoration:none;margin-bottom:.6rem;}
   .pjhead{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;margin-bottom:.2rem;}
+  /* .emojitile is sized only inside .app, so on this page the tile had no size and .appicon's
+     width:100% resolved against nothing, rendering a 1024px icon at full size. Size it here. */
+  .pjhead .emojitile{width:2.6rem;height:2.6rem;flex:none;border-radius:.6rem;background:#f6f0ff;
+                     display:flex;align-items:center;justify-content:center;font-size:1.5rem;overflow:hidden;}
+  .pjhead .appicon{width:100%;height:100%;object-fit:cover;border-radius:.6rem;display:block;}
   .pjhead h2{margin:0;font-family:'Baloo 2';font-size:1.6rem;color:var(--ink-1,#3a2d4d);}
   .pjlanes{display:flex;flex-wrap:wrap;gap:.45rem;margin:.5rem 0 1rem;}
   /* A count tells you the size of the pile. The distribution tells you its shape. */
@@ -1305,7 +1310,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v51';
+const TIARA_VERSION = 'board-v52';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
