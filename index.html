@@ -9,11 +9,32 @@
   :root{
     --pink:#FF6FB5; --purple:#9B5DE5; --brand:#7a3fd6; --sky:#4EA8FF; --sun:#FFC64B; --green:#2FBF7E;
     --ink:#3a2d4d; --soft:#8a7ba3; --line:#f0e6f6; --line2:#f2e9f7; --card:#fff;
+
+    /* INK TWINS. Every colour ships as a pair: the bright one for dots, bars and gradients, and
+       the same hue dark enough to be read as a word. Measured, not guessed: the lane brights run
+       2.1:1 to 4.0:1 against the background, fine as shapes and unreadable as text. --brand at
+       5.4:1 needed no twin, so headings and links stay the real Tiara purple. */
+    --brand-deep:#7a3fd6;
+    --new-i:#6d38b0; --upnext-i:#665779; --doing-i:#8a5a05;
+    --verify-i:#1f6fbd; --blocked-i:#a32f56; --done-i:#1a7d50;
+    --ink-1:#3a2d4d;   /* 11.3:1 */
+    --ink-2:#5d5175;   /*  6.8:1 */
+    --ink-3:#6f6188;   /*  5.0:1, quiet but still readable */
+
+    /* Width is a decision per view, not one number for every tab. Dense views get the screen;
+       prose gets about 74 characters. Pinning 820px everywhere is why the other tabs felt wrong. */
+    --w-dense: min(1500px, 95vw);
+    --w-read: 74ch;
   }
+  /* Type, icons, spacing and columns grow together on a large screen instead of the page
+     staying a narrow column in the middle of it. */
+  html{font-size:clamp(17.5px, .55vw + 15.4px, 23px);}
   *{box-sizing:border-box;}
-  body{margin:0; padding:22px 14px 70px; font-family:'Quicksand',system-ui,sans-serif; color:var(--ink); font-size:17px; line-height:1.5;
+  body{margin:0; padding:22px 14px 70px; font-family:'Quicksand',system-ui,sans-serif; color:var(--ink); font-size:1rem; line-height:1.5;
     background:radial-gradient(900px 420px at 6% -5%,#ffe0f0 0,transparent 60%),radial-gradient(900px 420px at 100% 3%,#e6ddfc 0,transparent 55%),linear-gradient(180deg,#fff4fb,#f4ecff);}
-  .wrap{max-width:820px;margin:0 auto;}
+  .wrap{max-width:var(--w-dense);margin:0 auto;}
+  /* prose panes read at a comfortable measure rather than stretching across a wide screen */
+  #runbook, #knowledge{max-width:var(--w-read);margin:0 auto;}
   header{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px;}
   h1{font-family:'Baloo 2';font-weight:800;font-size:1.85rem;margin:0;color:var(--brand);letter-spacing:-.01em;display:flex;align-items:center;gap:11px;}
   h1 .crest{width:34px;height:34px;border-radius:10px;background:linear-gradient(150deg,#ff6fb5,#9b5de5);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(155,93,229,.28);}
@@ -1114,7 +1135,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v48';
+const TIARA_VERSION = 'board-v49';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
