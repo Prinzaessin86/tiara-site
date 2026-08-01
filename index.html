@@ -56,6 +56,21 @@
   .adminbox h3{margin:0 0 .3rem;font-family:'Baloo 2';font-size:1.05rem;color:var(--brand);}
   .adminwhy{margin:0 0 .7rem;font-size:.85rem;color:var(--ink-3,#6f6188);max-width:68ch;}
   .adminrow{display:flex;flex-wrap:wrap;gap:.5rem;}
+  /* A link has no chrome and takes you somewhere. */
+  .nmlink{color:inherit;text-decoration:none;border-bottom:1.5px dotted var(--pink-soft,#FFC2DF);}
+  .nmlink:hover{color:var(--brand);border-bottom-color:var(--brand);}
+  .pjback{display:inline-block;font-size:.85rem;color:var(--brand);text-decoration:none;margin-bottom:.6rem;}
+  .pjhead{display:flex;align-items:center;flex-wrap:wrap;gap:.6rem;margin-bottom:.2rem;}
+  .pjhead h2{margin:0;font-family:'Baloo 2';font-size:1.6rem;color:var(--ink-1,#3a2d4d);}
+  .pjlanes{display:flex;flex-wrap:wrap;gap:.45rem;margin:.5rem 0 1rem;}
+  /* A count tells you the size of the pile. The distribution tells you its shape. */
+  .pjlane{font-size:.8rem;font-weight:700;padding:.15rem .55rem;border-radius:999px;background:#fff;border:1.5px solid var(--line);}
+  .pjsec{background:#fff;border:1.5px solid var(--line);border-radius:var(--r-lg,1.15rem);padding:.9rem 1rem;margin-bottom:.8rem;}
+  .pjsec>h3{margin:0 0 .5rem;font-family:'Baloo 2';font-size:1rem;color:var(--brand);}
+  .pjsec .muted{font-size:.85rem;color:var(--ink-3,#6f6188);}
+  .cmt{font-size:.85rem;color:var(--ink-2,#5d5175);padding:.25rem 0;border-bottom:1px solid var(--line2);}
+  .cmt:last-child{border-bottom:none;}
+  .cmt .sha{font-family:ui-monospace,monospace;font-size:.75rem;color:var(--ink-3,#6f6188);margin-right:.5rem;}
   button.tb{height:38px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-family:'Quicksand';font-weight:700;font-size:.85rem;border:1.5px solid var(--line);background:#fff;color:#5a4a6e;padding:0 14px;border-radius:11px;cursor:pointer;}
   button.tb svg{width:15px;height:15px;flex-shrink:0;}
   button.tb:hover{border-color:var(--pink);}
@@ -303,6 +318,7 @@
   </div>
 
   <div id="board"></div>
+  <div id="project" style="display:none"></div>
   <div id="portfolio" style="display:none"></div>
   <div id="runbook" style="display:none">
     <div class="adminbox">
@@ -823,7 +839,76 @@ function renderFreshness(){
 }
 setInterval(renderFreshness, 30000);
 
+/* ---------- A project's own page ----------
+   A card cannot hold open work, done, commits and settings without becoming the three-deep nesting
+   that made the original clumsy. The card holds what you scan; the page holds what you go looking
+   for. */
+let _pjCommits = {};   // appId -> [{sha,msg}], memory only. Read live, stored nowhere (D46).
+function openProject(id){
+  TABS.forEach(x=>{ const el=$('#'+x); if(el) el.style.display='none'; });
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  const p=$('#project'); if(!p) return;
+  p.style.display='block'; renderProject(id); window.scrollTo(0,0);
+  loadCommits(id);
+}
+async function loadCommits(id){
+  const a=app(id); const or=appOwnerRepo(a); if(!a||!or) return;
+  try{
+    const r=await ghApi('/repos/'+or+'/commits?per_page=5'); if(!r.ok) throw new Error('GitHub '+r.status);
+    _pjCommits[id]=(await r.json()).map(c=>({ sha:(c.sha||'').slice(0,7),
+      msg:((c.commit&&c.commit.message)||'').split('\n')[0] }));
+  }catch(e){ _pjCommits[id]={ error:(e&&e.message)?e.message:String(e) }; }
+  const p=$('#project'); if(p && p.style.display!=='none') renderProject(id);
+}
+function renderProject(id){
+  const a=app(id); const p=$('#project'); if(!a||!p) return;
+  const q=a.queue||[];
+  const openQ=q.filter(x=>x.status!=='done');
+  const doneQ=q.filter(x=>x.status==='done');
+  const counts={}; BOARD_STATUS_ORDER.forEach(k=>{ const n=q.filter(x=>x.status===k).length; if(n) counts[k]=n; });
+  const lanes=Object.keys(counts).map(k=>`<span class="pjlane">${counts[k]} ${BOARD_STATUS_LABEL[k]||k}</span>`).join('')
+              || '<span class="pjlane">no items</span>';
+  const row=(x)=>`<div class="row qrow"><span class="t">${x.id?`<span class="id">${esc(x.id)}</span>`:''}${esc(x.title)}</span>`
+      + `<span class="typechip2">${(TYPE_META[x.type]||TYPE_META.none).t}</span>`
+      + (x.url?`<a class="ghlink" href="${x.url}" target="_blank">#${x.issueNumber}\u2197</a>`:'')+`</div>`;
+  // Done is capped, and the cap announces itself. A truncation that stays quiet is the disease
+  // this whole project exists to treat.
+  const DONECAP=20;
+  const doneShown=doneQ.slice(0,DONECAP);
+  const c=_pjCommits[id];
+  const commits = !c ? '<div class="muted">reading…</div>'
+    : (c.error ? `<div class="muted">could not read commits: ${esc(c.error)}</div>`
+    : (c.length ? c.map(x=>`<div class="cmt"><span class="sha">${esc(x.sha)}</span>${esc(x.msg)}</div>`).join('')
+                : '<div class="muted">no commits</div>'));
+  p.innerHTML = `
+    <a class="pjback" href="#" onclick="event.preventDefault();showTab('board')">\u2190 all projects</a>
+    <div class="pjhead">
+      <span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span>
+      <h2>${esc(a.name)}</h2>
+      ${_version[a.id]?`<span class="appver">${esc(_version[a.id])}</span>`:''}
+      ${boardFor(a)?`<a class="ghlink" href="${boardFor(a).url}" target="_blank">board \u2197</a>`:''}
+    </div>
+    <div class="pjlanes">${lanes}</div>
+
+    <div class="pjsec"><h3>Open work \u00b7 ${openQ.length}</h3>
+      ${openQ.length?openQ.map(row).join(''):'<div class="muted">nothing open \ud83c\udf89</div>'}</div>
+
+    <div class="pjsec"><h3>Last 5 commits</h3>${commits}
+      <div class="muted" style="margin-top:.4rem">Read from GitHub each time you open this page, never stored.</div></div>
+
+    <div class="pjsec"><h3>Done \u00b7 showing ${doneShown.length} of ${doneQ.length}</h3>
+      ${doneShown.length?doneShown.map(row).join(''):'<div class="muted">nothing closed yet</div>'}</div>
+
+    <div class="pjsec"><h3>Settings</h3>
+      <div class="scnote repoedit" onclick="setRepo('${a.id}')">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
+      <div class="adminrow" style="margin-top:.6rem">
+        <button class="tb" onclick="renameApp('${a.id}')">Rename project</button>
+        <button class="tb danger" onclick="delApp('${a.id}')">Remove from Tiara</button>
+      </div></div>`;
+}
+
 function showTab(t){
+  const pj=$('#project'); if(pj) pj.style.display='none';
   TABS.forEach(x=>{ const el=$('#'+x); if(el) el.style.display=(x===t)?'block':'none';
     const tb=document.getElementById('tab-'+x); if(tb) tb.classList.toggle('on',x===t); });
 }
@@ -1190,7 +1275,7 @@ function render(){
     a.queue.forEach((q,i)=>{ if(q.status==='done') doneRows+=rowHtml(q,i); else activeRows+=rowHtml(q,i); });
     const doneFold = doneRows ? `<details class="donefold" data-key="done:${a.id}" ${openState.has('done:'+a.id)?'open':''}><summary>✅ Done · ${dn}</summary>${doneRows}</details>` : '';
     return `<details class="app" data-key="app:${a.id}" ${openState.has('app:'+a.id)?'open':''}>
-      <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="appmove"><button onclick="event.stopPropagation();moveApp('${a.id}',-1)" title="move up">▲</button><button onclick="event.stopPropagation();moveApp('${a.id}',1)" title="move down">▼</button></span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><span class="nm">${esc(a.name)}</span>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<button class="tftoggle${a.bundleId?' on':''}" title="${a.bundleId?'TestFlight badge on — click to change or turn off':'show a live TestFlight badge — pick which App Store Connect app this is'}" onclick="event.stopPropagation();tfToggle('${a.id}')">✈</button><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span></summary>
+      <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="appmove"><button onclick="event.stopPropagation();moveApp('${a.id}',-1)" title="move up">▲</button><button onclick="event.stopPropagation();moveApp('${a.id}',1)" title="move down">▼</button></span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><a class="nm nmlink" href="#" onclick="event.stopPropagation();event.preventDefault();openProject('${a.id}')" title="open ${esc(a.name)}'s own page">${esc(a.name)}</a>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<button class="tftoggle${a.bundleId?' on':''}" title="${a.bundleId?'TestFlight badge on — click to change or turn off':'show a live TestFlight badge — pick which App Store Connect app this is'}" onclick="event.stopPropagation();tfToggle('${a.id}')">✈</button><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span></summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a)&&boardFor(a))?`<div class="actions"><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} board ↗</a><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
@@ -1220,7 +1305,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v50';
+const TIARA_VERSION = 'board-v51';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
