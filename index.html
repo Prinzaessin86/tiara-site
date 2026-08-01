@@ -266,6 +266,11 @@
   .cchkx>summary::-webkit-details-marker{display:none;}
   .cchkx>summary:hover{color:var(--brand);}
   .cchkx[open]>summary{font-weight:700;}
+  /* An open explanation needs prose width. The dimension column holding it spans the whole
+     card while it is open, and snaps back when you close it, so the grid is untouched the
+     rest of the time. :has() is Safari 15.4+; where it is missing this simply does nothing. */
+  .ccol:has(.cchkx[open]){grid-column:1/-1;}
+  .ccol:has(.cchkx[open]) .cexp{max-width:var(--w-read);}
   .cexp{margin:.4rem 0 .6rem 1.1rem;padding:.5rem .65rem;background:#fff;border:1.5px solid var(--line2);
         border-radius:var(--r-md,.85rem);}
   .cexp p{margin:0 0 .35rem;font-size:.78rem;line-height:1.55;color:var(--ink-2,#5d5175);}
@@ -1423,7 +1428,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v57';
+const TIARA_VERSION = 'board-v58';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
