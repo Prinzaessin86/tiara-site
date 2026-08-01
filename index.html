@@ -602,12 +602,14 @@ async function discoverIcons(){
   }
 }
 function boardFor(a){ if(!a) return null; const or=appOwnerRepo(a); if(!or) return null; return GH_BOARDS[or.toLowerCase()] || _discovered[a.id] || null; }
-// release-status.json (committed by the TestFlight poller workflow) lives next to this page — same origin, no token.
+// release-status.json now lives in the private tiara repo (#56); the poller publishes it there and the page reads it with the token.
 // Shape: { generated, apps:{ "<bundleId>": {name,version,build,state,expired,uploaded} } }
 async function loadTFStatus(){
   try{
-    const r=await fetch('release-status.json?t='+Date.now()); if(!r.ok) return;   // absent before the first run — fine
-    const j=await r.json(); const apps=(j&&j.apps)||{};
+    if(!GH.token) return;   // release-status.json now lives in the private tiara repo (#56); needs the token like the board
+    const f=await ghGetFile(GH.owner+'/'+GH.boardRepo, 'release-status.json');
+    if(f.missing) return;   // absent before the first run is fine
+    const j=JSON.parse(f.text); const apps=(j&&j.apps)||{};
     Object.keys(_tfstatus).forEach(k=>delete _tfstatus[k]);
     for(const b of Object.keys(apps)) _tfstatus[b]=apps[b];
   }catch(e){ noted('TestFlight status file',e,'stale'); }   // never let a missing/bad status file break load
@@ -1568,7 +1570,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v61';
+const TIARA_VERSION = 'board-v62';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }

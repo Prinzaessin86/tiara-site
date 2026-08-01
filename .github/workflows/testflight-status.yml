@@ -33,8 +33,14 @@ jobs:
           ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
         run: node scripts/testflight-status.js
 
-      - name: Commit if changed
+      - name: Publish release-status.json to the private tiara repo
+        env:
+          TIARA_PUSH_TOKEN: ${{ secrets.TIARA_PUSH_TOKEN }}
         run: |
+          set -e
+          git clone --depth 1 "https://x-access-token:${TIARA_PUSH_TOKEN}@github.com/Prinzaessin86/tiara.git" _priv
+          cp release-status.json _priv/release-status.json
+          cd _priv
           git config user.name  "tiara-bot"
           git config user.email "actions@users.noreply.github.com"
           git add release-status.json

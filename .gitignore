@@ -12,3 +12,6 @@ tiara-data*.json
 
 # Compliance snapshot now lives in the private `tiara` repo (#56), fetched via the token.
 compliance.json
+
+# TestFlight status now lives in the private `tiara` repo (#56), fetched via the token.
+release-status.json
