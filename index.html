@@ -250,6 +250,9 @@
   .kblist{margin:6px 0;padding-left:2px;list-style:none;}
   .kblist li{font-size:.93rem;line-height:1.5;color:#4a3a5e;margin:6px 0;padding-left:16px;position:relative;}
   .kblist li::before{content:'·';position:absolute;left:4px;color:var(--pink);font-weight:800;}
+  .kbintro{font-size:.95rem;line-height:1.6;color:#4a3a5e;margin:0 0 10px;}
+  .kbdiag{display:block;width:100%;height:auto;margin:14px 0 6px;}
+  .kbcap{font-size:.82rem;line-height:1.5;color:var(--ink-3,#6f6188);font-style:italic;margin:0 0 16px;}
   .kbtag{display:inline-block;font-size:.66rem;font-weight:800;padding:2px 8px;border-radius:8px;margin-left:auto;letter-spacing:.03em;}
   .kbtag.local{background:#e7f7ef;color:#2f9e6e;} .kbtag.cloud{background:#e6effb;color:#4a7ed6;}
   footer{text-align:center;margin-top:24px;font-size:.82rem;color:var(--soft);font-weight:700;}
@@ -282,6 +285,8 @@
              border-radius:.3rem;word-break:break-all;}
   .cnoexp{font-size:.62rem;font-weight:800;text-transform:uppercase;background:#fbe7ee;color:#a32f56;
           padding:.1rem .38rem;border-radius:.45rem;margin-left:.35rem;}
+  .cfactok{background:#f2faf6;border:1.5px solid #cfe9dc;border-radius:var(--r-md,.85rem);
+            padding:.55rem .8rem;margin:0 0 .8rem;font-size:.82rem;color:#2f6b50;line-height:1.6;}
   .cexpwarn{background:#fbe7ee;border:1.5px solid #f0c9d6;border-radius:var(--r-md,.85rem);
             padding:.6rem .8rem;margin:0 0 .8rem;font-size:.82rem;color:#a32f56;line-height:1.6;}
   .cexpfix{color:var(--ink-2,#5d5175);}
@@ -428,6 +433,130 @@
 
       <div class="kbsec"><h3><span class="kbnum">7</span> How every app is born with all of this</h3>
         <p>None of this is set up by hand per app. One command (<code>newapp</code>, from the factory template) stamps out a new app that already carries the gate, the safety nets, the deeper checks, the dev-and-real split (separate DEV and PROD schemes, bundle ids, and CloudKit containers), and the written-down rules (the ADRs). Every app inherits the whole machine on day one, so quality is never bolted on later during a scary audit. The <b>Compliance</b> tab shows, at a glance, how far along each app is across all of it.</p></div>
+    </div>
+
+    <div class="kb">
+      <div class="phead">How the factory checks itself · the four couplings</div>
+
+      <p class="kbintro">Every rule in this factory has the same failure mode. Something is set up
+      correctly, works for a while, and then quietly stops, because nothing was ever going to notice
+      that it had. The version stamp was bumped six times in two days and then sat still for
+      seventeen template changes. A gate can be installed and never fire. An explanation can be
+      written and then describe a check that no longer works that way.</p>
+
+      <p class="kbintro">The answer is not discipline. It is <b>coupling</b>: tying two things
+      together so that moving one without the other is visible. Four such pairs matter here. Three
+      exist. The fourth is named honestly as missing rather than left to be discovered.</p>
+
+      <svg class="kbdiag" viewBox="0 0 720 380" role="img"
+           aria-label="Four couplings. One, the template is coupled to FACTORY_VERSION by counting commits since the last bump. Two, FACTORY_VERSION is compared to each app's factory version on every scan. Three, a check's code is hashed and locked to its explanation. Four, the template is not coupled to the set of checks, and nothing links them.">
+        <defs>
+          <marker id="kbarrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#6a5a82"/>
+          </marker>
+          <marker id="kbarrowbad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#c0396a"/>
+          </marker>
+        </defs>
+
+        <rect x="20" y="24" width="250" height="52" rx="14" fill="#fff" stroke="#e2d8ee" stroke-width="1.5"/>
+        <text x="145" y="55" text-anchor="middle" font-size="14" font-weight="700" fill="#3a2d4d">template/</text>
+        <line x1="278" y1="50" x2="462" y2="50" stroke="#6a5a82" stroke-width="1.6" marker-end="url(#kbarrow)"/>
+        <circle cx="298" cy="50" r="11" fill="#6a5a82"/>
+        <text x="298" y="55" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">1</text>
+        <text x="392" y="41" text-anchor="middle" font-size="12" fill="#6f6188">commits since the bump</text>
+        <rect x="470" y="24" width="230" height="52" rx="14" fill="#fff" stroke="#e2d8ee" stroke-width="1.5"/>
+        <text x="585" y="55" text-anchor="middle" font-size="14" font-weight="700" fill="#3a2d4d">FACTORY_VERSION</text>
+
+        <rect x="20" y="114" width="250" height="52" rx="14" fill="#fff" stroke="#e2d8ee" stroke-width="1.5"/>
+        <text x="145" y="145" text-anchor="middle" font-size="14" font-weight="700" fill="#3a2d4d">FACTORY_VERSION</text>
+        <line x1="278" y1="140" x2="462" y2="140" stroke="#6a5a82" stroke-width="1.6" marker-end="url(#kbarrow)"/>
+        <circle cx="298" cy="140" r="11" fill="#6a5a82"/>
+        <text x="298" y="145" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">2</text>
+        <text x="392" y="131" text-anchor="middle" font-size="12" fill="#6f6188">compared on every scan</text>
+        <rect x="470" y="114" width="230" height="52" rx="14" fill="#fff" stroke="#e2d8ee" stroke-width="1.5"/>
+        <text x="585" y="139" text-anchor="middle" font-size="13" font-weight="700" fill="#3a2d4d">each app&#8217;s</text>
+        <text x="585" y="156" text-anchor="middle" font-size="13" font-weight="700" fill="#3a2d4d">.factory-version</text>
+
+        <rect x="20" y="204" width="250" height="52" rx="14" fill="#fff" stroke="#e2d8ee" stroke-width="1.5"/>
+        <text x="145" y="229" text-anchor="middle" font-size="13" font-weight="700" fill="#3a2d4d">a check&#8217;s code in</text>
+        <text x="145" y="246" text-anchor="middle" font-size="13" font-weight="700" fill="#3a2d4d">compliance.mjs</text>
+        <line x1="278" y1="230" x2="462" y2="230" stroke="#6a5a82" stroke-width="1.6" marker-end="url(#kbarrow)"/>
+        <circle cx="298" cy="230" r="11" fill="#6a5a82"/>
+        <text x="298" y="235" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">3</text>
+        <text x="392" y="221" text-anchor="middle" font-size="12" fill="#6f6188">hashed and locked</text>
+        <rect x="470" y="204" width="230" height="52" rx="14" fill="#fff" stroke="#e2d8ee" stroke-width="1.5"/>
+        <text x="585" y="235" text-anchor="middle" font-size="14" font-weight="700" fill="#3a2d4d">its explanation</text>
+
+        <rect x="20" y="294" width="250" height="52" rx="14" fill="#fff" stroke="#e2d8ee" stroke-width="1.5"/>
+        <text x="145" y="325" text-anchor="middle" font-size="14" font-weight="700" fill="#3a2d4d">template/</text>
+        <line x1="278" y1="320" x2="462" y2="320" stroke="#c0396a" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#kbarrowbad)"/>
+        <circle cx="298" cy="320" r="11" fill="#c0396a"/>
+        <text x="298" y="325" text-anchor="middle" font-size="12" font-weight="800" fill="#fff">4</text>
+        <text x="392" y="311" text-anchor="middle" font-size="12" font-weight="700" fill="#a32f56">nothing links these</text>
+        <rect x="470" y="294" width="230" height="52" rx="14" fill="#fdf5f8" stroke="#f0c9d6" stroke-width="1.5" stroke-dasharray="6 5"/>
+        <text x="585" y="325" text-anchor="middle" font-size="14" font-weight="700" fill="#a32f56">the set of checks</text>
+      </svg>
+      <p class="kbcap">Solid lines are couplings that exist and are checked every four hours. The
+      dashed line is the one that does not.</p>
+
+      <div class="kbsec"><h3><span class="kbnum">1</span> The template to its own version number</h3>
+        <p>The factory has a version, in <code>FACTORY_VERSION</code>. It was bumped from 1 to 6 in
+        two days, once per real change, and then stopped while <code>template/</code> went on
+        changing seventeen more times: the finish gate, the enforcement manifest, the scope guards,
+        and the whole queue-file removal all landed under a number that still said 6.</p>
+        <p><b>What catches it now.</b> Every scan counts the commits to <code>template/</code> since
+        the version last moved. Zero means the number describes the factory. Anything above zero
+        means the factory has run ahead of its own version, and the compliance view says by how much.
+        Nothing in <code>_bootstrap</code> can fail a build, because it has no <code>Makefile</code>,
+        no <code>verify</code> and no hooks, so this is enforced where you actually look rather than
+        in a terminal nobody opens.</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">2</span> The factory to each app</h3>
+        <p>Each app records the factory version it was built from, in <code>.factory-version</code>.
+        On its own that is a number nobody reads. Compared against the factory's current version it
+        becomes the answer to a real question: how far behind is this app, and by how much.</p>
+        <p><b>What catches it now.</b> Two checks in the Bootstrap dimension.
+        <code>factory_stamped</code> asks whether the app declares a version at all.
+        <code>factory_current</code> asks whether that version is the current one. An app stamped 6
+        against a factory at 7 is behind by a known amount instead of by an unknown one.</p>
+        <p>The fix for a failing <code>factory_current</code> is to bring the app up to date and then
+        bump the file. Writing the number without doing the work is exactly how the stamp became a
+        lie the first time.</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">3</span> A check to its explanation</h3>
+        <p>Every compliance check carries four fields: what it means, how it is decided, how to see
+        it for yourself, and how to get to green. An explanation that is present but no longer true
+        is worse than a missing one, because the board still looks complete.</p>
+        <p><b>What catches it now.</b> The slice of <code>compliance.mjs</code> that implements each
+        check is hashed and recorded in <code>compliance-explain.lock.json</code>. Change how a check
+        decides without re-reading its explanation and the next scan says so, on the board, above the
+        legend. Re-locking is a separate deliberate command and is meant to be its own commit,
+        because it is you stating that you re-read the check and the explanation still holds.</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">4</span> The factory to the checks · this one does not exist</h3>
+        <p>Nothing makes a check appear when the factory gains a capability. The checks are written
+        by hand, so the template can grow a rule and the board will never mention it, and nothing
+        flags the gap.</p>
+        <p>This is not hypothetical. <code>template/scripts/conform.sh</code> is the script that
+        stops queue files coming back, and <b>there is no check that it is installed at all</b>. An
+        app could be missing it entirely and the board would say nothing. The same is true of the
+        enforcement manifest and of <code>tree-fingerprint.sh</code>.</p>
+        <p>So coupling 1 catches the factory changing. It does not catch the checks failing to
+        follow. Closing that would take the same shape one level up: record a hash of
+        <code>template/</code> beside the factory version, and when the template moves, require
+        either a check to move with it or an explicit note that none was needed. The cost is that
+        every template change then costs a deliberate line, which is precisely what stopped happening
+        after version 6.</p></div>
+
+      <div class="kbsec"><h3><span class="kbnum">5</span> The shape all four share</h3>
+        <p>Each one takes a thing that can quietly go stale and ties it to a thing that moves, so
+        that the gap between them is a number rather than a feeling. Then it puts that number
+        somewhere it is seen without being sought.</p>
+        <p>That last part is the load-bearing half. A check that writes to a log nobody opens is not
+        a check, it is a diary. Every one of these reports into the compliance view, on the same four
+        hourly refresh as everything else, which means the question "is this still true" is answered
+        continuously instead of during a scary audit.</p></div>
     </div>
   </div>
 
@@ -1350,6 +1479,20 @@ function renderCompliance(){
         return `<div class="cexpwarn">\u26d4 The explanations below may not match the checks.<br>${bits.join('<br>')}
           <br><span class="cexpfix">Re-read them, then: <code>node scripts/explain-lock.mjs --write</code></span></div>`;
       })()}
+    ${(function(){
+        // The factory's own version, coupled to the template by counting commits since the bump.
+        // A version that stops moving while the thing it versions keeps moving is worse than no
+        // version, so the gap is a number on the board rather than something you would have to
+        // think to go and look for. (D49)
+        const f=c.factory;
+        if(!f) return '<div class="cexpwarn">This scan predates the factory version check. Regenerate it.</div>';
+        const bits=[];
+        if(!f.inSync) bits.push(`<b>FACTORY_VERSION says ${esc(String(f.version))} and template/.factory-version says ${esc(String(f.templateVersion))}.</b> New apps would be stamped with the wrong number.`);
+        if(f.stale) bits.push(`<b>template/ has changed ${f.templateCommitsSinceBump} time${f.templateCommitsSinceBump===1?'':'s'} since version ${esc(String(f.version))}.</b> Either those changes did not warrant a bump, or the version no longer describes the factory it names.`);
+        if(!bits.length) return `<div class="cfactok">Factory version <b>${esc(String(f.version))}</b>, and template/ has not changed since it was set. Every app's stamp is measured against this.</div>`;
+        return `<div class="cexpwarn">\u26a0\ufe0f The factory version may not describe the factory.<br>${bits.join('<br>')}
+          <br><span class="cexpfix">Bring the number up to date in <code>_bootstrap/FACTORY_VERSION</code> and <code>template/.factory-version</code> together, in its own commit.</span></div>`;
+      })()}
     <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place &nbsp; ${compPill('na')} optional, not set up (cloud CI or TestFlight)</div>
     <div id="complist">${rows}</div>`;
 }
@@ -1422,7 +1565,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v59';
+const TIARA_VERSION = 'board-v60';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
