@@ -71,7 +71,16 @@
   .pjhead h2{margin:0;font-family:'Baloo 2';font-size:1.6rem;color:var(--ink-1,#3a2d4d);}
   .pjlanes{display:flex;flex-wrap:wrap;gap:.45rem;margin:.5rem 0 1rem;}
   /* A count tells you the size of the pile. The distribution tells you its shape. */
-  .pjlane{font-size:.8rem;font-weight:700;padding:.15rem .55rem;border-radius:999px;background:#fff;border:1.5px solid var(--line);}
+  .pjlane{font-size:.8rem;font-weight:700;padding:.15rem .55rem;border-radius:999px;background:#fff;
+           border:1.5px solid var(--line);color:var(--ink-2,#5d5175);font-family:'Quicksand';cursor:pointer;}
+  .pjlane:hover{border-color:var(--pink);}
+  .pjlane.on{border-color:var(--brand);color:var(--brand);background:#f6f0ff;}
+  .pjtools{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.6rem;}
+  .pjq{flex:1 1 18ch;min-width:14ch;font-family:'Quicksand';font-size:.9rem;border:1.5px solid var(--line);
+       border-radius:.6rem;padding:.35rem .6rem;}
+  .pjpage{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-top:.6rem;font-size:.82rem;color:var(--ink-3,#6f6188);}
+  .pjpage button[disabled]{opacity:.4;cursor:default;}
+  .pjpage button[disabled]:hover{border-color:var(--line);}
   .pjsec{background:#fff;border:1.5px solid var(--line);border-radius:var(--r-lg,1.15rem);padding:.9rem 1rem;margin-bottom:.8rem;}
   .pjsec>h3{margin:0 0 .5rem;font-family:'Baloo 2';font-size:1rem;color:var(--brand);}
   .pjsec .muted{font-size:.85rem;color:var(--ink-3,#6f6188);}
@@ -861,10 +870,19 @@ setInterval(renderFreshness, 30000);
    that made the original clumsy. The card holds what you scan; the page holds what you go looking
    for. */
 let _pjCommits = {};   // appId -> [{sha,msg}], memory only. Read live, stored nowhere (D46).
+// A view preference. It lives here and never goes to GitHub: GitHub holds the facts, Tiara holds
+// the view. Resets when you open a different project, because a filter you cannot see is a lie.
+let _pjView = { id:null, q:'', lane:'', page:0 };
+const PJ_PAGE = 10;
+function pjSearch(v){ _pjView.q=v; _pjView.page=0; renderProject(_pjView.id); const el=$('#pjq'); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } }
+function pjLane(k){ _pjView.lane = (_pjView.lane===k?'':k); _pjView.page=0; renderProject(_pjView.id); }
+function pjPage(d){ _pjView.page += d; renderProject(_pjView.id); window.scrollTo(0,0); }
+function pjClear(){ _pjView.q=''; _pjView.lane=''; _pjView.page=0; renderProject(_pjView.id); }
 function openProject(id){
   TABS.forEach(x=>{ const el=$('#'+x); if(el) el.style.display='none'; });
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   const p=$('#project'); if(!p) return;
+  if(_pjView.id!==id) _pjView={ id:id, q:'', lane:'', page:0 };
   p.style.display='block'; renderProject(id); window.scrollTo(0,0);
   loadCommits(id);
 }
@@ -883,13 +901,26 @@ function renderProject(id){
   const openQ=q.filter(x=>x.status!=='done');
   const doneQ=q.filter(x=>x.status==='done');
   const counts={}; BOARD_STATUS_ORDER.forEach(k=>{ const n=q.filter(x=>x.status===k).length; if(n) counts[k]=n; });
-  const lanes=Object.keys(counts).map(k=>`<span class="pjlane">${counts[k]} ${BOARD_STATUS_LABEL[k]||k}</span>`).join('')
-              || '<span class="pjlane">no items</span>';
+  // A hollow pill is a toggle. Clicking a lane filters to it; clicking again clears.
+  const lanes=Object.keys(counts).map(k=>
+      `<button class="pjlane${_pjView.lane===k?' on':''}" onclick="pjLane('${k}')" title="show only ${BOARD_STATUS_LABEL[k]||k}">${counts[k]} ${BOARD_STATUS_LABEL[k]||k}</button>`
+    ).join('') || '<span class="pjlane">no items</span>';
   const row=(x)=>`<div class="row qrow"><span class="t">${x.id?`<span class="id">${esc(x.id)}</span>`:''}${esc(x.title)}</span>`
       + `<span class="typechip2">${(TYPE_META[x.type]||TYPE_META.none).t}</span>`
       + (x.url?`<a class="ghlink" href="${x.url}" target="_blank">#${x.issueNumber}\u2197</a>`:'')+`</div>`;
   // Done is capped, and the cap announces itself. A truncation that stays quiet is the disease
   // this whole project exists to treat.
+  // filter, then page. The count always states both, because a truncation that does not announce
+  // itself is the disease this whole project exists to treat.
+  const needle=_pjView.q.trim().toLowerCase();
+  const filtered=openQ.filter(x=>
+      (!_pjView.lane || x.status===_pjView.lane) &&
+      (!needle || ((x.title||'')+' '+(x.id||'')).toLowerCase().includes(needle)));
+  const maxPage=Math.max(0, Math.ceil(filtered.length/PJ_PAGE)-1);
+  if(_pjView.page>maxPage) _pjView.page=maxPage;
+  const from=_pjView.page*PJ_PAGE;
+  const page=filtered.slice(from, from+PJ_PAGE);
+
   const DONECAP=20;
   const doneShown=doneQ.slice(0,DONECAP);
   const c=_pjCommits[id];
@@ -908,7 +939,17 @@ function renderProject(id){
     <div class="pjlanes">${lanes}</div>
 
     <div class="pjsec"><h3>Open work \u00b7 ${openQ.length}</h3>
-      ${openQ.length?openQ.map(row).join(''):'<div class="muted">nothing open \ud83c\udf89</div>'}</div>
+      <div class="pjtools">
+        <input id="pjq" class="pjq" placeholder="search open work…" value="${esc(_pjView.q)}" oninput="pjSearch(this.value)">
+        ${(_pjView.q||_pjView.lane)?`<button class="tb" onclick="pjClear()">Clear filter</button>`:''}
+      </div>
+      ${filtered.length?'':'<div class="muted">nothing matches</div>'}
+      ${page.map(row).join('')}
+      ${filtered.length?`<div class="pjpage">
+          <span>showing ${from+1} to ${from+page.length} of ${filtered.length}${filtered.length!==openQ.length?` (filtered from ${openQ.length})`:''}</span>
+          <button class="tb" onclick="pjPage(-1)" ${_pjView.page<=0?'disabled':''}>\u2190 previous</button>
+          <button class="tb" onclick="pjPage(1)" ${from+PJ_PAGE>=filtered.length?'disabled':''}>next \u2192</button>
+        </div>`:''}</div>
 
     <div class="pjsec"><h3>Last 5 commits</h3>${commits}
       <div class="muted" style="margin-top:.4rem">Read from GitHub each time you open this page, never stored.</div></div>
@@ -1330,7 +1371,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v53';
+const TIARA_VERSION = 'board-v54';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
