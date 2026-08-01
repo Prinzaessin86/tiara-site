@@ -39,7 +39,23 @@
   h1{font-family:'Baloo 2';font-weight:800;font-size:1.85rem;margin:0;color:var(--brand);letter-spacing:-.01em;display:flex;align-items:center;gap:11px;}
   h1 .crest{width:34px;height:34px;border-radius:10px;background:linear-gradient(150deg,#ff6fb5,#9b5de5);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(155,93,229,.28);}
   .sub{font-size:.8rem;color:var(--soft);font-weight:700;width:100%;}
-  .bar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
+  .bar{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:.75rem 0;}
+  /* Three affordances, three shapes. A button is solid and does something. A toggle is a hollow
+     pill. A link has no chrome. Corner radius alone was far too weak: import and export used to
+     read as filters. */
+  button.tb.primary{border:none;background:var(--grad-btn,linear-gradient(90deg,var(--pink),var(--purple)));color:#fff;box-shadow:0 .25rem .7rem rgba(155,93,229,.28);}
+  button.tb.primary svg{stroke:#fff;}
+  button.tb.danger{border-color:#f0c9d6;color:#a32f56;}
+  .fresh{font-size:.78rem;color:var(--ink-3,#6f6188);margin-left:auto;white-space:nowrap;}
+  .fresh.stale{color:#a32f56;font-weight:700;}
+  .addissue{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:0 0 .9rem;padding:.7rem .8rem;
+            background:#fff;border:1.5px solid var(--line);border-radius:var(--r-md,.85rem);}
+  .addissue input{flex:1 1 22ch;min-width:16ch;font-family:'Quicksand';font-size:.92rem;border:1.5px solid var(--line);border-radius:.6rem;padding:.4rem .6rem;}
+  .addissue select{font-family:'Quicksand';font-weight:700;font-size:.85rem;border:1.5px solid var(--line);border-radius:.6rem;padding:.4rem .5rem;background:#fff;color:var(--ink-2,#5d5175);}
+  .adminbox{background:#fff;border:1.5px solid var(--line);border-radius:var(--r-lg,1.15rem);padding:1rem 1.1rem;margin-bottom:1.1rem;}
+  .adminbox h3{margin:0 0 .3rem;font-family:'Baloo 2';font-size:1.05rem;color:var(--brand);}
+  .adminwhy{margin:0 0 .7rem;font-size:.85rem;color:var(--ink-3,#6f6188);max-width:68ch;}
+  .adminrow{display:flex;flex-wrap:wrap;gap:.5rem;}
   button.tb{height:38px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-family:'Quicksand';font-weight:700;font-size:.85rem;border:1.5px solid var(--line);background:#fff;color:#5a4a6e;padding:0 14px;border-radius:11px;cursor:pointer;}
   button.tb svg{width:15px;height:15px;flex-shrink:0;}
   button.tb:hover{border-color:var(--pink);}
@@ -247,12 +263,18 @@
   </header>
 
   <div class="bar">
-    <button class="tb newapp" style="border:none;background:linear-gradient(90deg,#2fbf7e,#4ea8ff);color:#fff;box-shadow:0 4px 12px rgba(47,191,126,.28);" onclick="addApp()"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New app</button>
-    <button class="tb" onclick="refreshBoard()"><svg viewBox="0 0 24 24" fill="none" stroke="#8a7ba3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.3M21 4v4h-4"/></svg>Refresh</button>
-    <button class="tb" onclick="importFile()"><svg viewBox="0 0 24 24" fill="none" stroke="#8a7ba3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/></svg>Import</button>
-    <button class="tb" id="btn-export" onclick="exportFile()"><svg viewBox="0 0 24 24" fill="none" stroke="#8a7ba3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 12l4-4m-4 4l-4-4M5 21h14"/></svg>Backup</button>
-    <button class="tb" onclick="ghDisconnect()"><svg viewBox="0 0 24 24" fill="none" stroke="#8a7ba3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>Disconnect</button>
+    <button class="tb primary" onclick="toggleAddIssue()" title="open an issue on any board"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add issue</button>
     <span id="status">connecting…</span>
+    <span id="fresh" class="fresh" title="when Tiara last read the boards"></span>
+  </div>
+
+  <!-- Add issue, global. It asks WHICH board, because that is the only thing it cannot infer. -->
+  <div id="addissue" class="addissue" style="display:none">
+    <select id="ai-app" title="which app"></select>
+    <input id="ai-title" placeholder="what needs doing…" onkeydown="if(event.key==='Enter')submitAddIssue()">
+    <select id="ai-type" title="a type is required (D42)"><option value="">pick a type</option></select>
+    <button class="tb primary" onclick="submitAddIssue()">Add to New</button>
+    <button class="tb" onclick="toggleAddIssue()">Cancel</button>
   </div>
 
   <div id="onboard" style="display:none">
@@ -273,8 +295,8 @@
   </div>
 
   <div class="tabs" id="tabs">
-    <div class="tab on" id="tab-board" onclick="showTab('board')">Board</div>
-    <div class="tab" id="tab-portfolio" onclick="showTab('portfolio')">Portfolio</div>
+    <div class="tab on" id="tab-board" onclick="showTab('board')">Portfolio</div>
+    <div class="tab" id="tab-portfolio" onclick="showTab('portfolio')">Task queue</div>
     <div class="tab" id="tab-runbook" onclick="showTab('runbook')">Runbook</div>
     <div class="tab" id="tab-knowledge" onclick="showTab('knowledge')">Knowledge</div>
     <div class="tab" id="tab-compliance" onclick="showTab('compliance')">Compliance</div>
@@ -282,7 +304,22 @@
 
   <div id="board"></div>
   <div id="portfolio" style="display:none"></div>
-  <div id="runbook" style="display:none"></div>
+  <div id="runbook" style="display:none">
+    <div class="adminbox">
+      <h3>Board administration</h3>
+      <p class="adminwhy">These are the buttons that used to crowd the top bar. They belong here: you
+      reach for them rarely, and when you do you are looking for how to do a thing, which is what this
+      tab is.</p>
+      <div class="adminrow">
+        <button class="tb" onclick="addApp()">New product</button>
+        <button class="tb" onclick="refreshBoard()">Refresh from GitHub</button>
+        <button class="tb" onclick="exportFile()" title="saves your project list and settings. NOT your tickets, those live as GitHub issues">Download backup</button>
+        <button class="tb" onclick="importFile()" title="replaces your project list and settings from a file. It asks first">Restore backup</button>
+        <button class="tb danger" onclick="ghDisconnect()">Disconnect GitHub</button>
+      </div>
+    </div>
+    <div id="runbookrecipes"></div>
+  </div>
   <div id="compliance" style="display:none"></div>
   <div id="knowledge" style="display:none">
     <div class="kb">
@@ -636,6 +673,7 @@ async function pollBoards(){
       if(full) lastFullPoll=now;
       if(ok){ captureOpen(); render(); }
       lastPoll={ at:new Date(), ok:ok, failed:failed.length, scope: full?'every board':'the boards you have open' };
+      renderFreshness();
       // a poll that failed must never look like a poll that worked
       if(failed.length) setStatus('\u26d4 '+failed.length+' board'+(failed.length>1?'s':'')+' did not refresh \u00b7 '+failed[0]);
       else if(ok)       setStatus('\ud83d\udd04 '+ok+' board'+(ok>1?'s':'')+' up to date \u00b7 '+new Date().toLocaleTimeString());
@@ -738,6 +776,53 @@ function touch(){ captureOpen(); render(); if(HELPER.on) scheduleSave(); else se
 
 /* ---------- tabs ---------- */
 const TABS=['board','portfolio','runbook','compliance','knowledge'];
+/* ---------- Add issue, from anywhere ---------- */
+function toggleAddIssue(){
+  const box=$('#addissue'); if(!box) return;
+  const opening = box.style.display==='none';
+  box.style.display = opening ? 'flex' : 'none';
+  if(!opening) return;
+  const sel=$('#ai-app');
+  sel.innerHTML = data.apps.filter(a=>boardFor(a))
+    .map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  const ty=$('#ai-type');
+  ty.innerHTML = '<option value="">pick a type</option>'
+    + TYPE_ORDER.map(t=>`<option value="${t}">${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('');
+  $('#ai-title').value=''; $('#ai-title').focus();
+}
+function submitAddIssue(){
+  const a=app($('#ai-app').value); const v=$('#ai-title').value.trim(); const ty=$('#ai-type').value;
+  if(!a){ setStatus('pick a project first'); return; }
+  if(!v){ $('#ai-title').focus(); return; }
+  if(!ty){ setStatus('pick a type first: bug, feature or chore'); $('#ai-type').focus(); return; }
+  $('#ai-title').value='';
+  const tmp={id:'saving…',title:v,status:'new',done:false,type:ty,priority:'med',notes:[],_notesLoaded:true,_pending:true};
+  a.queue.push(tmp); captureOpen(); render(); setStatus('adding to '+a.name+'…');
+  bAddItem(a,v,ty).then(res=>{ tmp.id='#'+res.issueNumber; tmp.issueNumber=res.issueNumber; tmp.itemId=res.itemId; tmp.url=res.url;
+      delete tmp._pending; captureOpen(); render();
+      setStatus('\ud83d\udfe2 '+a.name+' #'+res.issueNumber+' \u00b7 '+ty+' \u00b7 New'); })
+    .catch(e=>{ const k=a.queue.indexOf(tmp); if(k>=0) a.queue.splice(k,1); captureOpen(); render();
+      setStatus('\u26a0 couldn\'t add, removed ('+e.message+')'); });
+}
+
+/* ---------- Freshness. Stale data and live data used to be drawn identically. ----------
+   lastPoll has been recorded since v45 and nothing showed it, which is a monitor nobody reads. */
+function renderFreshness(){
+  const el=$('#fresh'); if(!el) return;
+  if(!HELPER.on){ el.textContent=''; el.className='fresh'; return; }
+  if(!lastPoll.at){ el.textContent='not read yet'; el.className='fresh'; return; }
+  const mins=Math.round((Date.now()-lastPoll.at.getTime())/60000);
+  const when = mins<1 ? 'just now' : (mins===1 ? '1 min ago' : mins+' mins ago');
+  if(lastPoll.failed){
+    el.className='fresh stale';
+    el.textContent='\u26d4 last read FAILED \u00b7 showing data from '+when;
+  } else {
+    el.className='fresh'+(mins>70?' stale':'');
+    el.textContent='read '+when+' \u00b7 '+lastPoll.scope+(mins>70?' \u00b7 overdue':'');
+  }
+}
+setInterval(renderFreshness, 30000);
+
 function showTab(t){
   TABS.forEach(x=>{ const el=$('#'+x); if(el) el.style.display=(x===t)?'block':'none';
     const tb=document.getElementById('tab-'+x); if(tb) tb.classList.toggle('on',x===t); });
@@ -1126,7 +1211,7 @@ function render(){
       <div class="meta chk"><svg viewBox="0 0 24 24" fill="none" stroke="#2f8f63" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>${esc(s.check)}</div></div>`).join('');
     return `<details class="rec" data-key="rec:${rec.id}" ${openState.has('rec:'+rec.id)?'open':''}><summary><div class="rt">${esc(rec.title)}</div><div class="rw">${esc(rec.when)}</div></summary>${steps}</details>`;
   }).join('');
-  $('#runbook').innerHTML = r;
+  $('#runbookrecipes').innerHTML = r;
   renderPortfolio();
   renderCompliance();
   initSortables();   // (re)wire drag-to-reorder onto the freshly-built board
@@ -1135,7 +1220,7 @@ function render(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v49';
+const TIARA_VERSION = 'board-v50';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
