@@ -1,0 +1,3 @@
+Finished documents live here: dated audits, completed plans, superseded briefs.
+Agents cannot read or write this directory. The reasoning is in
+docs/decisions/factory/FD-0011-archived-documents-are-agent-unreadable.md, which is readable.
