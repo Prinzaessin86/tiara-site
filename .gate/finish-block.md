@@ -122,4 +122,12 @@ not evidence. This turn measures inside a 390px iframe instead: `innerWidth=390`
 - `docs/HOW-TIARA-WORKS.md` remains stale in §2, §6 and §8 (roadmap.md, Scramble, the data model),
   all of which predate this work. Not in scope, not filed.
 - `.dots` is still roughly 2.3:1 and fails the squint test on all three surfaces. Not filed.
-- Not pushed. Both repos are committed locally only.
+- ~~Not pushed. Both repos are committed locally only.~~ **Wrong, corrected after the fact.** I ran
+  no `git push`, but `com.princess.tiara.autosync.plist` runs `scripts/tiara-sync.sh` every 1800s
+  and that script pushes any local commit (line 113). board-v65 and board-v66 both went to the
+  public remote that way, and GitHub Pages built `94d89b3` at 2026-08-09T20:52:33Z. The live page
+  reads board-v66. On this repo, committing IS publishing, on a half-hour delay - "committed
+  locally, not pushed" is not a state that survives. The private `tiara` repo's doc commit
+  (8d8648d) is genuinely still local; the agent only watches tiara-site.
+- What is live has been verified against stub data only. No status change has been watched
+  reaching a real GitHub issue, and drag-to-reorder is unexercised after the row-patching change.
