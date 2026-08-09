@@ -166,6 +166,21 @@
   .detail{margin:0 0 12px 28px;padding:11px 13px;background:#faf6ff;border:1.5px solid #eeddf7;border-radius:12px;}
   .dmeta{font-size:.74rem;color:var(--soft);font-weight:800;margin-bottom:7px;text-transform:uppercase;letter-spacing:.4px;}
   .notes{margin-bottom:8px;} .note{font-size:.92rem;margin:5px 0;line-height:1.4;} .note b{color:var(--purple);}
+  /* the issue body, one block per `### Label` section the forms write */
+  .bwrap{margin-bottom:10px;display:flex;flex-direction:column;gap:7px;}
+  .bsec{background:#fff;border:1.5px solid #eeddf7;border-radius:10px;padding:8px 11px;}
+  .bsec.dod{border-color:#c9b3f0;background:#fbf8ff;}
+  .blab{font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--purple);margin-bottom:4px;}
+  .bsec.dod .blab::after{content:' · the acceptance criterion';font-weight:700;letter-spacing:0;text-transform:none;color:var(--soft);}
+  .bval{font-size:.9rem;line-height:1.45;white-space:pre-wrap;word-break:break-word;}
+  /* the compose panel: one field per form field, so a ticket is born with its criterion */
+  .cmp{display:flex;flex-direction:column;gap:8px;margin-top:9px;padding:11px;background:#fbf8ff;border:1.5px solid #e6d8f7;border-radius:12px;}
+  .cmpf{display:flex;flex-direction:column;gap:3px;}
+  .cmpf label{font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.4px;color:var(--purple);}
+  .cmpf label .req{color:#c2456b;}
+  .cmpf textarea{font:inherit;font-size:.9rem;padding:7px 9px;border:1.5px solid #e2d4f2;border-radius:9px;resize:vertical;min-height:52px;background:#fff;}
+  .cmpf textarea:focus{outline:2px solid var(--purple);outline-offset:1px;}
+  .cmph{font-size:.78rem;color:var(--soft);line-height:1.35;}
   .donefold{margin-top:10px;border:1.5px solid #d9efe2;border-radius:12px;background:#f6fbf8;overflow:hidden;}
   .donefold>summary{list-style:none;cursor:pointer;padding:8px 12px;font-weight:800;font-size:.8rem;color:var(--green);}
   .donefold>summary::-webkit-details-marker{display:none;}
@@ -801,7 +816,7 @@ async function loadBoardItems(a){
     const lane = (n.lane&&n.lane.name) || 'Up next';
     const status = (c.state==='CLOSED') ? 'done' : (LANE2STATUS[lane.toLowerCase()] || 'todo');
     return { id: px+'#'+c.number, _lid:lid, issueNumber:c.number, itemId:n.id, url:c.url,
-      title:c.title, status, done:(status==='done'),
+      title:c.title, body:c.body||'', status, done:(status==='done'),
       priority:((n.priority&&n.priority.name)||'Med').toLowerCase(),
       type:((n.type&&n.type.name)||'').toLowerCase(),   // no Type on the board means untriaged (D42)
       notes:[], _commentCount:(c.comments&&c.comments.totalCount)||0, _notesLoaded:false };
@@ -825,13 +840,26 @@ async function bComment(a,q,text){ const or=appOwnerRepo(a); const r=await ghApi
 async function bLoadNotes(a,q){ const or=appOwnerRepo(a); const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber+'/comments'); if(!r.ok) return;
   const cs=await r.json(); q.notes=(cs||[]).map(c=>{ const m=(c.body||'').match(/^\s*(🤖\s*claude|👑\s*you)\s*:?\s*/i);
     return { by:(m&&/claude|🤖/i.test(m[1]))?'claude':'you', text:(c.body||'').replace(/^\s*(🤖\s*claude|👑\s*you)\s*:?\s*/i,'') }; }); q._notesLoaded=true; }
-async function bAddItem(a,title,type){
+async function bAddItem(a,title,type,body){
   const or=appOwnerRepo(a);
-  const r=await ghApi('/repos/'+or+'/issues',{method:'POST',body:JSON.stringify({title})}); if(!r.ok) throw new Error('create issue '+r.status);
+  // The body is the ticket. A title-only issue carries no Definition of Done, so it can never be
+  // promoted to Verify once the criterion gate lands, and it cannot be fixed afterwards without
+  // the worker writing its own criterion. Labels match the GitHub issue forms so a ticket filed
+  // here and one filed through the web form are indistinguishable afterwards.
+  const payload={title};
+  if(body) payload.body=body;
+  if(type) payload.labels=[type];
+  const r=await ghApi('/repos/'+or+'/issues',{method:'POST',body:JSON.stringify(payload)}); if(!r.ok) throw new Error('create issue '+r.status);
   const iss=await r.json(); const meta=await resolveBoard(a);
   const add=await ghGraphQL(`mutation($p:ID!,$c:ID!){ addProjectV2ItemById(input:{projectId:$p,contentId:$c}){ item{ id } } }`,{ p:meta.projectId, c:iss.node_id });
   const itemId=add.addProjectV2ItemById.item.id;
-  const setf=async(field,name)=>{ const f=meta.fields[field]; if(f&&f.opts[name]) await ghGraphQL(`mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ projectV2Item{ id } } }`,{ p:meta.projectId, i:itemId, f:f.id, o:f.opts[name] }); };
+  // Throw rather than skip. The old form was `if(f&&f.opts[name]) await ...` with no else, so a
+  // field or option that did not exist left the value silently unset and the caller reported
+  // success. A ticket with no Lane is invisible to every lane query, which is worse than a failure.
+  const setf=async(field,name)=>{ const f=meta.fields[field];
+    if(!f) throw new Error('board has no "'+field+'" field');
+    if(!f.opts[name]) throw new Error('"'+field+'" has no option "'+name+'" (has: '+Object.keys(f.opts).join(', ')+')');
+    await ghGraphQL(`mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ projectV2Item{ id } } }`,{ p:meta.projectId, i:itemId, f:f.id, o:f.opts[name] }); };
   await setf('lane','New');                       // D41
   if(type) await setf('type', cap(type));         // D42: never created without one
   return { issueNumber:iss.number, itemId, url:iss.html_url };
@@ -1432,6 +1460,58 @@ function normaliseApps(){
 function migrate(){ normaliseApps(); ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>{ if(!q.id) q.id=nextId(a); if(!q.status) q.status=q.done?'done':'todo'; q.done=(q.status==='done'); if(q.type==null) q.type=''; if(!q.priority) q.priority='med'; if(!Array.isArray(q.notes)) q.notes=[]; }); }); }
 const TYPE_ORDER=['bug','feature','chore'];   // 'task' deleted at the root (D42)
 const TYPE_META={none:{e:'',t:'no type',c:'#8877a0'},bug:{e:'🐞',t:'bug',c:'#d0567f'},feature:{e:'✨',t:'feature',c:'#9b5de5'},chore:{e:'🧹',t:'chore',c:'#4ea8ff'}};
+
+// The issue-form fields, in form order. This MUST match
+// _bootstrap/template/.github/ISSUE_TEMPLATE/{bug,feature,chore}.yml, because a ticket filed
+// here and one filed through the GitHub web form have to produce the same body structure for
+// one parser to read both. It is a second copy and therefore a drift risk; closing that means
+// Tiara fetching the forms at build time, which waits for the move off Pages.
+// `Definition of Done` is required on all three: it is the acceptance criterion a later gate
+// compares against the text as filed, so a ticket created without one can never be promoted.
+const ISSUE_FIELDS={
+  bug:[
+    {l:'Summary',            r:1, h:'One or two sentences. What is wrong, in plain language.'},
+    {l:'Repro or Reference', r:1, h:'Exact steps, or a screenshot or device note if steps do not apply.'},
+    {l:'Expected Behavior',  r:1, h:'What should have happened.'},
+    {l:'Actual Behavior',    r:1, h:'What happened instead.'},
+    {l:'Definition of Done', r:1, h:'Name a command and what it should print.\nRun: make verify\nExpect: 0 failures'}
+  ],
+  feature:[
+    {l:'Summary',            r:1, h:'One or two sentences. What this is.'},
+    {l:'Repro or Reference', r:0, h:'The screen, flow or file this touches.'},
+    {l:'Problem',            r:1, h:'What is missing or wrong without this.'},
+    {l:'Proposed Solution',  r:1, h:'What you would build, in enough detail to disagree with.'},
+    {l:'Definition of Done', r:1, h:'Name a command and what it should print.\nRun: make test\nExpect: 0 failures'}
+  ],
+  chore:[
+    {l:'Summary',            r:1, h:'One or two sentences. What this is.'},
+    {l:'Repro or Reference', r:0, h:'The file, script or system this touches.'},
+    {l:'Reason',             r:1, h:'Why now. What breaks or drifts if this waits.'},
+    {l:'Definition of Done', r:1, h:'Name a command and what it should print.\nRun: make conform\nExpect: green'}
+  ]
+};
+// Draft state lives outside the DOM, keyed by app id, because render() rebuilds the markup on
+// every board change and anything typed into a re-rendered textarea would be lost.
+const _drafts={};
+function draftFor(id){ return (_drafts[id]=_drafts[id]||{type:'',vals:{}}); }
+function draftSet(id,label,v){ draftFor(id).vals[label]=v; }
+function draftType(id,ty){ const d=draftFor(id); d.type=ty; captureOpen(); render(); }
+// Build the body in exactly the shape GitHub itself writes from a form, so both doors produce
+// the same structure and one parser can walk either.
+function draftBody(id,ty){
+  const d=draftFor(id);
+  return (ISSUE_FIELDS[ty]||[]).map(f=>{
+    const v=(d.vals[f.l]||'').trim();
+    return '### '+f.l+'\n\n'+(v||'_No response_');
+  }).join('\n\n')+'\n';
+}
+function composeHtml(id){
+  const d=draftFor(id); const ty=d.type; if(!ty||!ISSUE_FIELDS[ty]) return '';
+  return `<div class="cmp"><div class="cmph">${TYPE_META[ty].e} ${esc(TYPE_META[ty].t)} · every field marked <span style="color:#c2456b">*</span> is required. The ticket is created with this as its body.</div>`
+    + ISSUE_FIELDS[ty].map(f=>`<div class="cmpf"><label>${esc(f.l)}${f.r?' <span class="req">*</span>':''}</label>`
+        + `<textarea placeholder="${esc(f.h)}" oninput="draftSet('${id}',${JSON.stringify(f.l)},this.value)">${esc(d.vals[f.l]||'')}</textarea></div>`).join('')
+    + '</div>';
+}
 function cycleType(id,i){ const a=app(id); const q=a.queue[i]; const idx=TYPE_ORDER.indexOf(q.type||''); const nv=TYPE_ORDER[(idx+1)%3];
   if(boardFor(a)){ const prev=q.type; q.type=nv; patchItemRow(a,i); markBusy(q.id,true);
     bSetField(a,q,'type',cap(nv)).then(()=>{ afterEdit(a,i,{}); setStatus('🟢 '+q.id+' · '+nv+' - saved'); })
@@ -1555,14 +1635,22 @@ function delItem(id,i){ const a=app(id); const q=a.queue[i];
 // D41: it lands in New, because you have written it down but not yet decided where it sits.
 function addItem(id){
   const a=app(id);
-  const inp=document.getElementById('add-'+id); const v=inp.value.trim(); if(!v) return;
-  const tsel=document.getElementById('addtype-'+id); const ty=tsel ? tsel.value : '';
-  if(!ty){ setStatus('pick a type first: bug, feature or chore'); if(tsel) tsel.focus(); return; }
+  const d=draftFor(id);
+  const inp=document.getElementById('add-'+id); const v=(inp?inp.value:(d.title||'')).trim(); if(!v) return;
+  const ty=d.type||'';
+  if(!ty){ const tsel=document.getElementById('addtype-'+id); setStatus('pick a type first: bug, feature or chore'); if(tsel) tsel.focus(); return; }
   if(!boardFor(a)){ setStatus('\u26d4 '+a.name+' has no board. Run ensure-board.sh for it (D39).'); return; }
-  inp.value='';
-  const tmp={id:'saving…',title:v,status:'new',done:false,type:ty,priority:'med',notes:[],_notesLoaded:true,_pending:true};
+  // Refuse rather than create a ticket that can never be promoted. A missing Definition of Done
+  // is the one that matters: it is the acceptance criterion, and adding it once the work has
+  // started makes it a criterion the worker wrote for itself, which is what the gate exists to stop.
+  const missing=(ISSUE_FIELDS[ty]||[]).filter(f=>f.r && !(d.vals[f.l]||'').trim()).map(f=>f.l);
+  if(missing.length){ setStatus('⚠ still needed: '+missing.join(', ')); return; }
+  const body=draftBody(id,ty);
+  const tmp={id:'saving…',title:v,body,status:'new',done:false,type:ty,priority:'med',notes:[],_notesLoaded:true,_pending:true};
   a.queue.push(tmp); captureOpen(); render(); setStatus('adding to GitHub…');
-  bAddItem(a,v,ty).then(res=>{ tmp.id='#'+res.issueNumber; tmp.issueNumber=res.issueNumber; tmp.itemId=res.itemId; tmp.url=res.url; delete tmp._pending; captureOpen(); render(); setStatus('\ud83d\udfe2 added #'+res.issueNumber+' \u00b7 '+ty+' \u00b7 New'); })
+  bAddItem(a,v,ty,body).then(res=>{ tmp.id='#'+res.issueNumber; tmp.issueNumber=res.issueNumber; tmp.itemId=res.itemId; tmp.url=res.url; delete tmp._pending;
+    _drafts[id]={type:'',vals:{},title:''};   // cleared only once GitHub has it, so a failure keeps what you typed
+    captureOpen(); render(); setStatus('\ud83d\udfe2 added #'+res.issueNumber+' \u00b7 '+ty+' \u00b7 New'); })
     .catch(e=>{ const k=a.queue.indexOf(tmp); if(k>=0) a.queue.splice(k,1); captureOpen(); render(); setStatus('\u26a0 couldn\'t add, removed ('+e.message+')'); });
 }
 function personalize(str,a){ return (str||'').replace(/<AppName>/g,a.name).replace(/<PREFIX>/g,a.prefix||'ITEM'); }
@@ -1647,8 +1735,29 @@ function pillStatus(a){
 }
 /* ---------- render ---------- */
 const dsId = id => 'ds-'+(''+id).replace(/[^a-zA-Z0-9]/g,'_');   // stable DOM id for a row's detail slot
+// The issue body, split back into the `### Label` sections the forms write. Shown read-only:
+// the body is the ticket's own record of what it must demonstrate, and Definition of Done is the
+// section a later gate compares against the text as filed, so it is not editable from here.
+// GitHub writes the literal string `_No response_` under a blank optional field; that is empty.
+function bodyHtml(q){
+  const raw=(q.body||'').replace(/\r/g,'');
+  if(!raw.trim()) return '<div class="muted">no description</div>';
+  const parts=raw.split(/^###[ \t]+/m).filter(s=>s.trim());
+  // A body with no headings at all is pre-format or hand-written. Show it whole rather than
+  // pretending it has sections, so an old ticket still reads correctly.
+  if(!/^###[ \t]+/m.test(raw)) return `<div class="bsec"><div class="bval">${esc(raw.trim())}</div></div>`;
+  return parts.map(s=>{
+    const nl=s.indexOf('\n');
+    const label=(nl<0?s:s.slice(0,nl)).trim();
+    let val=(nl<0?'':s.slice(nl+1)).trim();
+    if(val==='_No response_') val='';
+    const dod=/^definition of done$/i.test(label);
+    return `<div class="bsec${dod?' dod':''}"><div class="blab">${esc(label)}</div>`
+      + (val?`<div class="bval">${esc(val)}</div>`:'<div class="bval muted">empty</div>')+'</div>';
+  }).join('');
+}
 function detailHtml(a,q,i,scope){ scope=scope||''; const sm=STATUS_META[q.status]||STATUS_META.todo;
-  return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${scope}${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i},'${scope}')"><button onclick="addNote('${a.id}',${i},'${scope}')">note</button></div></div>`;
+  return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t}</div><div class="bwrap">${bodyHtml(q)}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${scope}${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i},'${scope}')"><button onclick="addNote('${a.id}',${i},'${scope}')">note</button></div></div>`;
 }
 // Task queue tab (id 'portfolio') - every open item across every project, one list.
 // Auto = re-sort by priority on every render (regenerates). Manual = follow the exact order you
@@ -1909,7 +2018,7 @@ function render(){
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a)&&boardFor(a))?`<div class="actions"><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} board ↗</a><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
-        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||'<div class="muted">nothing active 🎉</div>'}</div><div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}">${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><button onclick="addItem('${a.id}')">add</button></div></div></details>
+        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||'<div class="muted">nothing active 🎉</div>'}</div><div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" value="${esc(draftFor(a.id).title||'')}" oninput="draftFor('${a.id}').title=this.value" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42)" onchange="draftType('${a.id}',this.value)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${draftFor(a.id).type===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><button onclick="addItem('${a.id}')">add</button></div>${composeHtml(a.id)}</div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         <div class="scnote repoedit" style="margin-top:8px" onclick="setRepo('${a.id}')" title="click to set the GitHub repo">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
         <button class="delproj" onclick="delApp('${a.id}')">Remove project from board</button>
@@ -1948,7 +2057,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v66';
+const TIARA_VERSION = 'board-v67';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
