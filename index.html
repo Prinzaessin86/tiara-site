@@ -83,6 +83,8 @@
   .pjpage button[disabled]:hover{border-color:var(--line);}
   .pjsec{background:#fff;border:1.5px solid var(--line);border-radius:var(--r-lg,1.15rem);padding:.8rem .95rem;margin-bottom:.7rem;}
   .pjsec>h3{margin:0 0 .5rem;font-family:'Baloo 2';font-size:.92rem;color:var(--brand);}
+  /* the board indents a detail past the grip and chips; a project page row has none, so it sits flush */
+  .pjsec .detail{margin-left:0;}
   .pjsec .muted{font-size:.85rem;color:var(--ink-3,#6f6188);}
   .cmt{font-size:.85rem;color:var(--ink-2,#5d5175);padding:.25rem 0;border-bottom:1px solid var(--line2);}
   .cmt:last-child{border-bottom:none;}
@@ -1060,9 +1062,17 @@ function renderProject(id){
   const lanes=Object.keys(counts).map(k=>
       `<button class="pjlane${_pjView.lane===k?' on':''}" onclick="pjLane('${k}')" title="show only ${BOARD_STATUS_LABEL[k]||k}">${counts[k]} ${BOARD_STATUS_LABEL[k]||k}</button>`
     ).join('') || '<span class="pjlane">no items</span>';
-  const row=(x)=>`<div class="row qrow"><span class="t">${x.id?`<span class="id">${esc(x.id)}</span>`:''}${esc(x.title)}</span>`
+  // A row here carries the same caret and detail slot as the Board tab, in its own 'j' scope, so a
+  // project page is a place you can read and add notes rather than a read-only list (#54).
+  const row=(x)=>{
+    const qi=q.indexOf(x);
+    const det=openState.has('item:'+x.id)?detailHtml(a,x,qi,'j'):'';
+    return `<div class="pjitem"><div class="row qrow"><span class="t">${x.id?`<span class="id">${esc(x.id)}</span>`:''}${esc(x.title)}</span>`
       + `<span class="typechip2">${(TYPE_META[x.type]||TYPE_META.none).t}</span>`
-      + (x.url?`<a class="ghlink" href="${x.url}" target="_blank">#${x.issueNumber}\u2197</a>`:'')+`</div>`;
+      + (x.url?`<a class="ghlink" href="${x.url}" target="_blank">#${x.issueNumber}\u2197</a>`:'')
+      + `<button class="dots" onclick="toggleProjDetail('${esc(x.id)}',this)" title="details & notes">${openState.has('item:'+x.id)?'\u25be':'\u25b8'}</button>`
+      + `</div><div class="dslot" id="jds-${dsId(x.id)}">${det}</div></div>`;
+  };
   // Done is capped, and the cap announces itself. A truncation that stays quiet is the disease
   // this whole project exists to treat.
   // filter, then page. The count always states both, because a truncation that does not announce
@@ -1244,6 +1254,15 @@ function togglePortDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!o
   if(!slot||!a){ renderPortfolio(); return; }
   slot.innerHTML = willOpen ? detailHtml(a,q,i,'p') : '';
   if(willOpen && boardFor(a) && !q._notesLoaded){ bLoadNotes(a,q).then(()=>{ const s=document.getElementById('pds-'+dsId(itemId)); if(s && openState.has(k)) s.innerHTML=detailHtml(a,q,i,'p'); }).catch(()=>{}); }
+}
+// same as toggleDetail but writes into the project page's own detail slot (the board's is hidden but still in the DOM)
+function toggleProjDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
+  if(btn) btn.textContent=willOpen?'▾':'▸';
+  let a,q,i=-1; for(const ap of data.apps){ const idx=(ap.queue||[]).findIndex(x=>x.id===itemId); if(idx>=0){ a=ap; q=ap.queue[idx]; i=idx; break; } }
+  const slot=document.getElementById('jds-'+dsId(itemId));
+  if(!slot||!a){ if(_pjView.id) renderProject(_pjView.id); return; }
+  slot.innerHTML = willOpen ? detailHtml(a,q,i,'j') : '';
+  if(willOpen && boardFor(a) && !q._notesLoaded){ bLoadNotes(a,q).then(()=>{ const s=document.getElementById('jds-'+dsId(itemId)); if(s && openState.has(k)) s.innerHTML=detailHtml(a,q,i,'j'); }).catch(()=>{}); }
 }
 // Portfolio → Board: switch to the Board tab, open the item's project card, and scroll to + flash the row.
 function gotoBoardItem(itemId){
@@ -1566,11 +1585,21 @@ function render(){
   renderCompliance();
   initSortables();   // (re)wire drag-to-reorder onto the freshly-built board
   window.scrollTo(0, _scrollY);   // restore scroll so opening a note doesn't fling you elsewhere
+  renderProjectIfOpen();
+}
+// render() rebuilds the tabs but not the project page, which is a separate surface. If a project
+// page is what you are looking at, it has to be rebuilt too or a note added there lands in the data
+// and never appears. Skipped while the search box has focus, so a background poll cannot eat what
+// you are typing.
+function renderProjectIfOpen(){
+  const p=$('#project'); if(!p || p.style.display==='none' || !_pjView.id) return;
+  if(document.activeElement && document.activeElement.id==='pjq') return;
+  renderProject(_pjView.id);
 }
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v63';
+const TIARA_VERSION = 'board-v64';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
