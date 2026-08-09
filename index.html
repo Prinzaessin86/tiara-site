@@ -225,10 +225,16 @@
   .psortbtn:hover{border-color:var(--pink);}
   .psortbtn.on{background:linear-gradient(90deg,#ffd9ee,#e6dbff);color:#7a4a9e;border-color:transparent;font-weight:800;}
   .prow{display:flex;align-items:center;gap:.55rem;padding:.5rem .7rem;background:#fdfaff;border:1.5px solid var(--line2);border-radius:var(--r-md,.85rem);margin-bottom:.4rem;}
-  .prow .papp{display:inline-flex;align-items:center;gap:.4rem;font-family:'Baloo 2';font-weight:700;font-size:.82rem;color:var(--ink-2,#5d5175);width:9.5rem;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .prow .papp{display:inline-flex;align-items:center;gap:.4rem;font-family:'Baloo 2';font-weight:700;font-size:.82rem;color:var(--ink-2,#5d5175);flex:0 1 9.5rem;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .prow .papp .em{font-size:1rem;flex-shrink:0;}
   .prow .pid{font-size:.7rem;font-weight:800;color:#fff;background:var(--purple);padding:.05rem .4rem;border-radius:.4rem;flex-shrink:0;}
   .prow .pt{flex:1;font-size:.86rem;min-width:0;}
+  /* A Task queue row carries a status dropdown now, so on a narrow screen it wraps to a second
+     line instead of pushing the chips off the side. Wide screens keep the single line. */
+  @media (max-width:640px){
+    .prow{flex-wrap:wrap;}
+    .prow .pt{flex:1 1 11rem;}
+  }
   .prow span.pt.pttap{cursor:pointer;}
   .prow span.pt.pttap:hover{color:var(--purple);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--pink);}
   @keyframes tiaraFlash{0%{background:#fdeef7;box-shadow:0 0 0 3px rgba(233,120,180,.35);}100%{background:#fdfaff;box-shadow:0 0 0 0 rgba(233,120,180,0);}}
@@ -373,7 +379,7 @@
   <div id="portfolio" style="display:none"></div>
   <div id="runbook" style="display:none">
     <div class="adminbox">
-      <h3>Board administration</h3>
+      <h3>Tiara administration</h3>
       <p class="adminwhy">These are the buttons that used to crowd the top bar. They belong here: you
       reach for them rarely, and when you do you are looking for how to do a thing, which is what this
       tab is.</p>
@@ -850,7 +856,7 @@ async function ghSave(){
   }catch(e){ setStatus('save failed: '+e.message); }
   saving=false; if(saveQueued){ saveQueued=false; ghSave(); }
 }
-async function refreshBoard(){ if(!HELPER.on) return; try{ await loadFromGitHub(); render(); setStatus('🔄 refreshed from GitHub'); }catch(e){ setStatus('⚠ '+e.message); } }
+async function refreshBoard(){ if(!HELPER.on) return; try{ captureOpen(); await loadFromGitHub(); render(); setStatus('🔄 refreshed from GitHub'); }catch(e){ setStatus('⚠ '+e.message); } }
 
 // Polling (D45): the board you have open, every 2 minutes. Every board, once an hour.
 // Tiara used to read only when you pressed Refresh, so two devices drifted apart in silence.
@@ -1062,13 +1068,15 @@ function renderProject(id){
   const lanes=Object.keys(counts).map(k=>
       `<button class="pjlane${_pjView.lane===k?' on':''}" onclick="pjLane('${k}')" title="show only ${BOARD_STATUS_LABEL[k]||k}">${counts[k]} ${BOARD_STATUS_LABEL[k]||k}</button>`
     ).join('') || '<span class="pjlane">no items</span>';
-  // A row here carries the same caret and detail slot as the Board tab, in its own 'j' scope, so a
-  // project page is a place you can read and add notes rather than a read-only list (#54).
+  // A row here carries the same caret and detail slot as the Portfolio tab, in its own 'j' scope, so
+  // a project page is a place you can read and add notes rather than a read-only list (#54).
+  // It also carries the live status, priority and type controls: a project name is the biggest
+  // click on a card, and the page it opens must be able to do the work that click used to do (#56).
   const row=(x)=>{
     const qi=q.indexOf(x);
     const det=openState.has('item:'+x.id)?detailHtml(a,x,qi,'j'):'';
-    return `<div class="pjitem"><div class="row qrow"><span class="t">${x.id?`<span class="id">${esc(x.id)}</span>`:''}${esc(x.title)}</span>`
-      + `<span class="typechip2">${(TYPE_META[x.type]||TYPE_META.none).t}</span>`
+    return `<div class="pjitem"><div class="row qrow">${prioDot(a.id,qi)}${chipSel(a.id,qi,'status')}<span class="t">${x.id?`<span class="id">${esc(x.id)}</span>`:''}${esc(x.title)}</span>`
+      + typeChip(a.id,qi)
       + (x.url?`<a class="ghlink" href="${x.url}" target="_blank">#${x.issueNumber}\u2197</a>`:'')
       + `<button class="dots" onclick="toggleProjDetail('${esc(x.id)}',this)" title="details & notes">${openState.has('item:'+x.id)?'\u25be':'\u25b8'}</button>`
       + `</div><div class="dslot" id="jds-${dsId(x.id)}">${det}</div></div>`;
@@ -1094,7 +1102,7 @@ function renderProject(id){
     : (c.length ? c.map(x=>`<div class="cmt"><span class="sha">${esc(x.sha)}</span>${esc(x.msg)}</div>`).join('')
                 : '<div class="muted">no commits</div>'));
   p.innerHTML = `
-    <a class="pjback" href="#" onclick="event.preventDefault();showTab('board')">\u2190 all projects</a>
+    <a class="pjback" href="#" onclick="event.preventDefault();showTab('board')">\u2190 Portfolio</a>
     <div class="pjhead">
       <span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span>
       <h2>${esc(a.name)}</h2>
@@ -1264,10 +1272,11 @@ function toggleProjDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!o
   slot.innerHTML = willOpen ? detailHtml(a,q,i,'j') : '';
   if(willOpen && boardFor(a) && !q._notesLoaded){ bLoadNotes(a,q).then(()=>{ const s=document.getElementById('jds-'+dsId(itemId)); if(s && openState.has(k)) s.innerHTML=detailHtml(a,q,i,'j'); }).catch(()=>{}); }
 }
-// Portfolio → Board: switch to the Board tab, open the item's project card, and scroll to + flash the row.
+// Task queue → Portfolio: switch tabs, open the item's project card, and scroll to + flash the row.
 function gotoBoardItem(itemId){
   let a; for(const ap of data.apps){ if((ap.queue||[]).some(x=>x.id===itemId)){ a=ap; break; } }
   if(!a) return;
+  captureOpen();                   // read the DOM first, or the redraw below shuts every card you opened by hand (#56)
   openState.add('app:'+a.id);      // expand the project card
   collapsed.delete('q:'+a.id);     // make sure the Queue lane is open
   showTab('board'); render();      // board must be visible before we can scroll to a row
@@ -1393,9 +1402,9 @@ const dsId = id => 'ds-'+(''+id).replace(/[^a-zA-Z0-9]/g,'_');   // stable DOM i
 function detailHtml(a,q,i,scope){ scope=scope||''; const sm=STATUS_META[q.status]||STATUS_META.todo;
   return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${scope}${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i},'${scope}')"><button onclick="addNote('${a.id}',${i},'${scope}')">note</button></div></div>`;
 }
-// Portfolio tab - every open item across every project, one list.
+// Task queue tab (id 'portfolio') - every open item across every project, one list.
 // Auto = re-sort by priority on every render (regenerates). Manual = follow the exact order you
-// arranged your projects (and items within each) on the Board, and leave it put (no re-sort).
+// arranged your projects (and items within each) in Portfolio, and leave it put (no re-sort).
 // ---------- Compliance ----------
 // compliance.json is generated by _bootstrap/scripts/compliance.mjs and committed next to this
 // page (same origin, no token). Shape: { generatedAt, keyed, apps:[{name,repo,modern,
@@ -1534,12 +1543,14 @@ function renderPortfolio(){
   const total=rows.length;
   const toggle=`<div class="psort"><span class="psortlab">Sort</span>`
     +`<button class="psortbtn ${auto?'on':''}" onclick="setPortfolioSort('auto')" title="re-sorts by priority on every load">⟳ Auto · priority</button>`
-    +`<button class="psortbtn ${auto?'':'on'}" onclick="setPortfolioSort('manual')" title="follows the order you arranged your projects on the Board - stays put">✋ Manual · my order</button></div>`;
+    +`<button class="psortbtn ${auto?'':'on'}" onclick="setPortfolioSort('manual')" title="follows the order you arranged your projects in Portfolio - stays put">✋ Manual · my order</button></div>`;
+  // A row here carries the same live controls as a Portfolio card row: status, priority and type
+  // all write straight to GitHub through the same setters (#56). A list you cannot work from is
+  // a report, and this tab is called Task queue.
   const body = total ? rows.map(({a,q,i})=>{
-    const pm=PRIO_META[q.priority]||PRIO_META.med; const tm=TYPE_META[q.type]||TYPE_META.none;
     const icon=_icon[a.id]?`<img class="appicon" style="width:17px;height:17px" src="${_icon[a.id]}" alt="">`:`<span class="em">${esc(a.emoji||'🫧')}</span>`;
     const det=openState.has('item:'+q.id)?detailHtml(a,q,i,'p'):'';
-    return `<div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}<span class="pt pttap" onclick="gotoBoardItem('${esc(q.id)}')" title="jump to this item on the Board">${esc(q.title||'')}</span><span class="priochip2" style="background:${pm.c}1a;color:${pm.c}" title="priority">${pm.t}</span><span class="typechip2" title="type">${tm.e} ${tm.t}</span>${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="togglePortDetail('${esc(q.id)}',this)" title="details & notes">${openState.has('item:'+q.id)?'▾':'▸'}</button></div><div class="pdslot" id="pds-${dsId(q.id)}">${det}</div>`;
+    return `<div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}${chipSel(a.id,i,'status')}<span class="pt pttap" onclick="gotoBoardItem('${esc(q.id)}')" title="jump to this item in Portfolio">${esc(q.title||'')}</span>${prioDot(a.id,i)}${typeChip(a.id,i)}${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="togglePortDetail('${esc(q.id)}',this)" title="details & notes">${openState.has('item:'+q.id)?'▾':'▸'}</button></div><div class="pdslot" id="pds-${dsId(q.id)}">${det}</div>`;
   }).join('') : '<div class="muted">no open items - every board is clear 🎉</div>';
   el.innerHTML = `<div class="phead"><b>${total}</b> open item${total===1?'':'s'} across ${data.apps.length} project${data.apps.length===1?'':'s'} · ${auto?'highest priority first':'your project order'}</div>${toggle}${body}`;
 }
@@ -1599,7 +1610,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v64';
+const TIARA_VERSION = 'board-v65';
 (async function init(){
   ghLoadCfg();
   try{ portfolioSort=localStorage.getItem('tiaraPortfolioSort')||'auto'; }catch(e){ noted('portfolio sort (load)',e); }
