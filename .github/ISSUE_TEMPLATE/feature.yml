@@ -1,0 +1,60 @@
+# GENERATED FILE. Do not edit.
+# Source:     .github/issue-fields.psv
+# Regenerate: sh scripts/gen-issue-forms.sh
+# conform.sh fails if this file and the source disagree.
+name: "Feature"
+description: "Something that does not exist yet and should."
+title: "[Feature]: "
+labels:
+  - "feature"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: "Summary"
+      description: "One or two sentences. What this is, in plain language."
+      placeholder: |
+        What this is, in one or two sentences.
+        e.g. Let a card be pinned to the top of the list.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: "Repro or Reference"
+      description: "Optional. The screen, flow or file this touches, and what exists today that this replaces or extends."
+      placeholder: |
+        Optional. Where this lives, and what it replaces.
+        e.g. Today screen, the card list. Nothing pins today.
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem"
+      description: "What is missing or wrong without this. Describe the situation, not the solution."
+      placeholder: |
+        What goes wrong today, without this.
+        e.g. The card I check hourly scrolls away as others are added.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "Proposed Solution"
+      description: "What you would build, in enough detail that someone could disagree with it."
+      placeholder: |
+        What you would build, concretely enough to argue with.
+        e.g. Long-press a card to pin it. Pinned cards sort above the rest.
+    validations:
+      required: true
+  - type: textarea
+    id: dod
+    attributes:
+      label: "Definition of Done"
+      description: "The acceptance criterion. Name a command and what it should print, not \"it works\". Fixed at filing and compared against this text later, so write something another person could run."
+      placeholder: |
+        Run: make test
+        Expect: 0 failures, and a pinned card is still first after a cold launch
+    validations:
+      required: true

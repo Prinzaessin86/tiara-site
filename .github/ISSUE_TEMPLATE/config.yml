@@ -1,0 +1,9 @@
+# GENERATED FILE. Do not edit.
+# Source:     scripts/gen-issue-forms.sh (a literal, not derived from the field table)
+# Regenerate: sh scripts/gen-issue-forms.sh
+# conform.sh fails if this file and the generator disagree.
+blank_issues_enabled: false
+contact_links:
+  - name: Something else entirely
+    url: https://github.com/Prinzaessin86/_bootstrap/issues/new/choose
+    about: Use this only if none of Bug, Feature or Chore fits.

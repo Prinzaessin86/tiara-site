@@ -1,0 +1,61 @@
+# GENERATED FILE. Do not edit.
+# Source:     .github/issue-fields.psv
+# Regenerate: sh scripts/gen-issue-forms.sh
+# conform.sh fails if this file and the source disagree.
+name: "Bug"
+description: "Something that used to work, or should work, does not."
+title: "[Bug]: "
+labels:
+  - "bug"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: "Summary"
+      description: "One or two sentences, in plain language. One bug per ticket: if you are describing three things, file three."
+      placeholder: |
+        What is wrong, in one or two sentences.
+        e.g. The card sheet dismisses itself when the phone rotates.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: "Repro or Reference"
+      description: "Numbered steps someone else could follow. If steps do not apply, a screenshot or a device note instead."
+      placeholder: |
+        1. Open the Today screen
+        2. Tap a card, then rotate to landscape
+        3. The sheet closes
+        
+        Device: iPhone 15, iOS 18.2
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior"
+      description: "What should have happened at the last step above."
+      placeholder: |
+        The sheet stays open and re-lays out for the new width.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Actual Behavior"
+      description: "What happened instead. Include the error text if there is one."
+      placeholder: |
+        The sheet closes and the scroll position is lost.
+    validations:
+      required: true
+  - type: textarea
+    id: dod
+    attributes:
+      label: "Definition of Done"
+      description: "The acceptance criterion. Name a command and what it should print, not \"it works\". Fixed at filing and compared against this text later, so write something another person could run."
+      placeholder: |
+        Run: make verify
+        Expect: 0 failures, and the sheet survives rotation on iPhone 15
+    validations:
+      required: true

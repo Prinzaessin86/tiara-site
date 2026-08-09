@@ -1,0 +1,50 @@
+# GENERATED FILE. Do not edit.
+# Source:     .github/issue-fields.psv
+# Regenerate: sh scripts/gen-issue-forms.sh
+# conform.sh fails if this file and the source disagree.
+name: "Chore"
+description: "Maintenance, cleanup, or infrastructure work with no user visible behaviour change."
+title: "[Chore]: "
+labels:
+  - "chore"
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: "Summary"
+      description: "One or two sentences. What this is, in plain language."
+      placeholder: |
+        What this is, in one or two sentences.
+        e.g. Delete the unused colour tokens from the design system.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: "Repro or Reference"
+      description: "Optional. The file, script or system this touches."
+      placeholder: |
+        Optional. What this touches.
+        e.g. Sources/Design/Tokens.swift
+    validations:
+      required: false
+  - type: textarea
+    id: reason
+    attributes:
+      label: "Reason"
+      description: "Why now. What breaks or drifts if this waits. \"Tidiness\" is not a reason."
+      placeholder: |
+        What breaks or drifts if this waits.
+        e.g. Three tokens no longer match the palette, so new screens pick the wrong one.
+    validations:
+      required: true
+  - type: textarea
+    id: dod
+    attributes:
+      label: "Definition of Done"
+      description: "The acceptance criterion. Name a command and what it should print, not \"it works\". Fixed at filing and compared against this text later, so write something another person could run."
+      placeholder: |
+        Run: make conform
+        Expect: green, and the check fails on an induced case
+    validations:
+      required: true
