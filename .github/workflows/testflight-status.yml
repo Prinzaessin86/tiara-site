@@ -2,7 +2,7 @@ name: TestFlight status
 
 # Asks App Store Connect what build is live for each app and commits
 # release-status.json, which Tiara reads to show a live ✈ TestFlight chip.
-# The .p8 key lives only in this repo's Actions secrets — never on the page.
+# The .p8 key lives only in this repo's Actions secrets - never on the page.
 
 on:
   schedule:
