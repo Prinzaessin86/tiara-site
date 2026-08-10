@@ -121,7 +121,10 @@ ghv=$(git show "$UPSTREAM:index.html" 2>/dev/null | grep -E "TIARA_VERSION" | gr
 info "your Mac: ${localv:-?}    GitHub: ${ghv:-?}"
 PAGES_URL=$(gh api "repos/$REPO/pages" --jq .html_url 2>/dev/null)
 [ -z "$PAGES_URL" ] && PAGES_URL="$FALLBACK_PAGES"
-livev=$(curl -fsSL "$PAGES_URL" 2>/dev/null | grep -oE "board-v[0-9]+" | head -1)
+# Filter to the TIARA_VERSION line first, exactly as the two reads above do. Taking the first
+# `board-v` string in the whole page picks up a CSS comment instead, and every version adds
+# another comment above the constant, so the mismatch warning fired on every sync. (TIA-59)
+livev=$(curl -fsSL "$PAGES_URL" 2>/dev/null | grep -E "TIARA_VERSION" | grep -oE "board-v[0-9]+" | head -1)
 info "live page: ${livev:-could not read}  ($PAGES_URL)"
 if [ -n "$localv" ] && [ "$localv" = "$ghv" ]; then
   if [ -z "$livev" ] || [ "$livev" = "$ghv" ]; then ok "versions agree ($localv)"
