@@ -1569,26 +1569,45 @@ const TYPE_META={none:{e:'',t:'no type',c:'#8877a0'},bug:{e:'🐞',t:'bug',c:'#d
 // compares against the text as filed, so a ticket created without one can never be promoted.
 // `d` is the constraint, shown always, under the label. `h` is the grey example inside the box,
 // which disappears as soon as you type. Both mirror the same field in the .yml.
+// The four permitted kinds of `Done when`. A kind the control does not offer cannot be typed,
+// which is the whole reason this one is a chooser rather than a box. Must stay identical to the
+// dropdown options in _bootstrap/template/.github/issue-fields.psv until Tiara reads that file
+// directly, which waits for the move off Pages (#66).
+const DONE_WHEN=[
+  'outcome: a command that must pass, named in Acceptance',
+  'observation: a device or simulator check, named in Acceptance',
+  'effort-bounded: a fixed number of rounds, then report coverage and what was skipped',
+  'manual: I will look at it myself. Never blocks, and is counted separately'
+];
+const ACCEPT_D='What you will look at to decide this is done. A judgement is allowed here. This text is fixed at filing and compared against the filed version at every lane move, so write it as if someone else has to read it.';
+const DONEW_D='The condition under which the agent may stop and report. Not what satisfies you, which is Acceptance above. This one has to be evaluable or it permits nothing.';
+const SCOPE_D='Which files or areas this work should touch. Checked at close against the files in commits citing this ticket, so it catches doing more, not doing less.';
 const ISSUE_FIELDS={
   bug:[
     {l:'Summary',            r:1, d:'One or two sentences, in plain language. One bug per ticket: if you are describing three things, file three.', h:'What is wrong, in one or two sentences.\ne.g. The card sheet dismisses itself when the phone rotates.'},
     {l:'Repro or Reference', r:1, d:'Numbered steps someone else could follow. If steps do not apply, a screenshot or a device note instead.', h:'1. Open the Today screen\n2. Tap a card, then rotate to landscape\n3. The sheet closes\n\nDevice: iPhone 15, iOS 18.2'},
     {l:'Expected Behavior',  r:1, d:'What should have happened at the last step above.', h:'The sheet stays open and re-lays out for the new width.'},
     {l:'Actual Behavior',    r:1, d:'What happened instead. Include the error text if there is one.', h:'The sheet closes and the scroll position is lost.'},
-    {l:'Definition of Done', r:1, d:'The acceptance criterion. Name a command and what it should print, not "it works". Fixed at filing and compared against this text later, so write something another person could run.', h:'Run: make verify\nExpect: 0 failures, and the sheet survives rotation on iPhone 15'}
+    {l:'Acceptance', r:1, d:ACCEPT_D, h:'The sheet stays open through a rotation, and the scroll position is where I left it.'},
+    {l:'Done when',  r:1, k:'select', o:DONE_WHEN, d:DONEW_D, h:''},
+    {l:'Scope',      r:1, d:SCOPE_D, h:'Sources/Today/CardSheet.swift and its tests. Nothing in the design system.'}
   ],
   feature:[
     {l:'Summary',            r:1, d:'One or two sentences. What this is, in plain language.', h:'What this is, in one or two sentences.\ne.g. Let a card be pinned to the top of the list.'},
     {l:'Repro or Reference', r:0, d:'Optional. The screen, flow or file this touches, and what exists today that this replaces or extends.', h:'Optional. Where this lives, and what it replaces.\ne.g. Today screen, the card list. Nothing pins today.'},
     {l:'Problem',            r:1, d:'What is missing or wrong without this. Describe the situation, not the solution.', h:'What goes wrong today, without this.\ne.g. The card I check hourly scrolls away as others are added.'},
     {l:'Proposed Solution',  r:1, d:'What you would build, in enough detail that someone could disagree with it.', h:'What you would build, concretely enough to argue with.\ne.g. Long-press a card to pin it. Pinned cards sort above the rest.'},
-    {l:'Definition of Done', r:1, d:'The acceptance criterion. Name a command and what it should print, not "it works". Fixed at filing and compared against this text later, so write something another person could run.', h:'Run: make test\nExpect: 0 failures, and a pinned card is still first after a cold launch'}
+    {l:'Acceptance', r:1, d:ACCEPT_D, h:'A pinned card is still first after a cold launch, and pinning feels obvious without being explained.'},
+    {l:'Done when',  r:1, k:'select', o:DONE_WHEN, d:DONEW_D, h:''},
+    {l:'Scope',      r:1, d:SCOPE_D, h:'Sources/Today/ and its tests. No schema change.'}
   ],
   chore:[
     {l:'Summary',            r:1, d:'One or two sentences. What this is, in plain language.', h:'What this is, in one or two sentences.\ne.g. Delete the unused colour tokens from the design system.'},
     {l:'Repro or Reference', r:0, d:'Optional. The file, script or system this touches.', h:'Optional. What this touches.\ne.g. Sources/Design/Tokens.swift'},
     {l:'Reason',             r:1, d:'Why now. What breaks or drifts if this waits. "Tidiness" is not a reason.', h:'What breaks or drifts if this waits.\ne.g. Three tokens no longer match the palette, so new screens pick the wrong one.'},
-    {l:'Definition of Done', r:1, d:'The acceptance criterion. Name a command and what it should print, not "it works". Fixed at filing and compared against this text later, so write something another person could run.', h:'Run: make conform\nExpect: green, and the check fails on an induced case'}
+    {l:'Acceptance', r:1, d:ACCEPT_D, h:'make conform is green, and it fails on an induced case rather than passing because there was nothing to check.'},
+    {l:'Done when',  r:1, k:'select', o:DONE_WHEN, d:DONEW_D, h:''},
+    {l:'Scope',      r:1, d:SCOPE_D, h:'scripts/conform.sh only. No change to the vendored hooks.'}
   ]
 };
 // Draft state lives outside the DOM, keyed by app id, because render() rebuilds the markup on
@@ -1619,10 +1638,16 @@ function aiTypeChange(){
   box.style.display='flex';
   box.innerHTML=`<div class="cmph">${TYPE_META[ty].e} ${esc(TYPE_META[ty].t)} · every field marked <span style="color:#c2456b">*</span> is required.</div>`
     + ISSUE_FIELDS[ty].map(f=>`<div class="cmpf"><label>${esc(f.l)}${f.r?' <span class="req">*</span>':''}</label><div class="cmpd">${esc(f.d)}</div>`
-        + `<textarea data-ail="${esc(f.l)}" placeholder="${esc(f.h)}"></textarea></div>`).join('');
+        + (f.k==='select'
+            ? `<select data-ail="${esc(f.l)}"><option value="">choose one…</option>`
+              + f.o.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('') + `</select>`
+            : `<textarea data-ail="${esc(f.l)}" placeholder="${esc(f.h)}"></textarea>`)
+        + `</div>`).join('');
 }
+// textarea AND select. Reading only textareas would drop `Done when` silently, producing a ticket
+// with an empty required section through a form that reported no error (#66).
 function aiVals(){
-  const out={}; document.querySelectorAll('#ai-fields textarea').forEach(t=>{ out[t.getAttribute('data-ail')]=t.value; }); return out;
+  const out={}; document.querySelectorAll('#ai-fields textarea, #ai-fields select').forEach(t=>{ out[t.getAttribute('data-ail')]=t.value; }); return out;
 }
 function composeHtml(id){
   const d=draftFor(id); const ty=d.type; if(!ty||!ISSUE_FIELDS[ty]) return '';
@@ -1633,7 +1658,11 @@ function composeHtml(id){
         // left oninput as the syntax error `draftSet('app',`, so nothing ever reached _drafts and
         // this panel could never satisfy its own required-field check. The toolbar door was
         // already doing it the safe way; now both do.
-        + `<textarea data-cmpl="${esc(f.l)}" placeholder="${esc(f.h)}" oninput="draftSet('${id}',this.dataset.cmpl,this.value)">${esc(d.vals[f.l]||'')}</textarea></div>`).join('')
+        + (f.k==='select'
+            ? `<select data-cmpl="${esc(f.l)}" onchange="draftSet('${id}',this.dataset.cmpl,this.value)"><option value="">choose one…</option>`
+              + f.o.map(o=>`<option value="${esc(o)}"${(d.vals[f.l]||'')===o?' selected':''}>${esc(o)}</option>`).join('') + `</select>`
+            : `<textarea data-cmpl="${esc(f.l)}" placeholder="${esc(f.h)}" oninput="draftSet('${id}',this.dataset.cmpl,this.value)">${esc(d.vals[f.l]||'')}</textarea>`)
+        + `</div>`).join('')
     + '</div>';
 }
 function cycleType(id,i){ const a=app(id); const q=a.queue[i]; const idx=TYPE_ORDER.indexOf(q.type||''); const nv=TYPE_ORDER[(idx+1)%3];
@@ -1887,7 +1916,10 @@ function bodyHtml(q){
     const label=(nl<0?s:s.slice(0,nl)).trim();
     let val=(nl<0?'':s.slice(nl+1)).trim();
     if(val==='_No response_') val='';
-    const dod=/^definition of done$/i.test(label);
+    // Acceptance is the criterion a later gate compares against the text as filed. `Definition of
+    // Done` is its pre-2026-08-10 name and must keep the highlight, or every ticket filed before
+    // the split loses its marked section, which is several hundred of them (#66).
+    const dod=/^(acceptance|definition of done)$/i.test(label);
     return `<div class="bsec${dod?' dod':''}"><div class="blab">${esc(label)}</div>`
       + (val?`<div class="bval">${esc(val)}</div>`:'<div class="bval muted">empty</div>')+'</div>';
   }).join('');
@@ -2196,7 +2228,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v70';
+const TIARA_VERSION = 'board-v71';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
