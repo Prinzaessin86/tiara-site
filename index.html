@@ -869,9 +869,19 @@ async function bSetField(a,q,fieldKey,optionName){
 }
 async function bSetState(a,q,state){ const or=appOwnerRepo(a); await retry(async()=>{ const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber,{method:'PATCH',body:JSON.stringify({state})}); if(!r.ok) throw new Error('issue state '+r.status); }); }
 async function bComment(a,q,text){ const or=appOwnerRepo(a); const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber+'/comments',{method:'POST',body:JSON.stringify({body:text})}); if(!r.ok) throw new Error('comment '+r.status); }
+// Who wrote a note comes from GitHub, not from the text. A prefix is self-declared: anything can
+// type "🤖 claude" and anything can leave it off, so a page reading the prefix was reporting a
+// claim rather than a fact. `user.type` is what actually posted it. Agent comments now carry the
+// App identity via _bootstrap/scripts/agent-comment.sh, so they arrive as a Bot.
+// The prefix match survives only for comments written before the App existed, which would
+// otherwise all become 👑 You retroactively.
+const NOTE_PREFIX=/^\s*(🤖\s*claude|🎀\s*claude code|👑\s*you)\s*:?\s*/i;
 async function bLoadNotes(a,q){ const or=appOwnerRepo(a); const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber+'/comments'); if(!r.ok) return;
-  const cs=await r.json(); q.notes=(cs||[]).map(c=>{ const m=(c.body||'').match(/^\s*(🤖\s*claude|👑\s*you)\s*:?\s*/i);
-    return { by:(m&&/claude|🤖/i.test(m[1]))?'claude':'you', text:(c.body||'').replace(/^\s*(🤖\s*claude|👑\s*you)\s*:?\s*/i,'') }; }); q._notesLoaded=true; }
+  const cs=await r.json(); q.notes=(cs||[]).map(c=>{
+    const bot=!!(c.user&&(c.user.type==='Bot'||/\[bot\]$/.test(c.user.login||'')));
+    const m=(c.body||'').match(NOTE_PREFIX);
+    const legacy=!!(m&&/claude/i.test(m[1]));
+    return { by:(bot||legacy)?'claude':'you', text:(c.body||'').replace(NOTE_PREFIX,'') }; }); q._notesLoaded=true; }
 async function bAddItem(a,title,type,body){
   const or=appOwnerRepo(a);
   // The body is the ticket. A title-only issue carries no Definition of Done, so it can never be
@@ -1252,7 +1262,7 @@ function renderIssue(){
     <div class="ipsec">Description</div>
     <div class="ipbody">${bodyHtml(q)}</div>
     <div class="ipsec">Notes</div>
-    <div class="ipnotes">${(q.notes||[]).map(n=>`<div class="ipnote"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div>
+    <div class="ipnotes">${(q.notes||[]).map(n=>`<div class="ipnote"><b>${n.by==='claude'?'🎀 Claude Code':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div>
     <div class="addbox"><input id="ipnote" placeholder="add a note…" onkeydown="if(event.key==='Enter')addIssueNote()"><button onclick="addIssueNote()">note</button></div>
   </div>`;
 }
@@ -1926,7 +1936,7 @@ function bodyHtml(q){
   }).join('');
 }
 function detailHtml(a,q,i,scope){ scope=scope||''; const sm=STATUS_META[q.status]||STATUS_META.todo;
-  return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t} <button class="openfull" onclick="openIssue('${esc(a.id)}','${esc(q.id)}')" title="open this ticket on its own page">open full page ⤢</button></div><div class="bwrap">${bodyHtml(q)}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🤖 Claude':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${scope}${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i},'${scope}')"><button onclick="addNote('${a.id}',${i},'${scope}')">note</button></div></div>`;
+  return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t} <button class="openfull" onclick="openIssue('${esc(a.id)}','${esc(q.id)}')" title="open this ticket on its own page">open full page ⤢</button></div><div class="bwrap">${bodyHtml(q)}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🎀 Claude Code':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${scope}${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i},'${scope}')"><button onclick="addNote('${a.id}',${i},'${scope}')">note</button></div></div>`;
 }
 // Task queue tab (id 'portfolio') - every open item across every project, one list.
 // Auto = re-sort by priority on every render (regenerates). Manual = follow the exact order you
@@ -2229,7 +2239,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v72';
+const TIARA_VERSION = 'board-v73';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
