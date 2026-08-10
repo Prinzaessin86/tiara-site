@@ -38,12 +38,33 @@ body:
     validations:
       required: true
   - type: textarea
-    id: dod
+    id: acceptance
     attributes:
-      label: "Definition of Done"
-      description: "The acceptance criterion. Name a command and what it should print, not \"it works\". Fixed at filing and compared against this text later, so write something another person could run."
+      label: "Acceptance"
+      description: "What you will look at to decide this is done. A judgement is allowed here. This text is fixed at filing and compared against the filed version at every lane move, so write it as if someone else has to read it."
       placeholder: |
-        Run: make conform
-        Expect: green, and the check fails on an induced case
+        make conform is green, and it fails on an induced case rather than passing because there was nothing to check.
+    validations:
+      required: true
+  - type: dropdown
+    id: deliverable
+    attributes:
+      label: "Deliverable"
+      description: "What comes back when this is done. Choose by what you want, not by how it will be built. At the lane move the agent points at the thing, and the gate checks it is of this shape and in the right place."
+      options:
+        - "code: a change committed in the repo"
+        - "document: a written file committed at a path"
+        - "decision: a proposal in docs/decisions/proposed for you to approve"
+        - "investigation: an answer written on this ticket"
+        - "manual: you will look at it yourself. Never blocks"
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: "Scope"
+      description: "Which files or areas this work should touch. Checked at close against the files in commits citing this ticket, so it catches doing more, not doing less."
+      placeholder: |
+        scripts/conform.sh only. No change to the vendored hooks.
     validations:
       required: true

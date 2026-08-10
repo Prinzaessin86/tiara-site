@@ -1,0 +1,60 @@
+# The canonical field definition for every issue form. Component 2 will point
+# make-board-ticket.sh's validator at this same file, so the two doors cannot disagree about
+# what a ticket needs. Today it feeds the forms only.
+#
+# Pipe separated because this machine has no YAML parser: no yq, no python yaml, and the ruby
+# shim is broken. A hand rolled YAML parser reading a missing file returns zero required fields
+# and passes everything, which is the failure this format exists to make impossible.
+#
+# The .yml forms are GENERATED from this file. Never edit them by hand.
+#   bash scripts/gen-issue-forms.sh
+# conform.sh regenerates into a temp directory and fails if the committed output differs.
+#
+# Records:
+#   meta      |<type>|<name>|<description>|<title prefix>|<label>
+#   field     |<type>|<id>|<label>|<required>|<description>|<placeholder>
+#   dropdown  |<type>|<id>|<label>|<required>|<description>|<option>\n<option>\n...
+#   checkboxes|<type>|<id>|<label>|<required>|<description>|<option>\n<option>\n...
+#
+# field is a textarea. dropdown and checkboxes take a \n separated option list in the last
+# column instead of a placeholder, need at least two options, and reject an empty or repeated
+# one. A chooser cannot be mistyped, which is the whole reason `Deliverable` is one: a kind the
+# form does not offer cannot be written. On checkboxes, required applies to every option, because
+# GitHub puts requiredness on the option rather than the field.
+#
+# \n in a PLACEHOLDER becomes a real newline. Descriptions are single line: a \n there stays
+# literal. A placeholder therefore cannot contain a Windows path or a literal backslash-n.
+#
+# No field may contain a pipe, and the generator refuses the file rather than silently shifting
+# columns. required must be exactly yes or no. Type and id must be lowercase. Every rule here
+# is asserted, because a source edit that quietly weakens a requirement would produce forms, a
+# validator and a gate that all agree with the weakened form.
+#
+# Field order is the order they appear here, and it is the order GitHub writes them into the
+# issue body, which is the order the validator walks.
+
+meta |bug|Bug|Something that used to work, or should work, does not.|[Bug]: |bug
+field|bug|summary|Summary|yes|One or two sentences, in plain language. One bug per ticket: if you are describing three things, file three.|What is wrong, in one or two sentences.\ne.g. The card sheet dismisses itself when the phone rotates.
+field|bug|repro|Repro or Reference|yes|Numbered steps someone else could follow. If steps do not apply, a screenshot or a device note instead.|1. Open the Today screen\n2. Tap a card, then rotate to landscape\n3. The sheet closes\n\nDevice: iPhone 15, iOS 18.2
+field|bug|expected|Expected Behavior|yes|What should have happened at the last step above.|The sheet stays open and re-lays out for the new width.
+field|bug|actual|Actual Behavior|yes|What happened instead. Include the error text if there is one.|The sheet closes and the scroll position is lost.
+field|bug|acceptance|Acceptance|yes|What you will look at to decide this is done. A judgement is allowed here. This text is fixed at filing and compared against the filed version at every lane move, so write it as if someone else has to read it.|The sheet stays open through a rotation, and the scroll position is where I left it.
+dropdown|bug|deliverable|Deliverable|yes|What comes back when this is done. Choose by what you want, not by how it will be built. At the lane move the agent points at the thing, and the gate checks it is of this shape and in the right place.|code: a change committed in the repo\ndocument: a written file committed at a path\ndecision: a proposal in docs/decisions/proposed for you to approve\ninvestigation: an answer written on this ticket\nmanual: you will look at it yourself. Never blocks
+field|bug|scope|Scope|yes|Which files or areas this work should touch. Checked at close against the files in commits citing this ticket, so it catches doing more, not doing less.|Sources/Today/CardSheet.swift and its tests. Nothing in the design system.
+
+meta |feature|Feature|Something that does not exist yet and should.|[Feature]: |feature
+field|feature|summary|Summary|yes|One or two sentences. What this is, in plain language.|What this is, in one or two sentences.\ne.g. Let a card be pinned to the top of the list.
+field|feature|repro|Repro or Reference|no|Optional. The screen, flow or file this touches, and what exists today that this replaces or extends.|Optional. Where this lives, and what it replaces.\ne.g. Today screen, the card list. Nothing pins today.
+field|feature|problem|Problem|yes|What is missing or wrong without this. Describe the situation, not the solution.|What goes wrong today, without this.\ne.g. The card I check hourly scrolls away as others are added.
+field|feature|proposal|Proposed Solution|yes|What you would build, in enough detail that someone could disagree with it.|What you would build, concretely enough to argue with.\ne.g. Long-press a card to pin it. Pinned cards sort above the rest.
+field|feature|acceptance|Acceptance|yes|What you will look at to decide this is done. A judgement is allowed here. This text is fixed at filing and compared against the filed version at every lane move, so write it as if someone else has to read it.|A pinned card is still first after a cold launch, and pinning feels obvious without being explained.
+dropdown|feature|deliverable|Deliverable|yes|What comes back when this is done. Choose by what you want, not by how it will be built. At the lane move the agent points at the thing, and the gate checks it is of this shape and in the right place.|code: a change committed in the repo\ndocument: a written file committed at a path\ndecision: a proposal in docs/decisions/proposed for you to approve\ninvestigation: an answer written on this ticket\nmanual: you will look at it yourself. Never blocks
+field|feature|scope|Scope|yes|Which files or areas this work should touch. Checked at close against the files in commits citing this ticket, so it catches doing more, not doing less.|Sources/Today/ and its tests. No schema change.
+
+meta |chore|Chore|Maintenance, cleanup, or infrastructure work with no user visible behaviour change.|[Chore]: |chore
+field|chore|summary|Summary|yes|One or two sentences. What this is, in plain language.|What this is, in one or two sentences.\ne.g. Delete the unused colour tokens from the design system.
+field|chore|repro|Repro or Reference|no|Optional. The file, script or system this touches.|Optional. What this touches.\ne.g. Sources/Design/Tokens.swift
+field|chore|reason|Reason|yes|Why now. What breaks or drifts if this waits. "Tidiness" is not a reason.|What breaks or drifts if this waits.\ne.g. Three tokens no longer match the palette, so new screens pick the wrong one.
+field|chore|acceptance|Acceptance|yes|What you will look at to decide this is done. A judgement is allowed here. This text is fixed at filing and compared against the filed version at every lane move, so write it as if someone else has to read it.|make conform is green, and it fails on an induced case rather than passing because there was nothing to check.
+dropdown|chore|deliverable|Deliverable|yes|What comes back when this is done. Choose by what you want, not by how it will be built. At the lane move the agent points at the thing, and the gate checks it is of this shape and in the right place.|code: a change committed in the repo\ndocument: a written file committed at a path\ndecision: a proposal in docs/decisions/proposed for you to approve\ninvestigation: an answer written on this ticket\nmanual: you will look at it yourself. Never blocks
+field|chore|scope|Scope|yes|Which files or areas this work should touch. Checked at close against the files in commits citing this ticket, so it catches doing more, not doing less.|scripts/conform.sh only. No change to the vendored hooks.
