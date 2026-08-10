@@ -1569,18 +1569,19 @@ const TYPE_META={none:{e:'',t:'no type',c:'#8877a0'},bug:{e:'🐞',t:'bug',c:'#d
 // compares against the text as filed, so a ticket created without one can never be promoted.
 // `d` is the constraint, shown always, under the label. `h` is the grey example inside the box,
 // which disappears as soon as you type. Both mirror the same field in the .yml.
-// The four permitted kinds of `Done when`. A kind the control does not offer cannot be typed,
+// The five permitted deliverables. A kind the control does not offer cannot be typed,
 // which is the whole reason this one is a chooser rather than a box. Must stay identical to the
 // dropdown options in _bootstrap/template/.github/issue-fields.psv until Tiara reads that file
 // directly, which waits for the move off Pages (#66).
-const DONE_WHEN=[
-  'outcome: a command that must pass, named in Acceptance',
-  'observation: a device or simulator check, named in Acceptance',
-  'effort-bounded: a fixed number of rounds, then report coverage and what was skipped',
-  'manual: I will look at it myself. Never blocks, and is counted separately'
+const DELIVERABLE=[
+  'code: a change committed in the repo',
+  'document: a written file committed at a path',
+  'decision: a proposal in docs/decisions/proposed for you to approve',
+  'investigation: an answer written on this ticket',
+  'manual: you will look at it yourself. Never blocks'
 ];
 const ACCEPT_D='What you will look at to decide this is done. A judgement is allowed here. This text is fixed at filing and compared against the filed version at every lane move, so write it as if someone else has to read it.';
-const DONEW_D='The condition under which the agent may stop and report. Not what satisfies you, which is Acceptance above. This one has to be evaluable or it permits nothing.';
+const DELIV_D='What comes back when this is done. Choose by what you want, not by how it will be built. At the lane move the agent points at the thing, and the gate checks it is of this shape and in the right place.';
 const SCOPE_D='Which files or areas this work should touch. Checked at close against the files in commits citing this ticket, so it catches doing more, not doing less.';
 const ISSUE_FIELDS={
   bug:[
@@ -1589,7 +1590,7 @@ const ISSUE_FIELDS={
     {l:'Expected Behavior',  r:1, d:'What should have happened at the last step above.', h:'The sheet stays open and re-lays out for the new width.'},
     {l:'Actual Behavior',    r:1, d:'What happened instead. Include the error text if there is one.', h:'The sheet closes and the scroll position is lost.'},
     {l:'Acceptance', r:1, d:ACCEPT_D, h:'The sheet stays open through a rotation, and the scroll position is where I left it.'},
-    {l:'Done when',  r:1, k:'select', o:DONE_WHEN, d:DONEW_D, h:''},
+    {l:'Deliverable', r:1, k:'select', o:DELIVERABLE, d:DELIV_D, h:''},
     {l:'Scope',      r:1, d:SCOPE_D, h:'Sources/Today/CardSheet.swift and its tests. Nothing in the design system.'}
   ],
   feature:[
@@ -1598,7 +1599,7 @@ const ISSUE_FIELDS={
     {l:'Problem',            r:1, d:'What is missing or wrong without this. Describe the situation, not the solution.', h:'What goes wrong today, without this.\ne.g. The card I check hourly scrolls away as others are added.'},
     {l:'Proposed Solution',  r:1, d:'What you would build, in enough detail that someone could disagree with it.', h:'What you would build, concretely enough to argue with.\ne.g. Long-press a card to pin it. Pinned cards sort above the rest.'},
     {l:'Acceptance', r:1, d:ACCEPT_D, h:'A pinned card is still first after a cold launch, and pinning feels obvious without being explained.'},
-    {l:'Done when',  r:1, k:'select', o:DONE_WHEN, d:DONEW_D, h:''},
+    {l:'Deliverable', r:1, k:'select', o:DELIVERABLE, d:DELIV_D, h:''},
     {l:'Scope',      r:1, d:SCOPE_D, h:'Sources/Today/ and its tests. No schema change.'}
   ],
   chore:[
@@ -1606,7 +1607,7 @@ const ISSUE_FIELDS={
     {l:'Repro or Reference', r:0, d:'Optional. The file, script or system this touches.', h:'Optional. What this touches.\ne.g. Sources/Design/Tokens.swift'},
     {l:'Reason',             r:1, d:'Why now. What breaks or drifts if this waits. "Tidiness" is not a reason.', h:'What breaks or drifts if this waits.\ne.g. Three tokens no longer match the palette, so new screens pick the wrong one.'},
     {l:'Acceptance', r:1, d:ACCEPT_D, h:'make conform is green, and it fails on an induced case rather than passing because there was nothing to check.'},
-    {l:'Done when',  r:1, k:'select', o:DONE_WHEN, d:DONEW_D, h:''},
+    {l:'Deliverable', r:1, k:'select', o:DELIVERABLE, d:DELIV_D, h:''},
     {l:'Scope',      r:1, d:SCOPE_D, h:'scripts/conform.sh only. No change to the vendored hooks.'}
   ]
 };
@@ -1644,7 +1645,7 @@ function aiTypeChange(){
             : `<textarea data-ail="${esc(f.l)}" placeholder="${esc(f.h)}"></textarea>`)
         + `</div>`).join('');
 }
-// textarea AND select. Reading only textareas would drop `Done when` silently, producing a ticket
+// textarea AND select. Reading only textareas would drop `Deliverable` silently, producing a ticket
 // with an empty required section through a form that reported no error (#66).
 function aiVals(){
   const out={}; document.querySelectorAll('#ai-fields textarea, #ai-fields select').forEach(t=>{ out[t.getAttribute('data-ail')]=t.value; }); return out;
@@ -2228,7 +2229,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v71';
+const TIARA_VERSION = 'board-v72';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
