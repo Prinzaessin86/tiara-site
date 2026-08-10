@@ -1,7 +1,6 @@
 # GENERATED FILE. Do not edit.
 # Source:     .github/issue-fields.psv
 # Regenerate: sh scripts/gen-issue-forms.sh
-# conform.sh fails if this file and the source disagree.
 name: "Chore"
 description: "Maintenance, cleanup, or infrastructure work with no user visible behaviour change."
 title: "[Chore]: "
