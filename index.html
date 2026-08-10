@@ -1911,7 +1911,11 @@ function bodyHtml(q){
   // fenced blocks are normal here. Each fenced line becomes an empty line rather than being
   // removed, which keeps every index in the mask valid against the real text.
   let fenced=false;
-  const mask=raw.split('\n').map(l=>{ if(/^\s*```/.test(l)){ fenced=!fenced; return ''; } return fenced?'':l; }).join('\n');
+  // Blank to the SAME LENGTH. Returning '' shortens the mask, so every index after a fenced
+  // block points somewhere else in the real text and a section renders as a fragment of a
+  // later one. The old comment claimed this kept indexes valid; it did not. (tiara-site#67)
+  const blank=l=>' '.repeat(l.length);
+  const mask=raw.split('\n').map(l=>{ if(/^\s*```/.test(l)){ fenced=!fenced; return blank(l); } return fenced?blank(l):l; }).join('\n');
   const heads=[]; const re=/^###[ \t]+(.*)$/gm; let m;
   while((m=re.exec(mask))!==null) heads.push({at:m.index, len:m[0].length, label:(m[1]||'').trim()});
   // A body with no headings at all is pre-format or hand-written. Show it whole rather than
@@ -2239,7 +2243,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v73';
+const TIARA_VERSION = 'board-v74';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
