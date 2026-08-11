@@ -1631,7 +1631,6 @@ function renderProject(id){
   const q=a.queue||[];
   const openQ=q.filter(x=>x.status!=='done');
   const doneQ=q.filter(x=>x.status==='done');
-  const counts={}; BOARD_STATUS_ORDER.forEach(k=>{ const n=q.filter(x=>x.status===k).length; if(n) counts[k]=n; });
   // A row here carries the same caret and detail slot as the Portfolio tab, in its own 'j' scope, so
   // a project page is a place you can read and add notes rather than a read-only list (#54).
   // It also carries the live status, priority and type controls: a project name is the biggest
@@ -2799,7 +2798,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v86';
+const TIARA_VERSION = 'board-v87';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
