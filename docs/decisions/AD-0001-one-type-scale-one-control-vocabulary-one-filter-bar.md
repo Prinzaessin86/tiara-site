@@ -1,13 +1,27 @@
 # AD-0001. One type scale, one control vocabulary, one filter bar
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-08-11
 **Ticket:** [tiara-site#75](https://github.com/Prinzaessin86/tiara-site/issues/75)
 **Mockup:** `tiara/docs/ux-overhaul-mockup-board-v76.html` (private repo, open it in a browser)
 **Measured against:** `board-v76`. `board-v77` landed while this was being written and changed only
 code comments.
-**Would be enforced by:** a `scripts/hooks/pre-commit` rule that fails a raw `font-size`, hex colour
-or `border-radius` anywhere in `index.html`, with an allowlist for the `:root` token block.
+**Enforced by:** a `scripts/hooks/pre-commit` rule that fails a raw `font-size`, hex colour or
+`border-radius` anywhere in `index.html`, with an allowlist for the `:root` token block.
+
+**Built by, in this order.** Each is shippable alone; #84 may not land before #76.
+
+| Decision | Ticket |
+|---|---|
+| 0 · `onRowReorder` splices instead of rebuilding | [#76](https://github.com/Prinzaessin86/tiara-site/issues/76) |
+| 1a · tokens at today's values, and the lint rule | [#77](https://github.com/Prinzaessin86/tiara-site/issues/77) |
+| 1b · collapse the scale and the radii | [#78](https://github.com/Prinzaessin86/tiara-site/issues/78) |
+| 1c · labels onto the ink twins | [#79](https://github.com/Prinzaessin86/tiara-site/issues/79) |
+| 2 · priority and type become menus that write | [#80](https://github.com/Prinzaessin86/tiara-site/issues/80) |
+| 3 · destructive actions into `⋯`, and the phone | [#81](https://github.com/Prinzaessin86/tiara-site/issues/81) |
+| 4 · the panel | [#82](https://github.com/Prinzaessin86/tiara-site/issues/82) |
+| 5 · the filter bar, the priority data change, the router | [#83](https://github.com/Prinzaessin86/tiara-site/issues/83) |
+| 6 · the card cap | [#84](https://github.com/Prinzaessin86/tiara-site/issues/84) |
 
 ## Context
 
@@ -240,21 +254,21 @@ Deliberately not decided here: the Compliance grid's density, the Runbook and Kn
 already at a comfortable measure), keyboard access for the tabs and the grip (real, and its own
 ticket), and any move off GitHub Pages.
 
-## How this would ship
+## How this ships
 
-Eight tickets, in this order. Each is shippable alone.
+Nine tickets, filed 2026-08-11, in this order. Each is shippable alone.
 
-| Order | Change | Size | Verified by |
+| Order | Change | Ticket | Verified by |
 |---|---|---|---|
-| 0 | `onRowReorder` splices instead of rebuilding | small | a drag on a filtered list, before and after |
-| 1a | Tokens at today's values, plus the lint rule | large, mechanical | the diff, and pixel-identical screenshots |
-| 1b | Collapse the scale and the radii | large | before-and-after screenshots of every surface |
-| 1c | Labels move to the ink twins | medium | measured contrast, every chip ≥ 4.5:1 |
-| 2 | `chipSel` for prio and type, and the write path they are missing | small | a chip change reaching GitHub, and reverting on failure |
-| 3 | `⋯` on the row and the card header, phone rules | medium | a 375px screenshot, and a tap target audit |
-| 4 | The panel | medium | a long list, one panel open |
-| 5 | The filter bar, the priority data change, the router | large | a linked filtered URL that opens the right tab |
-| 6 | The card cap | small | a 34-item card, and a drag on it |
+| 0 | `onRowReorder` splices instead of rebuilding | [#76](https://github.com/Prinzaessin86/tiara-site/issues/76) | a drag on a filtered list, before and after |
+| 1a | Tokens at today's values, plus the lint rule | [#77](https://github.com/Prinzaessin86/tiara-site/issues/77) | the diff, and pixel-identical screenshots |
+| 1b | Collapse the scale and the radii | [#78](https://github.com/Prinzaessin86/tiara-site/issues/78) | before-and-after screenshots of every surface |
+| 1c | Labels move to the ink twins | [#79](https://github.com/Prinzaessin86/tiara-site/issues/79) | measured contrast, every chip ≥ 4.5:1 |
+| 2 | `chipSel` for prio and type, and the write path they are missing | [#80](https://github.com/Prinzaessin86/tiara-site/issues/80) | a chip change reaching GitHub, and reverting on failure |
+| 3 | `⋯` on the row and the card header, phone rules | [#81](https://github.com/Prinzaessin86/tiara-site/issues/81) | a 375px screenshot, and a tap target audit |
+| 4 | The panel | [#82](https://github.com/Prinzaessin86/tiara-site/issues/82) | a long list, one panel open |
+| 5 | The filter bar, the priority data change, the router | [#83](https://github.com/Prinzaessin86/tiara-site/issues/83) | a linked filtered URL that opens the right tab |
+| 6 | The card cap | [#84](https://github.com/Prinzaessin86/tiara-site/issues/84) | a 34-item card, and a drag on it |
 
 ## The subagent review this ticket asked for
 
