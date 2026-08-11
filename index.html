@@ -165,14 +165,21 @@
   .dots:hover{color:var(--pink);}
   .detail{margin:0 0 12px 28px;padding:11px 13px;background:#faf6ff;border:1.5px solid #eeddf7;border-radius:12px;}
   .dmeta{font-size:.74rem;color:var(--soft);font-weight:800;margin-bottom:7px;text-transform:uppercase;letter-spacing:.4px;}
-  .notes{margin-bottom:8px;} .note{font-size:.92rem;margin:5px 0;line-height:1.4;} .note b{color:var(--purple);}
+  /* A note is a card, not a line. Its text is markdown with headings and lists in it, so two of
+     them stacked as bare paragraphs read as one long run-on. */
+  .notes{margin-bottom:8px;display:flex;flex-direction:column;gap:.4rem;}
+  .note{font-size:.92rem;line-height:1.45;background:#fff;border:1.5px solid #eeddf7;border-radius:10px;padding:.5rem .7rem;}
+  .note b{color:var(--purple);}
+  .nby{font-family:'Baloo 2';font-weight:700;font-size:.82rem;color:var(--brand);margin-bottom:.3rem;}
   /* the issue body, one block per `### Label` section the forms write */
   .bwrap{margin-bottom:10px;display:flex;flex-direction:column;gap:7px;}
   .bsec{background:#fff;border:1.5px solid #eeddf7;border-radius:10px;padding:8px 11px;}
   .bsec.dod{border-color:#c9b3f0;background:#fbf8ff;}
   .blab{font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--purple);margin-bottom:4px;}
   .bsec.dod .blab::after{content:' · the acceptance criterion';font-weight:700;letter-spacing:0;text-transform:none;color:var(--soft);}
-  .bval{font-size:.9rem;line-height:1.45;white-space:pre-wrap;word-break:break-word;}
+  /* No white-space:pre-wrap any more: the markdown renderer makes the paragraphs, so pre-wrap
+     would double every blank line it already turned into a gap. */
+  .bval{font-size:.9rem;line-height:1.5;word-break:break-word;}
   /* the compose panel: one field per form field, so a ticket is born with its criterion */
   .cmp{display:flex;flex-direction:column;gap:8px;margin-top:9px;padding:11px;background:#fbf8ff;border:1.5px solid #e6d8f7;border-radius:12px;}
   .cmpf{display:flex;flex-direction:column;gap:3px;}
@@ -411,6 +418,49 @@
   .pjcrumb a{color:var(--brand);text-decoration:none;}
   .pjcrumb a:hover{text-decoration:underline;text-underline-offset:2px;}
   .pjcrumb b{color:var(--ink-1,#3a2d4d);}
+
+  /* ---------- board-v76: a comment is markdown, so it is read as markdown ----------
+     An issue body and every comment on it arrive from GitHub as markdown. The page printed them
+     escaped inside `white-space:pre-wrap`, so a heading, a bullet, a bold lead-in and a paragraph
+     all landed at one size with no space between them, which is what made an agent's note tiring
+     to read. These styles dress what mdHtml() produces. Nothing here is a browser default: every
+     size, colour and marker is stated. */
+  .md{line-height:1.55;}
+  .md>*:first-child{margin-top:0;} .md>*:last-child{margin-bottom:0;}
+  .md p{margin:0 0 .55rem;}
+  .md p:last-child{margin-bottom:0;}
+  /* A heading is a size and a weight, never only a colour: the ink twins rule says a word must be
+     readable first and decorated second. */
+  .md .mdh{font-family:'Baloo 2';font-weight:700;line-height:1.3;margin:.8rem 0 .3rem;color:var(--brand);}
+  .md .mdh1{font-size:1.12em;}
+  .md .mdh2{font-size:1.03em;}
+  .md .mdh3{font-size:.95em;color:var(--ink-1,#3a2d4d);}
+  .md ul,.md ol{margin:.35rem 0 .6rem;padding-left:1.1rem;}
+  .md ul{list-style:none;padding-left:.2rem;}
+  .md ul>li{position:relative;padding-left:1rem;}
+  .md ul>li::before{content:'·';position:absolute;left:.25rem;color:var(--pink);font-weight:800;}
+  .md ol>li::marker{color:var(--brand);font-weight:800;}
+  .md li{margin:.2rem 0;}
+  .md li>ul,.md li>ol{margin:.2rem 0 .1rem;}
+  .md .mdbox{color:var(--brand);font-weight:800;margin-right:.35rem;}
+  .md code{font-family:ui-monospace,Menlo,monospace;font-size:.86em;background:#f4ecff;color:var(--brand);
+           padding:.05rem .32rem;border-radius:.35rem;word-break:break-word;}
+  .md pre{margin:.5rem 0 .6rem;padding:.55rem .7rem;background:#faf6ff;border:1.5px solid #eeddf7;
+          border-radius:.6rem;overflow-x:auto;}
+  .md pre code{background:none;color:var(--ink-2,#5d5175);padding:0;font-size:.84em;line-height:1.55;white-space:pre;word-break:normal;}
+  .md .mdq{margin:.5rem 0;padding:.3rem .7rem;border-left:3px solid var(--pink);background:#fff6fb;border-radius:0 .5rem .5rem 0;color:var(--ink-2,#5d5175);}
+  .md .mdhr{height:1.5px;background:var(--line);border-radius:2px;margin:.8rem 0;}
+  .md a{color:var(--brand);font-weight:700;text-decoration:none;border-bottom:1.5px dotted #FFC2DF;word-break:break-word;}
+  .md a:hover{border-bottom-color:var(--brand);}
+  .md strong{font-weight:800;color:var(--ink-1,#3a2d4d);}
+  .md em{font-style:italic;color:var(--ink-2,#5d5175);}
+  .md del{color:var(--ink-3,#6f6188);}
+  /* A table is the one block that can be wider than the panel, so it scrolls inside itself rather
+     than giving the whole page a horizontal scrollbar. */
+  .md .mdtw{overflow-x:auto;margin:.5rem 0 .6rem;}
+  .md .mdt{border-collapse:collapse;font-size:.94em;}
+  .md .mdt th,.md .mdt td{border:1.5px solid var(--line);padding:.3rem .55rem;text-align:left;vertical-align:top;}
+  .md .mdt th{background:#faf6ff;color:var(--brand);font-weight:800;white-space:nowrap;}
 
   /* A phone. The page had no media query at all until board-v65, so every size was a clamp on the
      viewport that scaled type and never changed a layout. These only ever make things bigger or
@@ -1275,7 +1325,7 @@ function renderIssue(){
     <div class="ipsec">Description</div>
     <div class="ipbody">${bodyHtml(q)}</div>
     <div class="ipsec">Notes</div>
-    <div class="ipnotes">${(q.notes||[]).map(n=>`<div class="ipnote"><b>${n.by==='claude'?'🎀 Claude Code':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div>
+    <div class="ipnotes">${(q.notes||[]).map(n=>noteHtml(n,'ipnote')).join('')||'<div class="muted">no notes yet</div>'}</div>
     <div class="addbox"><input id="ipnote" placeholder="add a note…" onkeydown="if(event.key==='Enter')addIssueNote()"><button onclick="addIssueNote()">note</button></div>
   </div>`;
 }
@@ -1916,6 +1966,122 @@ function pillStatus(a){
 }
 /* ---------- render ---------- */
 const dsId = id => 'ds-'+(''+id).replace(/[^a-zA-Z0-9]/g,'_');   // stable DOM id for a row's detail slot
+/* ---------- markdown, the small subset a board actually writes (tiara-site#74) ----------
+   Everything shown here - an issue body, a comment from a person, a comment from an agent - is
+   markdown at the source. It was printed as one escaped blob, so structure the writer put in was
+   thrown away on the way to the screen.
+
+   Safety: the text is escaped FIRST, and every tag below is one this code wrote itself. A comment
+   can never smuggle markup through, because by the time these rules run there are no `<` left in
+   the string. Links are only ever made from an http(s) URL, so `javascript:` cannot become an
+   href. Nothing here may throw: mdHtml() catches and falls back to the old flat rendering, since a
+   render that throws blanks the board. */
+function mdInline(t){
+  // Code spans are held aside before anything else, so `**` inside a snippet stays literal.
+  const held=[]; const hold=h=>{ held.push(h); return '\u0001'+(held.length-1)+'\u0001'; };
+  let s=String(t);
+  s=s.replace(/`([^`]+)`/g,(m,c)=>hold('<code>'+c+'</code>'));
+  const link=(url,txt)=>hold('<a href="'+url+'" target="_blank" rel="noopener">'+txt+'</a>');
+  s=s.replace(/\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g,(m,txt,url)=>link(url,txt||url));
+  s=s.replace(/(^|[\s(])(https?:\/\/[^\s<)\]]*[^\s<)\].,;:!?'"])/g,(m,pre,url)=>pre+link(url,url));
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  s=s.replace(/(^|[^\w*])\*([^*\n]+)\*(?!\w)/g,'$1<em>$2</em>');
+  s=s.replace(/(^|[^\w_])_([^_\n]+)_(?!\w)/g,'$1<em>$2</em>');
+  s=s.replace(/~~([^~]+)~~/g,'<del>$1</del>');
+  return s.replace(/\u0001(\d+)\u0001/g,(m,k)=>held[+k]);
+}
+// A list, including the nested one an agent writes under a bullet. Returns where it ended, so the
+// block loop carries on from the first line that is no longer part of it.
+function mdList(L,i){
+  const it=l=>{ let m=/^(\s*)([-*+])[ \t]+(.*)$/.exec(l); if(m) return {ind:m[1].length,ord:false,t:m[3]};
+                m=/^(\s*)(\d+)[.)][ \t]+(.*)$/.exec(l);   if(m) return {ind:m[1].length,ord:true,t:m[3]};
+                return null; };
+  const first=it(L[i]); const ord=first.ord; const base=first.ind; const items=[];
+  while(i<L.length){
+    const cur=it(L[i]);
+    if(cur && cur.ind<=base+1 && cur.ord===ord){ items.push({t:cur.t,kids:[]}); i++; continue; }
+    // A line under an item belongs to that item. A nested list or a fenced block under it becomes
+    // its own content; anything else is the rest of a wrapped line and is joined back onto the
+    // text, so a bullet hard-wrapped at 100 characters reads as one sentence rather than two.
+    // A heading, a fence, a quote or a rule ends the list even without a blank line before it,
+    // because those are never the tail of a sentence.
+    // Indented, those same markers belong to the item above instead, which is how a bullet carries
+    // a command in a fenced block.
+    const opensBlock = /^ {0,1}(#{1,6}[ \t]|>|```)/.test(L[i]) || /^ {0,1}([-*_])([ \t]*\1){2,}[ \t]*$/.test(L[i]);
+    if(items.length && L[i].trim() && !opensBlock){
+      const last=items[items.length-1]; const dedent=L[i].replace(/^ {1,4}/,'');
+      if(/^\s{2,}/.test(L[i]) && (it(dedent) || /^\s*```/.test(dedent) || last.kids.length)) last.kids.push(dedent);
+      else last.t += '\n'+L[i].trim();
+      i++; continue; }
+    // a blank line does not end the list if the next real line is still an item of it
+    if(!L[i].trim()){ let j=i+1; while(j<L.length && !L[j].trim()) j++;
+      const nx=j<L.length?it(L[j]):null;
+      if(nx && nx.ind>=base && nx.ord===ord){ i=j; continue; } }
+    break;
+  }
+  const tag=ord?'ol':'ul';
+  const html='<'+tag+'>'+items.map(x=>{
+    const box=/^\[([ xX])\][ \t]+/.exec(x.t);
+    const head=box ? '<span class="mdbox">'+(box[1]===' '?'☐':'☑')+'</span>'+mdInline(esc(x.t.slice(box[0].length)))
+                   : mdInline(esc(x.t));
+    return '<li>'+head+(x.kids.length?mdHtml(x.kids.join('\n')):'')+'</li>';
+  }).join('')+'</'+tag+'>';
+  return {html,i};
+}
+function mdTable(L,i){
+  const cells=l=>l.replace(/^\s*\|/,'').replace(/\|\s*$/,'').split('|').map(c=>c.trim());
+  const head=cells(L[i]); i+=2; const rows=[];
+  while(i<L.length && L[i].trim() && L[i].indexOf('|')>=0){ rows.push(cells(L[i])); i++; }
+  const html='<div class="mdtw"><table class="mdt"><thead><tr>'
+    + head.map(c=>'<th>'+mdInline(esc(c))+'</th>').join('')+'</tr></thead><tbody>'
+    + rows.map(r=>'<tr>'+r.map(c=>'<td>'+mdInline(esc(c))+'</td>').join('')+'</tr>').join('')
+    + '</tbody></table></div>';
+  return {html,i};
+}
+function mdHtml(src){
+  const raw=(src==null?'':String(src)).replace(/\r/g,'').replace(/\t/g,'  ');
+  if(!raw.trim()) return '';
+  try{
+    const L=raw.split('\n'); const out=[]; let para=[]; let i=0;
+    // A single newline inside a paragraph is a SPACE, not a line break. Every comment these boards
+    // carry is hard-wrapped near 100 characters and a detail panel is far narrower than that, so
+    // honouring those newlines the way GitHub does breaks each paragraph into ragged half-lines.
+    // The markdown escape hatch still works: end a line with two spaces to force a break.
+    const flush=()=>{ if(para.length){
+      out.push('<p>'+mdInline(esc(para.join('\n'))).replace(/[ \t]{2,}\n/g,'<br>').replace(/\n/g,' ')+'</p>');
+      para=[]; } };
+    while(i<L.length){
+      const l=L[i];
+      if(/^\s*```/.test(l)){ flush(); i++; const buf=[];
+        while(i<L.length && !/^\s*```/.test(L[i])) buf.push(L[i++]);
+        i++;                                   // the closing fence, or the end of the text
+        out.push('<pre><code>'+esc(buf.join('\n'))+'</code></pre>'); continue; }
+      if(!l.trim()){ flush(); i++; continue; }
+      let m=/^\s{0,3}(#{1,6})[ \t]+(.*)$/.exec(l);
+      if(m){ flush(); const lv=m[1].length;
+        out.push('<div class="mdh mdh'+(lv<=2?1:lv===3?2:3)+'">'+mdInline(esc(m[2].replace(/[ \t]+#+[ \t]*$/,'').trim()))+'</div>'); i++; continue; }
+      if(/^\s{0,3}([-*_])([ \t]*\1){2,}[ \t]*$/.test(l)){ flush(); out.push('<div class="mdhr"></div>'); i++; continue; }
+      if(/^\s{0,3}>/.test(l)){ flush(); const buf=[];
+        while(i<L.length && /^\s{0,3}>/.test(L[i])) buf.push(L[i++].replace(/^\s{0,3}>[ \t]?/,''));
+        out.push('<div class="mdq">'+mdHtml(buf.join('\n'))+'</div>'); continue; }
+      if(/^(\s*)([-*+]|\d+[.)])[ \t]+/.test(l)){ flush(); const r=mdList(L,i); out.push(r.html); i=r.i; continue; }
+      if(l.indexOf('|')>=0 && i+1<L.length && /-/.test(L[i+1]) && /^[\s:|-]+$/.test(L[i+1]) && L[i+1].indexOf('|')>=0){
+        flush(); const r=mdTable(L,i); out.push(r.html); i=r.i; continue; }
+      para.push(l); i++;
+    }
+    flush();
+    return out.join('');
+  }catch(e){
+    noted('markdown',e);
+    return '<p>'+esc(raw).replace(/\n/g,'<br>')+'</p>';   // the old flat rendering, never nothing
+  }
+}
+// One comment, with its author on its own line. The author used to be a bold prefix glued to the
+// first word of the text, which cannot work once the text starts with its own heading or list.
+function noteHtml(n,cls){
+  return '<div class="'+cls+'"><div class="nby">'+(n.by==='claude'?'🎀 Claude Code':'👑 You')+'</div>'
+    + '<div class="md">'+(mdHtml(n.text)||'<p class="muted">empty</p>')+'</div></div>';
+}
 // The issue body, split back into the `### Label` sections the forms write. Shown read-only:
 // the body is the ticket's own record of what it must demonstrate, and Definition of Done is the
 // section a later gate compares against the text as filed, so it is not editable from here.
@@ -1937,13 +2103,13 @@ function bodyHtml(q){
   while((m=re.exec(mask))!==null) heads.push({at:m.index, len:m[0].length, label:(m[1]||'').trim()});
   // A body with no headings at all is pre-format or hand-written. Show it whole rather than
   // pretending it has sections, so an old ticket still reads correctly.
-  if(!heads.length) return `<div class="bsec"><div class="bval">${esc(raw.trim())}</div></div>`;
+  if(!heads.length) return `<div class="bsec"><div class="bval md">${mdHtml(raw)}</div></div>`;
   // Anything before the first heading is a preamble, not a section. Splitting on the heading and
   // treating the leading chunk as a section made its first line the bold label, which mislabels
   // every ticket that opens with prose or a `## ` heading.
   const pre=raw.slice(0,heads[0].at).trim();
   const parts=heads.map((h,k)=>h.label+'\n'+raw.slice(h.at+h.len, k+1<heads.length?heads[k+1].at:raw.length));
-  return (pre?`<div class="bsec"><div class="bval">${esc(pre)}</div></div>`:'')+parts.map(s=>{
+  return (pre?`<div class="bsec"><div class="bval md">${mdHtml(pre)}</div></div>`:'')+parts.map(s=>{
     const nl=s.indexOf('\n');
     const label=(nl<0?s:s.slice(0,nl)).trim();
     let val=(nl<0?'':s.slice(nl+1)).trim();
@@ -1952,12 +2118,13 @@ function bodyHtml(q){
     // Done` is its pre-2026-08-10 name and must keep the highlight, or every ticket filed before
     // the split loses its marked section, which is several hundred of them (#66).
     const dod=/^(acceptance|definition of done)$/i.test(label);
+    const html=mdHtml(val);
     return `<div class="bsec${dod?' dod':''}"><div class="blab">${esc(label)}</div>`
-      + (val?`<div class="bval">${esc(val)}</div>`:'<div class="bval muted">empty</div>')+'</div>';
+      + (html?`<div class="bval md">${html}</div>`:'<div class="bval muted">empty</div>')+'</div>';
   }).join('');
 }
 function detailHtml(a,q,i,scope){ scope=scope||''; const sm=STATUS_META[q.status]||STATUS_META.todo;
-  return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t} <button class="openfull" onclick="openIssue('${esc(a.id)}','${esc(q.id)}')" title="open this ticket on its own page">open full page ⤢</button></div><div class="bwrap">${bodyHtml(q)}</div><div class="notes">${(q.notes||[]).map(n=>`<div class="note"><b>${n.by==='claude'?'🎀 Claude Code':'👑 You'}:</b> ${esc(n.text)}</div>`).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${scope}${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i},'${scope}')"><button onclick="addNote('${a.id}',${i},'${scope}')">note</button></div></div>`;
+  return `<div class="detail"><div class="dmeta">${esc(q.id)} · ${sm.e} ${sm.t} <button class="openfull" onclick="openIssue('${esc(a.id)}','${esc(q.id)}')" title="open this ticket on its own page">open full page ⤢</button></div><div class="bwrap">${bodyHtml(q)}</div><div class="notes">${(q.notes||[]).map(n=>noteHtml(n,'note')).join('')||'<div class="muted">no notes yet</div>'}</div><div class="addbox"><input id="note-${scope}${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i},'${scope}')"><button onclick="addNote('${a.id}',${i},'${scope}')">note</button></div></div>`;
 }
 // Task queue tab (id 'portfolio') - every open item across every project, one list.
 // Auto = re-sort by priority on every render (regenerates). Manual = follow the exact order you
@@ -2260,7 +2427,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v75';
+const TIARA_VERSION = 'board-v76';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
