@@ -935,7 +935,7 @@ async function bLoadNotes(a,q){ const or=appOwnerRepo(a); const r=await ghApi('/
     return { by:(bot||legacy)?'claude':'you', text:(c.body||'').replace(NOTE_PREFIX,'') }; }); q._notesLoaded=true; }
 async function bAddItem(a,title,type,body,prio){
   const or=appOwnerRepo(a);
-  // The body is the ticket. A title-only issue carries no Definition of Done, so it can never be
+  // The body is the ticket. A title-only issue carries no Acceptance, so it can never be
   // promoted to Verify once the criterion gate lands, and it cannot be fixed afterwards without
   // the worker writing its own criterion. Labels match the GitHub issue forms so a ticket filed
   // here and one filed through the web form are indistinguishable afterwards.
@@ -1638,7 +1638,8 @@ const TYPE_META={none:{e:'',t:'no type',c:'#8877a0'},bug:{e:'🐞',t:'bug',c:'#d
 // here and one filed through the GitHub web form have to produce the same body structure for
 // one parser to read both. It is a second copy and therefore a drift risk; closing that means
 // Tiara fetching the forms at build time, which waits for the move off Pages.
-// `Definition of Done` is required on all three: it is the acceptance criterion a later gate
+// `Acceptance`, `Deliverable` and `Scope` are required on all three, and replaced the single
+// `Definition of Done` field the forms used to carry. Acceptance is the criterion a later gate
 // compares against the text as filed, so a ticket created without one can never be promoted.
 // `d` is the constraint, shown always, under the label. `h` is the grey example inside the box,
 // which disappears as soon as you type. Both mirror the same field in the .yml.
@@ -1867,8 +1868,8 @@ function addItem(id){
   const ty=d.type||'';
   if(!ty){ const tsel=document.getElementById('addtype-'+id); setStatus('pick a type first: bug, feature or chore'); if(tsel) tsel.focus(); return; }
   if(!boardFor(a)){ setStatus('\u26d4 '+a.name+' has no board. Run ensure-board.sh for it (D39).'); return; }
-  // Refuse rather than create a ticket that can never be promoted. A missing Definition of Done
-  // is the one that matters: it is the acceptance criterion, and adding it once the work has
+  // Refuse rather than create a ticket that can never be promoted. A missing Acceptance is the
+  // one that matters: it is the criterion itself, and adding it once the work has
   // started makes it a criterion the worker wrote for itself, which is what the gate exists to stop.
   const missing=missingFields(d.vals,ty);
   if(missing.length){ setStatus('⚠ still needed: '+missing.join(', ')); return; }
@@ -2083,14 +2084,14 @@ function noteHtml(n,cls){
     + '<div class="md">'+(mdHtml(n.text)||'<p class="muted">empty</p>')+'</div></div>';
 }
 // The issue body, split back into the `### Label` sections the forms write. Shown read-only:
-// the body is the ticket's own record of what it must demonstrate, and Definition of Done is the
+// the body is the ticket's own record of what it must demonstrate, and Acceptance is the
 // section a later gate compares against the text as filed, so it is not editable from here.
 // GitHub writes the literal string `_No response_` under a blank optional field; that is empty.
 function bodyHtml(q){
   const raw=(q.body||'').replace(/\r/g,'');
   if(!raw.trim()) return '<div class="muted">no description</div>';
   // Blank out fenced regions before looking for headings, so a `### ` inside a code sample is not
-  // read as a section boundary. The Definition of Done help asks people to paste commands, so
+  // read as a section boundary. The Repro or Reference help asks people to paste commands, so
   // fenced blocks are normal here. Each fenced line becomes an empty line rather than being
   // removed, which keeps every index in the mask valid against the real text.
   let fenced=false;
@@ -2427,7 +2428,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v76';
+const TIARA_VERSION = 'board-v77';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
