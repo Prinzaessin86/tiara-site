@@ -49,22 +49,24 @@
     --sp-80:.8rem; --sp-85:.85rem; --sp-90:.9rem; --sp-95:.95rem; --sp-100:1rem; --sp-110:1.1rem;
     --sp-120:1.2rem; --sp-150:1.5rem;
 
-    /* CHIP COLOUR. The label, its 10% fill and its 13% fill, which the JS used to build
-       by concatenating an alpha onto a hex literal. #79 moves each label onto its ink twin,
-       which is then a change to these three lines and nothing else. */
-    --st-new:#9b5de5; --st-new-f:#9b5de51a; --st-new-f2:#9b5de522;
-    --st-todo:#8877a0; --st-todo-f:#8877a01a; --st-todo-f2:#8877a022;
-    --st-doing:#e0932b; --st-doing-f:#e0932b1a; --st-doing-f2:#e0932b22;
-    --st-verify:#4ea8ff; --st-verify-f:#4ea8ff1a; --st-verify-f2:#4ea8ff22;
-    --st-blocked:#d0567f; --st-blocked-f:#d0567f1a; --st-blocked-f2:#d0567f22;
-    --st-done:#2fbf7e; --st-done-f:#2fbf7e1a; --st-done-f2:#2fbf7e22;
-    --ty-none:#8877a0; --ty-none-f:#8877a01a; --ty-none-f2:#8877a022;
-    --ty-bug:#d0567f; --ty-bug-f:#d0567f1a; --ty-bug-f2:#d0567f22;
-    --ty-feature:#9b5de5; --ty-feature-f:#9b5de51a; --ty-feature-f2:#9b5de522;
-    --ty-chore:#4ea8ff; --ty-chore-f:#4ea8ff1a; --ty-chore-f2:#4ea8ff22;
-    --pr-high:#d0567f; --pr-high-f:#d0567f1a; --pr-high-f2:#d0567f22;
-    --pr-med:#e0932b; --pr-med-f:#e0932b1a; --pr-med-f2:#e0932b22;
-    --pr-low:#2fbf7e; --pr-low-f:#2fbf7e1a; --pr-low-f2:#2fbf7e22;
+    /* CHIP COLOUR. Three values per chip: the LABEL, which is the ink twin, and the two fills,
+       which stay the bright hue at 10% and 13%. That is the rule the palette comment above states
+       and the file did not follow: a bright is a fill, a dot or a bar, and never a word. Measured
+       on its own fill, every label below now runs 4.56:1 to 6.33:1; as brights they ran 2.29:1 to
+       3.99:1 and not one of them reached 4.5. (#79) */
+    --st-new:var(--new-i); --st-new-f:#9b5de51a; --st-new-f2:#9b5de522;
+    --st-todo:var(--upnext-i); --st-todo-f:#8877a01a; --st-todo-f2:#8877a022;
+    --st-doing:var(--doing-i); --st-doing-f:#e0932b1a; --st-doing-f2:#e0932b22;
+    --st-verify:var(--verify-i); --st-verify-f:#4ea8ff1a; --st-verify-f2:#4ea8ff22;
+    --st-blocked:var(--blocked-i); --st-blocked-f:#d0567f1a; --st-blocked-f2:#d0567f22;
+    --st-done:var(--done-i); --st-done-f:#2fbf7e1a; --st-done-f2:#2fbf7e22;
+    --ty-none:var(--ink-3); --ty-none-f:#8877a01a; --ty-none-f2:#8877a022;
+    --ty-bug:var(--blocked-i); --ty-bug-f:#d0567f1a; --ty-bug-f2:#d0567f22;
+    --ty-feature:var(--new-i); --ty-feature-f:#9b5de51a; --ty-feature-f2:#9b5de522;
+    --ty-chore:var(--verify-i); --ty-chore-f:#4ea8ff1a; --ty-chore-f2:#4ea8ff22;
+    --pr-high:var(--blocked-i); --pr-high-f:#d0567f1a; --pr-high-f2:#d0567f22;
+    --pr-med:var(--doing-i); --pr-med-f:#e0932b1a; --pr-med-f2:#e0932b22;
+    --pr-low:var(--done-i); --pr-low-f:#2fbf7e1a; --pr-low-f2:#2fbf7e22;
 
     --c-2f8f63:#2f8f63;
 
@@ -196,7 +198,7 @@
   .row.qrow{background:var(--c-fdfaff);border:1.5px solid var(--line2);border-radius:var(--r-lg);padding:var(--sp-9px) var(--sp-12px);align-items:center;gap:var(--sp-10px);margin-bottom:var(--sp-7px);}
   .priochip2{display:inline-flex;align-items:center;gap:var(--sp-5px);font-size:var(--t-sm);font-weight:700;border:none;border-radius:var(--r-md);padding:var(--sp-4px) var(--sp-10px);cursor:pointer;flex-shrink:0;white-space:nowrap;line-height:1.2;}
   .priochip2::before{content:'';width:8px;height:8px;border-radius:var(--r-circle);background:currentColor;flex-shrink:0;}
-  .typechip2{font-size:var(--t-xs);color:var(--soft);font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;background:none;border:none;padding:0;}
+  .typechip2{font-size:var(--t-xs);color:var(--ink-2);font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;background:none;border:none;padding:0;}
   select.chipsel.status{padding:var(--sp-4px) var(--sp-22px) var(--sp-4px) var(--sp-10px);font-size:var(--t-sm);}
   .row .id{font-size:var(--t-xs);font-weight:800;color:var(--card);background:var(--purple);padding:var(--sp-1px) var(--sp-6px);border-radius:var(--r-sm);margin-right:var(--sp-5px);}
   .ghlink{font-size:var(--t-xs);font-weight:800;color:var(--c-7a4a9e);background:var(--c-f3e9fb);border-radius:var(--r-sm);padding:var(--sp-2px) var(--sp-7px);text-decoration:none;white-space:nowrap;flex-shrink:0;}
@@ -2509,7 +2511,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v80';
+const TIARA_VERSION = 'board-v81';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
