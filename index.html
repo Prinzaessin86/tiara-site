@@ -170,12 +170,6 @@
   .r-sky{background:linear-gradient(160deg,var(--c-cdeeff),var(--c-bcd9ff));} .r-peach{background:linear-gradient(160deg,var(--c-ffe0c7),var(--c-ffc9d4));} .r-mint{background:linear-gradient(160deg,var(--c-c4f5e1),var(--c-a8e6cf));}
   .app .emojitile{width:36px;height:36px;border-radius:var(--r-md);background:var(--c-f6f0ff);display:flex;align-items:center;justify-content:center;font-size:var(--t-lg);flex-shrink:0;}
   .app .nm{font-family:'Baloo 2';font-weight:700;font-size:var(--t-lg);}
-  .tftoggle{border:none;background:none;cursor:pointer;color:var(--c-c9b8dd);opacity:.5;padding:var(--sp-2px) var(--sp-3px);font-size:var(--t-sm);line-height:1;flex-shrink:0;}
-  .tftoggle.on{color:var(--c-2f6fd0);opacity:1;}
-  .tftoggle:hover{color:var(--pink);opacity:1;}
-  .nmedit{border:none;background:none;cursor:pointer;color:var(--c-c9b8dd);padding:var(--sp-2px);display:inline-flex;align-items:center;flex-shrink:0;}
-  .nmedit svg{width:13px;height:13px;}
-  .nmedit:hover{color:var(--pink);}
   .app .pill{font-size:var(--t-xs);font-weight:800;padding:var(--sp-3px) var(--sp-10px);border-radius:var(--r-md);background:var(--c-f1eef6);color:var(--soft);}
   .app .cnt{margin-left:auto;font-size:var(--t-sm);color:var(--soft);font-weight:700;white-space:nowrap;}
   .app .cnt b{color:var(--purple);}
@@ -211,9 +205,6 @@
   .row .promote{cursor:pointer;border:none;background:var(--c-f3e9fb);color:var(--purple);font-weight:700;font-size:var(--t-xs);border-radius:var(--r-md);padding:var(--sp-2px) var(--sp-8px);}
   .grip{cursor:grab;color:var(--c-cbb8e2);font-weight:800;font-size:var(--t-lg);user-select:none;line-height:1;touch-action:none;}
   .app-grip{cursor:grab;color:var(--c-cbb8e2);font-weight:800;font-size:var(--t-lg);user-select:none;line-height:1;flex-shrink:0;margin-right:-3px;touch-action:none;}
-  .appmove{display:inline-flex;flex-direction:column;gap:var(--sp-1px);flex-shrink:0;margin-right:var(--sp-2px);}
-  .appmove button{border:none;background:none;cursor:pointer;color:var(--c-c3b2df);font-size:var(--t-xs);line-height:.9;padding:0 var(--sp-2px);}
-  .appmove button:hover{color:var(--pink);}
   .appver{font-size:var(--t-xs);font-weight:800;color:var(--c-2f9e6e);background:var(--c-e7f7ef);padding:var(--sp-2px) var(--sp-8px);border-radius:var(--r-md);flex-shrink:0;letter-spacing:.02em;}
   .appicon{width:100%;height:100%;object-fit:cover;border-radius:var(--r-md);display:block;}
   .tfbadge{font-size:var(--t-xs);font-weight:800;color:var(--c-245fb8);background:var(--c-dcebff);padding:var(--sp-4px) var(--sp-11px);border-radius:var(--r-md);flex-shrink:0;letter-spacing:.02em;white-space:nowrap;box-shadow:inset 0 0 0 1px var(--c-b9d4fb);}
@@ -313,8 +304,6 @@
   .runout{white-space:pre-wrap;background:var(--c-fbf4ff);border:1.5px solid var(--c-ecd9f3);color:var(--c-5a4a6e);font-family:ui-monospace,monospace;font-size:var(--t-sm);border-radius:var(--r-lg);padding:var(--sp-10px) var(--sp-12px);margin:var(--sp-8px) 0 0;max-height:240px;overflow:auto;width:100%;line-height:1.5;}
   .rbrun{background:linear-gradient(135deg,var(--c-ffeaf6),var(--c-efe6ff));border:1.5px solid var(--c-f0cfe8);border-radius:var(--r-lg);padding:var(--sp-9px) var(--sp-12px);margin-bottom:var(--sp-12px);font-size:var(--t-sm);font-weight:700;color:var(--c-a4478a);}
   .rbrun select{font-family:'Quicksand';font-weight:700;border:1.5px solid var(--c-f0cfe8);border-radius:var(--r-md);padding:var(--sp-3px) var(--sp-8px);margin-left:var(--sp-4px);}
-  .delproj{margin-top:var(--sp-12px);border:1.5px solid var(--c-f3d9e8);background:var(--c-fff5fa);color:var(--c-c96);color:var(--c-cc7aa8);font-weight:700;font-size:var(--t-xs);border-radius:var(--r-md);padding:var(--sp-5px) var(--sp-11px);cursor:pointer;}
-  .delproj:hover{background:var(--c-ffe9f3);border-color:var(--c-eeb8d5);}
   .prio-badge{font-size:var(--t-md);margin-right:var(--sp-2px);}
   #onboard{max-width:560px;margin:var(--sp-10px) auto 0;}
   .onbox{background:var(--card);border:2px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-22px) var(--sp-24px);box-shadow:0 8px 22px rgba(155,93,229,.10);}
@@ -528,10 +517,46 @@
   .md .mdt th,.md .mdt td{border:1.5px solid var(--line);padding:var(--sp-30) var(--sp-55);text-align:left;vertical-align:top;}
   .md .mdt th{background:var(--c-faf6ff);color:var(--brand);font-weight:800;white-space:nowrap;}
 
+  /* ---------- board-v83: a control says what it does ----------
+     A destructive action is never a bare glyph beside a benign one. `✕` closed a GitHub issue,
+     sat next to the caret that opens a panel, was the smallest thing on the row, and its tooltip
+     said "delete". Both it and the card's four unlabelled header controls move into a menu with
+     words in it. (#81) */
+  .kebab{position:relative;display:inline-block;flex-shrink:0;}
+  .kebab>summary{list-style:none;cursor:pointer;color:var(--c-b09bc9);font-weight:800;
+       font-size:var(--t-md);line-height:1;padding:var(--sp-2px) var(--sp-6px);border-radius:var(--r-md);}
+  .kebab>summary::-webkit-details-marker{display:none;}
+  .kebab>summary:hover,.kebab[open]>summary{color:var(--brand);background:var(--c-f6f0ff);}
+  .kebab>summary:focus-visible{outline:2px solid var(--purple);outline-offset:1px;}
+  .kebab .pop{position:absolute;right:0;top:calc(100% + var(--sp-4px));z-index:40;min-width:13rem;
+       background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-lg);
+       box-shadow:0 var(--sp-8px) var(--sp-24px) rgba(155,93,229,.18);padding:var(--sp-5px);
+       display:flex;flex-direction:column;gap:var(--sp-1px);text-align:left;}
+  .kebab .pop button{font-family:'Quicksand';font-weight:700;font-size:var(--t-sm);text-align:left;
+       border:none;background:none;color:var(--ink-2);padding:var(--sp-40) var(--sp-55);
+       border-radius:var(--r-md);cursor:pointer;white-space:nowrap;}
+  .kebab .pop button:hover{background:var(--c-faf6ff);color:var(--brand);}
+  .kebab .pop button.danger{color:var(--blocked-i);}
+  .kebab .pop button.danger:hover{background:var(--c-fbe7ee);color:var(--blocked-i);}
+  .kebab .pop .sep{height:1.5px;background:var(--line2);margin:var(--sp-4px) var(--sp-5px);}
+  /* The caret is a word. `▸` told you nothing about what it would do. */
+  .dets{font-family:'Quicksand';font-weight:700;font-size:var(--t-xs);color:var(--ink-3);
+       border:1.5px solid var(--line);background:var(--card);border-radius:var(--r-md);
+       padding:var(--sp-2px) var(--sp-8px);cursor:pointer;flex-shrink:0;}
+  .dets:hover{border-color:var(--pink);color:var(--brand);}
+  .dets:focus-visible{outline:2px solid var(--purple);outline-offset:1px;}
+
   /* A phone. The page had no media query at all until board-v65, so every size was a clamp on the
      viewport that scaled type and never changed a layout. These only ever make things bigger or
      let them wrap; no desktop size changes. */
   @media (max-width:640px){
+    /* Neither a row nor a card header wrapped at any width, so at 375px the card was wider than
+       the phone and everything inside it inherited that extra room instead of wrapping into it.
+       Only .prow had this. (#81) */
+    details.app>summary{flex-wrap:wrap;row-gap:var(--sp-40);}
+    .app .cnt{margin-left:0;}
+    .row{flex-wrap:wrap;row-gap:var(--sp-40);}
+    .row .t{flex:1 1 100%;order:5;}
     .prow{flex-wrap:wrap;}
     .prow .pt{flex:1 1 11rem;}
     .bar{gap:var(--sp-40);}
@@ -541,12 +566,13 @@
     .tabs{gap:var(--sp-100);}
     .pjhead h2{font-size:var(--t-lg);}
   }
+  /* Every control on a row, not the five that happened to be listed, and 2.75rem rather than
+     2.4rem: at this page's root size 2.4rem is still under the 44px a finger needs. (#81) */
   @media (pointer:coarse){
-    select.chipsel.status{min-height:2.4rem;}
-    .dots{padding:var(--sp-40) var(--sp-55);font-size:var(--t-md);}
-    .row .x{padding:var(--sp-30) var(--sp-50);font-size:var(--t-lg);}
-    .pjlane{padding:var(--sp-35) var(--sp-80);}
-    select.chipsel.prio,select.chipsel.type{min-height:2.4rem;}
+    .row select.chipsel,.row .dets,.row .kebab>summary,.row .grip,.row .ghlink,
+    .prow select.chipsel,.pjlane,.hsub,.psortbtn{min-height:2.75rem;display:inline-flex;
+       align-items:center;}
+    .row .ghlink,.pjlane{padding-left:var(--sp-80);padding-right:var(--sp-80);}
   }
 </style>
 </head>
@@ -1423,7 +1449,7 @@ function pjRowHtml(a,x,qi){
   return `<div class="pjitem" data-item="${esc(x.id)}"><div class="row qrow">${prioDot(a.id,qi)}${chipSel(a.id,qi,'status')}<span class="t">${x.id?`<span class="id">${esc(x.id)}</span>`:''}${esc(x.title)}</span>`
     + typeChip(a.id,qi)
     + (x.url?`<a class="ghlink" href="${x.url}" target="_blank">#${x.issueNumber}↗</a>`:'')
-    + `<button class="dots" onclick="toggleProjDetail('${esc(x.id)}',this)" title="details & notes">${openState.has('item:'+x.id)?'▾':'▸'}</button>`
+    + `<button class="dets" onclick="toggleProjDetail('${esc(x.id)}',this)" title="the body of this ticket and its notes">${openState.has('item:'+x.id)?'close':'details'}</button>`
     + `</div><div class="dslot" id="jds-${dsId(x.id)}">${det}</div></div>`;
 }
 function renderProject(id){
@@ -1885,10 +1911,26 @@ function chipSel(id,i,kind){
 // exists anywhere in this file and all of which a custom menu would have to invent.
 function prioDot(id,i){ return chipSel(id,i,'prio'); }
 function typeChip(id,i){ return chipSel(id,i,'type'); }
+// A menu with words in it, for the actions that were bare glyphs. <details> rather than a custom
+// popover, for the same reason the chips are a <select>: the summary is focusable, it toggles from
+// the keyboard, and there is no state to get wrong. The two lines below are what <details> does not
+// give you: a click elsewhere, and Escape.
+function kebab(key, items){
+  return `<details class="kebab" data-key="menu:${key}"><summary title="more actions" aria-label="more actions">⋯</summary>`
+    + `<div class="pop">` + items.map(it => it==='-' ? '<div class="sep"></div>'
+        : `<button class="${it.danger?'danger':''}" onclick="closeMenus();${it.do}">${it.label}</button>`).join('')
+    + `</div></details>`;
+}
+function closeMenus(except){ document.querySelectorAll('details.kebab[open]').forEach(d=>{ if(d!==except) d.open=false; }); }
+document.addEventListener('click', e=>{ const d=e.target.closest && e.target.closest('details.kebab'); closeMenus(d||null); });
+// A kebab inside a <summary> is inside the card's own toggle, so a click on it would open the
+// card as well. The menu owns its own clicks.
+document.addEventListener('click', e=>{ if(e.target.closest && e.target.closest('details.kebab')) e.stopPropagation(); }, true);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMenus(null); });
 function delApp(id){ const a=app(id); if(!a)return; if(!confirm('Remove the project "'+a.name+'" from your Tiara board?\n\nThis only clears it from the board - it does NOT touch any files, folders, or repos on your Mac.')) return; data.apps=data.apps.filter(x=>x.id!==id); openState.delete('app:'+id); touch(); setStatus('removed '+a.name+' from the board'); }
 function cycleStatus(id,i){ const a=app(id); const q=a.queue[i]; const idx=STATUS_ORDER.indexOf(q.status||'todo'); q.status=STATUS_ORDER[(idx+1)%4]; q.done=(q.status==='done'); touch(); }
 function toggleDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
-  if(btn) btn.textContent=willOpen?'▾':'▸';
+  if(btn) btn.textContent=willOpen?'close':'details';
   let a,q,i=-1; for(const ap of data.apps){ const idx=(ap.queue||[]).findIndex(x=>x.id===itemId); if(idx>=0){ a=ap; q=ap.queue[idx]; i=idx; break; } }
   const slot=document.getElementById(dsId(itemId));
   if(!slot||!a){ render(); return; }                       // fallback: full redraw if the slot isn't found
@@ -1897,7 +1939,7 @@ function toggleDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openS
 }
 // same as toggleDetail but writes into the Portfolio tab's own detail slot (the board's is hidden but still in the DOM)
 function togglePortDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
-  if(btn) btn.textContent=willOpen?'▾':'▸';
+  if(btn) btn.textContent=willOpen?'close':'details';
   let a,q,i=-1; for(const ap of data.apps){ const idx=(ap.queue||[]).findIndex(x=>x.id===itemId); if(idx>=0){ a=ap; q=ap.queue[idx]; i=idx; break; } }
   const slot=document.getElementById('pds-'+dsId(itemId));
   if(!slot||!a){ renderPortfolio(); return; }
@@ -1906,7 +1948,7 @@ function togglePortDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!o
 }
 // same as toggleDetail but writes into the project page's own detail slot (the board's is hidden but still in the DOM)
 function toggleProjDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
-  if(btn) btn.textContent=willOpen?'▾':'▸';
+  if(btn) btn.textContent=willOpen?'close':'details';
   let a,q,i=-1; for(const ap of data.apps){ const idx=(ap.queue||[]).findIndex(x=>x.id===itemId); if(idx>=0){ a=ap; q=ap.queue[idx]; i=idx; break; } }
   const slot=document.getElementById('jds-'+dsId(itemId));
   if(!slot||!a){ if(_pjView.id) renderProject(_pjView.id); return; }
@@ -2381,7 +2423,7 @@ function tqToggleLane(k){ tqClosed.has(k)?tqClosed.delete(k):tqClosed.add(k); tq
 function tqRow({a,q,i}){
   const icon=_icon[a.id]?`<img class="appicon" style="width:17px;height:17px" src="${_icon[a.id]}" alt="">`:`<span class="em">${esc(a.emoji||'🫧')}</span>`;
   const det=openState.has('item:'+q.id)?detailHtml(a,q,i,'p'):'';
-  return `<div class="tqitem" data-item="${esc(q.id)}"><div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}${chipSel(a.id,i,'status')}<span class="pt pttap" onclick="gotoBoardItem('${esc(q.id)}')" title="jump to this item in Portfolio">${esc(q.title||'')}</span>${prioDot(a.id,i)}${typeChip(a.id,i)}${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="togglePortDetail('${esc(q.id)}',this)" title="details & notes">${openState.has('item:'+q.id)?'▾':'▸'}</button></div><div class="pdslot" id="pds-${dsId(q.id)}">${det}</div></div>`;
+  return `<div class="tqitem" data-item="${esc(q.id)}"><div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}${chipSel(a.id,i,'status')}<span class="pt pttap" onclick="gotoBoardItem('${esc(q.id)}')" title="jump to this item in Portfolio">${esc(q.title||'')}</span>${prioDot(a.id,i)}${typeChip(a.id,i)}${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}<button class="dets" onclick="togglePortDetail('${esc(q.id)}',this)" title="the body of this ticket and its notes">${openState.has('item:'+q.id)?'close':'details'}</button></div><div class="pdslot" id="pds-${dsId(q.id)}">${det}</div></div>`;
 }
 function renderPortfolio(){
   const el=$('#portfolio'); if(!el) return;
@@ -2463,7 +2505,7 @@ function renderPortfolio(){
 // rebuilding twelve cards to change one chip (board-v66).
 function boardRowHtml(a,q,i){
   const det = openState.has('item:'+q.id) ? detailHtml(a,q,i) : '';
-  return `<div class="qitem" data-qi="${i}" data-item="${esc(q.id)}"><div class="row qrow ${q.status==='done'?'done':''}"><span class="grip" title="drag to reorder">⠿</span>${prioDot(a.id,i)}${chipSel(a.id,i,'status')}<span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span>${typeChip(a.id,i)}${q.url?`<a class="ghlink" href="${q.url}" target="_blank" onclick="event.stopPropagation()" title="open issue #${q.issueNumber} on GitHub">#${q.issueNumber}↗</a>`:''}<button class="dots" onclick="toggleDetail('${esc(q.id)}',this)" title="details & notes">${openState.has('item:'+q.id)?'▾':'▸'}</button><button class="x" title="delete" onclick="delItem('${a.id}',${i})">✕</button></div><div class="dslot" id="${dsId(q.id)}">${det}</div></div>`;
+  return `<div class="qitem" data-qi="${i}" data-item="${esc(q.id)}"><div class="row qrow ${q.status==='done'?'done':''}"><span class="grip" title="drag to reorder">⠿</span>${prioDot(a.id,i)}${chipSel(a.id,i,'status')}<span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span>${typeChip(a.id,i)}${q.url?`<a class="ghlink" href="${q.url}" target="_blank" onclick="event.stopPropagation()" title="open issue #${q.issueNumber} on GitHub">#${q.issueNumber}↗</a>`:''}<button class="dets" onclick="toggleDetail('${esc(q.id)}',this)" title="the body of this ticket and its notes">${openState.has('item:'+q.id)?'close':'details'}</button>${kebab(q.id,[{label:'Open #'+q.issueNumber+' on GitHub ↗',do:`window.open('${q.url}','_blank')`},'-',{label:'Close issue on GitHub',danger:true,do:`delItem('${a.id}',${i})`}])}</div><div class="dslot" id="${dsId(q.id)}">${det}</div></div>`;
 }
 function render(){
   const _scrollY = window.scrollY;   // keep the page from jumping when a re-render rebuilds the board
@@ -2479,14 +2521,22 @@ function render(){
     a.queue.forEach((q,i)=>{ if(q.status==='done') doneRows+=rowHtml(q,i); else activeRows+=rowHtml(q,i); });
     const doneFold = doneRows ? `<details class="donefold" data-key="done:${a.id}" ${openState.has('done:'+a.id)?'open':''}><summary>✅ Done · ${dn}</summary>${doneRows}</details>` : '';
     return `<details class="app" data-key="app:${a.id}" ${openState.has('app:'+a.id)?'open':''}>
-      <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="appmove"><button onclick="event.stopPropagation();moveApp('${a.id}',-1)" title="move up">▲</button><button onclick="event.stopPropagation();moveApp('${a.id}',1)" title="move down">▼</button></span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><a class="nm nmlink" href="#" onclick="event.stopPropagation();event.preventDefault();openProject('${a.id}')" title="open ${esc(a.name)}'s own page">${esc(a.name)}</a>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<button class="tftoggle${a.bundleId?' on':''}" title="${a.bundleId?'TestFlight badge on - click to change or turn off':'show a live TestFlight badge - pick which App Store Connect app this is'}" onclick="event.stopPropagation();tfToggle('${a.id}')">✈</button><button class="nmedit" title="rename project" onclick="event.stopPropagation();renameApp('${a.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span></summary>
+      <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><a class="nm nmlink" href="#" onclick="event.stopPropagation();event.preventDefault();openProject('${a.id}')" title="open ${esc(a.name)}'s own page">${esc(a.name)}</a>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span>${kebab('app:'+a.id,[
+        {label:'Rename project…',do:`renameApp('${a.id}')`},
+        {label:'Set the GitHub repo…',do:`setRepo('${a.id}')`},
+        {label:a.bundleId?'TestFlight badge: change or turn off…':'TestFlight badge: pick the app…',do:`tfToggle('${a.id}')`},
+        '-',
+        {label:'Move up',do:`moveApp('${a.id}',-1)`},
+        {label:'Move down',do:`moveApp('${a.id}',1)`},
+        '-',
+        {label:'Remove project from Tiara',danger:true,do:`delApp('${a.id}')`},
+      ])}</summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:var(--st-doing)">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a)&&boardFor(a))?`<div class="actions"><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} board ↗</a><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
         <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||'<div class="muted">nothing active 🎉</div>'}</div><div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" value="${esc(draftFor(a.id).title||'')}" oninput="draftFor('${a.id}').title=this.value" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42)" onchange="draftType('${a.id}',this.value)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${draftFor(a.id).type===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><select id="addprio-${a.id}" class="chipsel" title="priority (TIA-65). Written to the board's Priority field on create." onchange="draftFor('${a.id}').prio=this.value">${PRIO_ORDER.map(p=>`<option value="${p}"${(draftFor(a.id).prio||'med')===p?' selected':''}>${PRIO_META[p].t}</option>`).join('')}</select><button onclick="addItem('${a.id}')">add</button></div>${composeHtml(a.id)}</div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
-        <div class="scnote repoedit" style="margin-top:8px" onclick="setRepo('${a.id}')" title="click to set the GitHub repo">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
-        <button class="delproj" onclick="delApp('${a.id}')">Remove project from board</button>
+        <div class="scnote">repo: ${esc(a.repo)}</div>
       </div></details>`;
   }).join('');
   $('#board').innerHTML = (_loading && !data.apps.length)
@@ -2522,7 +2572,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v82';
+const TIARA_VERSION = 'board-v83';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
