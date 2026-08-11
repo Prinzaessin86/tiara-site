@@ -70,7 +70,7 @@
 
     --c-2f8f63:#2f8f63;
 
-    --c-e3cdf3:#e3cdf3; --c-fbf5ff:#fbf5ff;
+    --c-e3cdf3:#e3cdf3; --c-fbf5ff:#fbf5ff; --c-e8daf9:#e8daf9;
 
     /* COLOUR. The whole palette, in one place for the first time. */
     --c-1f5bc0:#1f5bc0; --c-1f7a4d:#1f7a4d; --c-245fb8:#245fb8; --c-2f6b50:#2f6b50; --c-2f6fd0:#2f6fd0; --c-2f9e6e:#2f9e6e;
@@ -518,6 +518,54 @@
   .md .mdt{border-collapse:collapse;font-size:var(--t-rel-sm);}
   .md .mdt th,.md .mdt td{border:1.5px solid var(--line);padding:var(--sp-30) var(--sp-55);text-align:left;vertical-align:top;}
   .md .mdt th{background:var(--c-faf6ff);color:var(--brand);font-weight:800;white-space:nowrap;}
+
+  /* ---------- board-v86: one filter bar, three surfaces (#83) ---------- */
+  .fwrap{background:var(--card);border:1.5px solid var(--line2);border-radius:var(--r-lg);
+       padding:var(--sp-60);margin:0 0 var(--sp-70);}
+  .fbody{display:flex;flex-wrap:wrap;gap:var(--sp-40);align-items:center;}
+  .fq{flex:1 1 16ch;min-width:12ch;font-family:'Quicksand';font-weight:600;font-size:var(--t-sm);
+       border:1.5px solid var(--line);border-radius:var(--r-md);padding:var(--sp-35) var(--sp-60);
+       color:var(--ink-1);background:var(--card);}
+  .fq::placeholder{color:var(--c-a99cb8);}
+  .fsel{appearance:none;-webkit-appearance:none;font-family:'Quicksand';font-weight:700;
+       font-size:var(--t-sm);border:1.5px solid var(--line);background:var(--card);color:var(--ink-2);
+       border-radius:var(--r-md);padding:var(--sp-30) var(--sp-19px) var(--sp-30) var(--sp-55);
+       cursor:pointer;max-width:14rem;background-repeat:no-repeat;background-position:right var(--sp-5px) center;
+       background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><path d='M1 3l4 4 4-4' fill='none' stroke='%23b09bc9' stroke-width='1.6'/></svg>");}
+  .fsel:hover{border-color:var(--pink);}
+  .fsel.on{border-color:transparent;background-color:var(--c-f6f0ff);color:var(--brand);}
+  .fquick{font-family:'Quicksand';font-weight:700;font-size:var(--t-sm);border:1.5px solid var(--line);
+       background:var(--card);color:var(--ink-2);border-radius:var(--r-pill);
+       padding:var(--sp-30) var(--sp-70);cursor:pointer;white-space:nowrap;}
+  .fquick .c{font-size:var(--t-xs);font-weight:800;color:var(--card);background:var(--purple);
+       border-radius:var(--r-pill);padding:0 var(--sp-35);margin-left:var(--sp-30);}
+  .fquick:hover{border-color:var(--pink);}
+  .fquick.on{background:linear-gradient(90deg,var(--c-ffd9ee),var(--c-e6dbff));border-color:transparent;color:var(--c-7a4a9e);}
+  .factive{display:flex;flex-wrap:wrap;gap:var(--sp-40);align-items:center;margin-top:var(--sp-50);
+       font-size:var(--t-sm);color:var(--ink-3);}
+  .factive b{color:var(--ink-1);}
+  .ftag{display:inline-flex;align-items:center;gap:var(--sp-25);background:var(--c-f6f0ff);
+       color:var(--brand);font-weight:700;border-radius:var(--r-pill);
+       padding:var(--sp-20) var(--sp-25) var(--sp-20) var(--sp-60);font-size:var(--t-xs);}
+  .ftag button{border:none;background:var(--c-e8daf9);color:var(--brand);border-radius:var(--r-circle);
+       width:1.2rem;height:1.2rem;cursor:pointer;font-weight:800;line-height:1;font-size:var(--t-xs);}
+  .ftag button:hover{background:var(--pink);color:var(--card);}
+  .fclear{border:none;background:none;color:var(--brand);font-weight:700;font-size:var(--t-sm);
+       cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+  /* A phone gets one button. Five menus, a query box, two quick chips and the active row would
+     otherwise stack six deep above the first result. */
+  .ftoggle{display:none;font-family:'Quicksand';font-weight:700;font-size:var(--t-sm);
+       border:1.5px solid var(--line);background:var(--card);color:var(--ink-2);
+       border-radius:var(--r-pill);padding:var(--sp-40) var(--sp-90);cursor:pointer;}
+  .ftoggle .c{font-size:var(--t-xs);font-weight:800;color:var(--card);background:var(--purple);
+       border-radius:var(--r-pill);padding:0 var(--sp-35);margin-left:var(--sp-30);}
+  @media (max-width:640px){
+    .ftoggle{display:inline-flex;align-items:center;min-height:2.75rem;}
+    .fbody{margin-top:var(--sp-50);}
+    .fbody.shut{display:none;}
+    .fbody>*{flex:1 1 100%;}
+    .fsel{max-width:none;}
+  }
 
   /* #84: the cap says what it is not showing, and where the rest is. */
   .capline{font-size:var(--t-xs);color:var(--ink-3);background:var(--c-faf6ff);
@@ -1035,7 +1083,10 @@ async function loadBoardItems(a){
     const status = (c.state==='CLOSED') ? 'done' : (LANE2STATUS[lane.toLowerCase()] || 'todo');
     return { id: px+'#'+c.number, _lid:lid, issueNumber:c.number, itemId:n.id, url:c.url,
       title:c.title, body:c.body||'', status, done:(status==='done'),
-      priority:((n.priority&&n.priority.name)||'Med').toLowerCase(),
+      // An absent Priority stays absent. It used to become 'Med' here and again in migrate(), so
+      // the row showed a priority nobody had set and nothing could find the untriaged. Type's
+      // empty state was preserved a line below all along. (#83)
+      priority:((n.priority&&n.priority.name)||'').toLowerCase(),
       type:((n.type&&n.type.name)||'').toLowerCase(),   // no Type on the board means untriaged (D42)
       notes:[], _commentCount:(c.comments&&c.comments.totalCount)||0, _notesLoaded:false };
   });
@@ -1392,6 +1443,88 @@ function renderFreshness(){
 }
 setInterval(renderFreshness, 30000);
 
+
+/* ---------- one filter bar, three surfaces (AD-0001 decision 5, #83) ----------
+   Task queue had a query, lane chips, project chips, a sort and a view. A project page had a query
+   and lane chips. Portfolio, the main tab, had neither. None of them could filter by type or
+   priority, and none could find the untriaged. This is one component and one matcher, used by all
+   three; each surface keeps its own state object, because a filter belongs to the thing you are
+   looking at. */
+const F_EMPTY = { q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'' };
+let _fOpen = true;   // the bar is collapsed on a phone only; CSS decides, this is the toggle
+function fView(scope){ return scope==='tq'?_tqView : scope==='pj'?_pjView : _bdView; }
+function fRender(scope){ if(scope==='tq') renderPortfolio(); else if(scope==='pj') renderProject(_pjView.id); else { captureOpen(); render(); } }
+function fSet(scope,key,val){ const v=fView(scope); v[key]=(v[key]===val?'':val); if('page' in v) v.page=0; fSync(scope); fRender(scope); }
+function fSetQ(scope,val){ const v=fView(scope); v.q=val; if('page' in v) v.page=0; fSync(scope); fRender(scope);
+  const el=$('#fq-'+scope); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } }
+function fClear(scope){ const v=fView(scope); Object.keys(F_EMPTY).forEach(k=>v[k]=''); if('page' in v) v.page=0; fSync(scope); fRender(scope); }
+function fToggleBar(scope){ _fOpen=!_fOpen; fRender(scope); }
+function fActive(v){ return !!(v.q||v.lane||v.type||v.prio||v.app||v.quick); }
+function fCount(v){ return ['q','lane','type','prio','app','quick'].filter(k=>v[k]).length; }
+// One row, one answer. `r` is {a,q} on every surface, so a project page and the Task queue ask the
+// same question of the same shape.
+function fMatch(v,r){
+  const needle=(v.q||'').trim().toLowerCase();
+  if(needle && !((r.q.title||'')+' '+(r.q.id||'')+' '+((r.a&&r.a.name)||'')).toLowerCase().includes(needle)) return false;
+  if(v.lane && itemStatus(r.q)!==v.lane) return false;
+  if(v.app  && r.a && r.a.id!==v.app) return false;
+  if(v.type && (r.q.type||'')!==v.type) return false;
+  if(v.prio && (r.q.priority||'')!==v.prio) return false;
+  if(v.quick==='untriaged' && (r.q.type&&r.q.priority)) return false;
+  if(v.quick==='verify' && itemStatus(r.q)!=='verify') return false;
+  return true;
+}
+const F_SORTS = { '':'as arranged', prio:'priority', newest:'newest first', oldest:'oldest first', title:'title' };
+function fSort(v,rows){
+  const s=v.sort; if(!s) return rows;
+  const prank={high:0,med:1,medium:1,low:2,'':3};
+  const c=[...rows];
+  if(s==='prio') c.sort((x,y)=>(prank[x.q.priority]??3)-(prank[y.q.priority]??3));
+  if(s==='newest') c.sort((x,y)=>(y.q.issueNumber||0)-(x.q.issueNumber||0));
+  if(s==='oldest') c.sort((x,y)=>(x.q.issueNumber||0)-(y.q.issueNumber||0));
+  if(s==='title') c.sort((x,y)=>(x.q.title||'').localeCompare(y.q.title||''));
+  return c;
+}
+// A menu states, for every value, the count picking it would give. That count is measured with the
+// OTHER filters still on, because that is what the click would actually do.
+function fMenu(scope,v,key,label,opts,rows){
+  const without = rows.filter(r=>fMatch({...v,[key]:''},r));
+  const n = k => without.filter(r=>fMatch({...v,[key]:k},r)).length;
+  const cur=v[key];
+  return `<select class="fsel${cur?' on':''}" aria-label="${label}" title="${label}" onchange="fSet('${scope}','${key}',this.value===''?'':this.value)">`
+    + `<option value=""${cur?'':' selected'}>${label} · any</option>`
+    + opts.map(o=>`<option value="${esc(o.k)}"${cur===o.k?' selected':''}>${esc(o.t)} · ${n(o.k)}</option>`).join('')
+    + `</select>`;
+}
+function filterBar(scope, rows, opts){
+  opts=opts||{}; const v=fView(scope);
+  const shown=opts.shown, total=rows.length;
+  const lane = fMenu(scope,v,'lane','lane',BOARD_STATUS_ORDER.filter(k=>opts.done||k!=='done').map(k=>({k,t:BOARD_STATUS_LABEL[k]||k})),rows);
+  const type = fMenu(scope,v,'type','type',TYPE_ORDER.map(k=>({k,t:TYPE_META[k].t})).concat([{k:'',t:'no type'}].filter(()=>false)),rows);
+  const prio = fMenu(scope,v,'prio','priority',PRIO_ORDER.map(k=>({k,t:PRIO_META[k].t})),rows);
+  const app  = opts.apps ? fMenu(scope,v,'app','project',data.apps.map(a=>({k:a.id,t:a.name})),rows) : '';
+  const sort = opts.sort===false ? '' :
+    `<select class="fsel${v.sort?' on':''}" aria-label="sort" title="sort" onchange="fSet('${scope}','sort',this.value)">`
+    + Object.keys(F_SORTS).map(k=>`<option value="${k}"${v.sort===k?' selected':''}>sort · ${F_SORTS[k]}</option>`).join('')+`</select>`;
+  const nUntriaged = rows.filter(r=>fMatch({...v,quick:''},r) && !(r.q.type&&r.q.priority)).length;
+  const nVerify    = rows.filter(r=>fMatch({...v,quick:''},r) && itemStatus(r.q)==='verify').length;
+  const quick = `<button class="fquick${v.quick==='untriaged'?' on':''}" onclick="fSet('${scope}','quick','untriaged')" title="no type, or no priority: nobody has triaged these">untriaged<span class="c">${nUntriaged}</span></button>`
+    + `<button class="fquick${v.quick==='verify'?' on':''}" onclick="fSet('${scope}','quick','verify')" title="waiting for you to look at them">needs verify<span class="c">${nVerify}</span></button>`;
+  const tag=(key,text)=>`<span class="ftag">${esc(text)}<button onclick="fSet('${scope}','${key}','${esc(v[key])}')" title="remove this filter" aria-label="remove ${esc(text)}">✕</button></span>`;
+  const tags=[ v.q?tag('q','“'+v.q+'”'):'', v.lane?tag('lane',BOARD_STATUS_LABEL[v.lane]||v.lane):'',
+    v.type?tag('type',TYPE_META[v.type]?TYPE_META[v.type].t:v.type):'', v.prio?tag('prio',PRIO_META[v.prio]?PRIO_META[v.prio].t:v.prio):'',
+    v.app?tag('app',(app_(v.app)||{name:v.app}).name):'', v.quick?tag('quick',v.quick==='untriaged'?'untriaged':'needs verify'):'' ].filter(Boolean).join('');
+  return `<div class="fwrap">`
+    + `<button class="ftoggle" onclick="fToggleBar('${scope}')" aria-expanded="${_fOpen}">Filters${fCount(v)?`<span class="c">${fCount(v)}</span>`:''}</button>`
+    + `<div class="fbody${_fOpen?'':' shut'}">`
+    +   `<input id="fq-${scope}" class="fq" placeholder="${esc(opts.placeholder||'search…')}" value="${esc(v.q)}" oninput="fSetQ('${scope}',this.value)" aria-label="search">`
+    +   lane + type + prio + app + sort + quick
+    + `</div>`
+    + `<div class="factive">showing <b>${shown}</b> of ${total}${tags?' · ':''}${tags}`
+    +   (fActive(v)?`<button class="fclear" onclick="fClear('${scope}')">clear all</button>`:'')
+    + `</div></div>`;
+}
+
 /* ---------- A project's own page ----------
    A card cannot hold open work, done, commits and settings without becoming the three-deep nesting
    that made the original clumsy. The card holds what you scan; the page holds what you go looking
@@ -1399,13 +1532,10 @@ setInterval(renderFreshness, 30000);
 let _pjCommits = {};   // appId -> [{sha,msg}], memory only. Read live, stored nowhere (D46).
 // A view preference. It lives here and never goes to GitHub: GitHub holds the facts, Tiara holds
 // the view. Resets when you open a different project, because a filter you cannot see is a lie.
-let _pjView = { id:null, q:'', lane:'', page:0 };
+let _pjView = { id:null, q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'', page:0 };
 const PJ_PAGE = 10;
 const CARD_CAP = 10;   // a Portfolio card shows this many open items, then says so (#84)
-function pjSearch(v){ _pjView.q=v; _pjView.page=0; renderProject(_pjView.id); const el=$('#pjq'); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } }
-function pjLane(k){ _pjView.lane = (_pjView.lane===k?'':k); _pjView.page=0; renderProject(_pjView.id); }
 function pjPage(d){ _pjView.page += d; renderProject(_pjView.id); window.scrollTo(0,0); }
-function pjClear(){ _pjView.q=''; _pjView.lane=''; _pjView.page=0; renderProject(_pjView.id); }
 function openProject(id, opts){
   opts=opts||{};
   rememberScroll();
@@ -1416,7 +1546,7 @@ function openProject(id, opts){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.id==='tab-board'));
   const ip=$('#issuepage'); if(ip) ip.style.display='none';
   const p=$('#project'); if(!p) return;
-  if(_pjView.id!==id) _pjView={ id:id, q:'', lane:'', page:0 };
+  if(_pjView.id!==id) _pjView={ id:id, q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'', page:0 };
   p.style.display='block'; renderProject(id);
   _navFrom=null; renderBackChip();
   setHash('project/'+id);
@@ -1502,10 +1632,6 @@ function renderProject(id){
   const openQ=q.filter(x=>x.status!=='done');
   const doneQ=q.filter(x=>x.status==='done');
   const counts={}; BOARD_STATUS_ORDER.forEach(k=>{ const n=q.filter(x=>x.status===k).length; if(n) counts[k]=n; });
-  // A hollow pill is a toggle. Clicking a lane filters to it; clicking again clears.
-  const lanes=Object.keys(counts).map(k=>
-      `<button class="pjlane${_pjView.lane===k?' on':''}" onclick="pjLane('${k}')" title="show only ${BOARD_STATUS_LABEL[k]||k}">${counts[k]} ${BOARD_STATUS_LABEL[k]||k}</button>`
-    ).join('') || '<span class="pjlane">no items</span>';
   // A row here carries the same caret and detail slot as the Portfolio tab, in its own 'j' scope, so
   // a project page is a place you can read and add notes rather than a read-only list (#54).
   // It also carries the live status, priority and type controls: a project name is the biggest
@@ -1515,10 +1641,8 @@ function renderProject(id){
   // this whole project exists to treat.
   // filter, then page. The count always states both, because a truncation that does not announce
   // itself is the disease this whole project exists to treat.
-  const needle=_pjView.q.trim().toLowerCase();
-  const filtered=openQ.filter(x=>
-      (!_pjView.lane || x.status===_pjView.lane) &&
-      (!needle || ((x.title||'')+' '+(x.id||'')).toLowerCase().includes(needle)));
+  const rowsAll=openQ.map(x=>({a,q:x}));
+  const filtered=fSort(_pjView, rowsAll.filter(r=>fMatch(_pjView,r))).map(r=>r.q);
   const maxPage=Math.max(0, Math.ceil(filtered.length/PJ_PAGE)-1);
   if(_pjView.page>maxPage) _pjView.page=maxPage;
   const from=_pjView.page*PJ_PAGE;
@@ -1539,17 +1663,13 @@ function renderProject(id){
       ${_version[a.id]?`<span class="appver">${esc(_version[a.id])}</span>`:''}
       ${boardFor(a)?`<a class="ghlink" href="${boardFor(a).url}" target="_blank">board \u2197</a>`:''}
     </div>
-    <div class="pjlanes">${lanes}</div>
 
     <div class="pjsec"><h3>Open work \u00b7 ${openQ.length}</h3>
-      <div class="pjtools">
-        <input id="pjq" class="pjq" placeholder="search open work…" value="${esc(_pjView.q)}" oninput="pjSearch(this.value)">
-        ${(_pjView.q||_pjView.lane)?`<button class="tb" onclick="pjClear()">Clear filter</button>`:''}
-      </div>
+      ${filterBar('pj', rowsAll, {shown:filtered.length, placeholder:'search this project…'})}
       ${filtered.length?'':'<div class="muted">nothing matches</div>'}
       ${page.map(row).join('')}
       ${filtered.length?`<div class="pjpage">
-          <span>showing ${from+1} to ${from+page.length} of ${filtered.length}${filtered.length!==openQ.length?` (filtered from ${openQ.length})`:''}</span>
+          <span>page ${_pjView.page+1} of ${maxPage+1} · items ${from+1} to ${from+page.length}</span>
           <button class="tb" onclick="pjPage(-1)" ${_pjView.page<=0?'disabled':''}>\u2190 previous</button>
           <button class="tb" onclick="pjPage(1)" ${from+PJ_PAGE>=filtered.length?'disabled':''}>next \u2192</button>
         </div>`:''}</div>
@@ -1566,6 +1686,33 @@ function renderProject(id){
         <button class="tb" onclick="renameApp('${a.id}')">Rename project</button>
         <button class="tb danger" onclick="delApp('${a.id}')">Remove from Tiara</button>
       </div></div>`;
+}
+
+
+// A filtered view has to be linkable, or it cannot be shared with tomorrow's self. Four things in
+// the router had to change for that (#83):
+//   applyHash looked the WHOLE hash up in TAB_FOR, so `#/queue?q=icon` missed and landed on
+//     Portfolio: it splits on `?` first now.
+//   routeOf decoded the whole hash at once, so a value containing %26 or %3D corrupted the parse:
+//     each parameter is decoded on its own.
+//   setHash writes location.hash, which PUSHES a history entry - one Back press per keystroke -
+//     so a filter change uses replaceState.
+//   showTab wrote the bare surface name, dropping the query on every tab switch.
+const F_KEYS=['q','lane','type','prio','app','quick','sort'];
+function fQuery(scope){ const v=fView(scope);
+  return F_KEYS.filter(k=>v[k]).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(v[k])).join('&'); }
+function fApplyQuery(scope,qs){ const v=fView(scope); F_KEYS.forEach(k=>v[k]='');
+  (qs||'').split('&').filter(Boolean).forEach(pair=>{ const i=pair.indexOf('=');
+    const k=decodeURIComponent(i<0?pair:pair.slice(0,i)); const val=i<0?'':decodeURIComponent(pair.slice(i+1));
+    if(F_KEYS.includes(k)) v[k]=val; });
+  if('page' in v) v.page=0; }
+// The filter is written to the URL without a history entry, so Back still means "the surface I was
+// on before", not "the character I typed before".
+function fSync(scope){
+  const base = scope==='pj' ? 'project/'+_pjView.id : (scope==='tq' ? 'queue' : 'portfolio');
+  const qs=fQuery(scope); const h='/'+base+(qs?'?'+qs:'');
+  try{ _hashLock=true; history.replaceState(null,'',location.pathname+location.search+'#'+h);
+       setTimeout(()=>{_hashLock=false;},0); }catch(e){ noted('filter url',e); }
 }
 
 /* ---------- Where you are, and where you were (board-v66) ----------
@@ -1595,7 +1742,9 @@ function rememberScroll(){
 /* Every route is written as #/name. The leading slash is not decoration: the pane divs are called
    #portfolio, #runbook, #knowledge and #compliance, so a bare #portfolio is a real fragment target
    and the browser scrolls the page to that element before any of this code runs. */
-function routeOf(){ const h=decodeURIComponent((location.hash||'').replace(/^#\/?/,'')); return h; }
+function routeOf(){ const raw=(location.hash||'').replace(/^#\/?/,''); const cut=raw.indexOf('?');
+  // the PATH is decoded; the query is left alone and decoded per parameter by fApplyQuery
+  return cut<0 ? decodeURIComponent(raw) : decodeURIComponent(raw.slice(0,cut))+raw.slice(cut); }
 function setHash(h){
   if(routeOf()===h) return;
   _hashLock=true;
@@ -1604,13 +1753,17 @@ function setHash(h){
 }
 function applyHash(){
   if(_hashLock) return;
-  const h=routeOf();
-  if(h.indexOf('project/')===0){ const id=h.slice(8); if(app(id)){ openProject(id,{fromHash:true}); return; } }
+  const full=routeOf(); const cut=full.indexOf('?');
+  const h = cut<0 ? full : full.slice(0,cut);
+  const qs = cut<0 ? '' : full.slice(cut+1);
+  if(h.indexOf('project/')===0){ const id=h.slice(8); if(app(id)){ openProject(id,{fromHash:true}); if(qs){ fApplyQuery('pj',qs); renderProject(id); } return; } }
   // issue/<appId>/<itemId>. A ticket gets its own URL so it can be linked to and reloaded onto.
   if(h.indexOf('issue/')===0){ const rest=h.slice(6); const cut=rest.indexOf('/');
     if(cut>0){ const ai=rest.slice(0,cut), ii=decodeURIComponent(rest.slice(cut+1));
       if(findItem(ai,ii)){ openIssue(ai,ii); return; } } }
-  showTab(TAB_FOR[h]||'board',{fromHash:true});
+  const t=TAB_FOR[h]||'board';
+  if(qs) fApplyQuery(t==='portfolio'?'tq':'bd', qs);
+  showTab(t,{fromHash:true});
 }
 window.addEventListener('hashchange', applyHash);
 window.addEventListener('beforeunload', rememberScroll);
@@ -1626,7 +1779,8 @@ function showTab(t, opts){
   TABS.forEach(x=>{ const el=$('#'+x); if(el) el.style.display=(x===t)?'block':'none';
     const tb=document.getElementById('tab-'+x); if(tb) tb.classList.toggle('on',x===t); });
   renderBackChip();
-  setHash(HASH_FOR[t]||'portfolio');
+  const qs = t==='portfolio' ? fQuery('tq') : (t==='board' ? fQuery('bd') : '');
+  setHash((HASH_FOR[t]||'portfolio')+(qs?'?'+qs:''));
   if(!opts.noScroll) window.scrollTo(0, _scrollMem[t]||0);
 }
 // The chip lives in its own node, above the tab panes, so showing it costs nothing: a full render
@@ -1706,6 +1860,7 @@ function afterEdit(a,i,opts){
 
 /* ---------- mutations ---------- */
 function app(id){ return data.apps.find(a=>a.id===id); }
+const app_ = app;   // the filter bar's tag row needs it by a name no template shadows
 function moveApp(id,dir){ const i=data.apps.findIndex(a=>a.id===id); if(i<0) return; const j=i+dir; if(j<0||j>=data.apps.length) return; const [a]=data.apps.splice(i,1); data.apps.splice(j,0,a); touch(); }
 const PREFIX={tiara:'TIA',poda:'PODA',sparklereef:'SR',rainybow:'RB',bubbles:'BUB',pagingdrdaddy:'PDD',tentaclepit:'TENT',dressie:'DRES'};
 function ensurePrefixes(){ data.apps.forEach(a=>{ if(!a.prefix) a.prefix = PREFIX[a.id] || (a.name.replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase()||'ITEM'); }); }
@@ -1787,7 +1942,7 @@ function normaliseApps(){
     if(!a.prefix) a.prefix=(a.name||'ITEM').replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase()||'ITEM';
   });
 }
-function migrate(){ normaliseApps(); ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>{ if(!q.id) q.id=nextId(a); if(!q.status) q.status=q.done?'done':'todo'; q.done=(q.status==='done'); if(q.type==null) q.type=''; if(!q.priority) q.priority='med'; if(!Array.isArray(q.notes)) q.notes=[]; }); }); }
+function migrate(){ normaliseApps(); ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>{ if(!q.id) q.id=nextId(a); if(!q.status) q.status=q.done?'done':'todo'; q.done=(q.status==='done'); if(q.type==null) q.type=''; if(q.priority==null) q.priority=''; if(!Array.isArray(q.notes)) q.notes=[]; }); }); }
 const TYPE_ORDER=['bug','feature','chore'];   // 'task' deleted at the root (D42)
 const TYPE_META={none:{e:'',t:'no type',c:'var(--ty-none)',f:'var(--ty-none-f)',f2:'var(--ty-none-f2)'},bug:{e:'🐞',t:'bug',c:'var(--ty-bug)',f:'var(--ty-bug-f)',f2:'var(--ty-bug-f2)'},feature:{e:'✨',t:'feature',c:'var(--ty-feature)',f:'var(--ty-feature-f)',f2:'var(--ty-feature-f2)'},chore:{e:'🧹',t:'chore',c:'var(--ty-chore)',f:'var(--ty-chore-f)',f2:'var(--ty-chore-f2)'}};
 
@@ -1908,7 +2063,7 @@ function setType(id,i,v){ const a=app(id); const q=a.queue[i]; if(!q||q.type===v
       .catch(e=>{ q.type=prev; afterEdit(a,i,{failed:true}); setStatus('⚠ '+q.id+' type didn\'t save - reverted ('+e.message+')'); }); return; }
   q.type=v; touch(); }
 const PRIO_ORDER=['high','med','low'];
-const PRIO_META={high:{e:'🔴',t:'high',c:'var(--pr-high)',f:'var(--pr-high-f)',f2:'var(--pr-high-f2)'},med:{e:'🟡',t:'med',c:'var(--pr-med)',f:'var(--pr-med-f)',f2:'var(--pr-med-f2)'},low:{e:'🟢',t:'low',c:'var(--pr-low)',f:'var(--pr-low-f)',f2:'var(--pr-low-f2)'}};
+const PRIO_META={none:{e:'',t:'not set',c:'var(--ink-3)',f:'var(--c-f4f0f8)',f2:'var(--c-f4f0f8)'},high:{e:'🔴',t:'high',c:'var(--pr-high)',f:'var(--pr-high-f)',f2:'var(--pr-high-f2)'},med:{e:'🟡',t:'med',c:'var(--pr-med)',f:'var(--pr-med-f)',f2:'var(--pr-med-f2)'},low:{e:'🟢',t:'low',c:'var(--pr-low)',f:'var(--pr-low-f)',f2:'var(--pr-low-f2)'}};
 function setPrio(id,i,v){ const a=app(id); const q=a.queue[i]; if(!q||q.priority===v) return;
   if(boardFor(a)){ const prev=q.priority; q.priority=v; patchItemRow(a,i); markBusy(q.id,true);
     const resorts = portfolioSort!=='manual';   // Auto sort orders by priority, so the list changes shape
@@ -1941,11 +2096,11 @@ function setStat(id,i,v){ const a=app(id); const q=a.queue[i];
 function chipSel(id,i,kind){
   const a=app(id); const q=a.queue[i]; const onBoard=!!boardFor(a);
   const statusOrder = onBoard ? BOARD_STATUS_ORDER : STATUS_ORDER;
-  const C={status:[statusOrder,STATUS_META,q.status||'todo','setStat'],type:[TYPE_ORDER,TYPE_META,q.type||'','setType'],prio:[PRIO_ORDER,PRIO_META,q.priority||'med','setPrio']}[kind];
+  const C={status:[statusOrder,STATUS_META,q.status||'todo','setStat'],type:[TYPE_ORDER,TYPE_META,q.type||'','setType'],prio:[PRIO_ORDER,PRIO_META,q.priority||'','setPrio']}[kind];
   const order=C[0],meta=C[1],cur=C[2],fn=C[3],m=meta[cur]||Object.values(meta)[0];
   const label=(k)=> (onBoard&&kind==='status'&&BOARD_STATUS_LABEL[k]) ? BOARD_STATUS_LABEL[k] : (meta[k]?meta[k].t:k);
   const opts=(order.map(k=>`<option value="${k}" ${k===cur?'selected':''}>${meta[k]?meta[k].e:''} ${label(k)}</option>`).join(''))
-    + ((kind==='type'&&!cur)?`<option value="" selected>no type</option>`:'');
+    + ((!cur&&(kind==='type'||kind==='prio'))?`<option value="" selected>${kind==='type'?'no type':'not set'}</option>`:'');
   const TITLE={status:'lane on the board',type:'type',prio:'priority'}[kind];
   return `<select class="chipsel ${kind}" title="${TITLE}: ${esc(label(cur)||'not set')}" aria-label="${TITLE}" style="background-color:${m.f2};color:${m.c}" onchange="${fn}('${id}',${i},this.value)">${opts}</select>`;
 }
@@ -2477,7 +2632,8 @@ function setPortfolioSort(m){ portfolioSort=m; try{localStorage.setItem('tiaraPo
    are a view, they never go to GitHub, and they reset on load because a filter you cannot see is
    a lie. The grouping and the collapsed lanes DO persist, because a group heading states its own
    count on screen, so a collapsed lane is never a silent truncation. */
-let _tqView = { q:'', lane:'', app:'', page:0 };
+let _tqView = { q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'', page:0 };
+let _bdView = { q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'' };   // Portfolio, which had no filter at all
 const TQ_PAGE = 25;
 let tqGrouped = true;
 const tqClosed = new Set();
@@ -2486,12 +2642,8 @@ function tqSave(){
        localStorage.setItem('tiaraTqClosed', JSON.stringify([...tqClosed])); }
   catch(e){ noted('task queue view (save)',e); }
 }
-function tqSearch(v){ _tqView.q=v; _tqView.page=0; renderPortfolio();
-  const el=$('#tqq'); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } }
-function tqLane(k){ _tqView.lane=(_tqView.lane===k?'':k); _tqView.page=0; renderPortfolio(); }
-function tqApp(id){ _tqView.app=(_tqView.app===id?'':id); _tqView.page=0; renderPortfolio(); }
 function tqPage(d){ _tqView.page+=d; renderPortfolio(); window.scrollTo(0,0); }
-function tqClear(){ _tqView={ q:'', lane:'', app:'', page:0 }; renderPortfolio(); }
+function tqClear(){ fClear('tq'); }
 function setTqGrouped(on){ tqGrouped=!!on; tqSave(); renderPortfolio(); }
 function tqToggleLane(k){ tqClosed.has(k)?tqClosed.delete(k):tqClosed.add(k); tqSave(); renderPortfolio(); }
 
@@ -2514,26 +2666,11 @@ function renderPortfolio(){
   const auto = portfolioSort!=='manual';
   const all=[];
   data.apps.forEach(a=>{ (a.queue||[]).forEach((q,i)=>{ if(itemStatus(q)!=='done') all.push({a,q,i}); }); });
-  if(auto){ const prank={high:0,med:1,medium:1,low:2};
+  if(auto){ const prank={high:0,med:1,medium:1,low:2,'':3};
     all.sort((x,y)=>(prank[x.q.priority]??1)-(prank[y.q.priority]??1) || (x.a.name||'').localeCompare(y.a.name||'')); }
   // manual: leave rows in project order (data.apps) + queue order exactly as you arranged them
 
-  const needle=_tqView.q.trim().toLowerCase();
-  const hitsText = ({a,q}) => !needle || ((q.title||'')+' '+(q.id||'')+' '+(a.name||'')).toLowerCase().includes(needle);
-  const hitsLane = ({q}) => !_tqView.lane || itemStatus(q)===_tqView.lane;
-  const hitsApp  = ({a}) => !_tqView.app  || a.id===_tqView.app;
-  const rows = all.filter(r=>hitsText(r)&&hitsLane(r)&&hitsApp(r));
-  const filtering = !!(needle || _tqView.lane || _tqView.app);
-
-  // A chip's count is what clicking it would actually give you, so it is measured against the
-  // other two filters rather than against everything.
-  const laneCounts={}; all.filter(r=>hitsText(r)&&hitsApp(r)).forEach(r=>{ const k=itemStatus(r.q); laneCounts[k]=(laneCounts[k]||0)+1; });
-  const appCounts={};  all.filter(r=>hitsText(r)&&hitsLane(r)).forEach(r=>{ appCounts[r.a.id]=(appCounts[r.a.id]||0)+1; });
-
-  const laneChips = BOARD_STATUS_ORDER.filter(k=>k!=='done').map(k=>
-      `<button class="pjlane${_tqView.lane===k?' on':''}" onclick="tqLane('${k}')" title="show only ${BOARD_STATUS_LABEL[k]||k}">${laneCounts[k]||0} ${BOARD_STATUS_LABEL[k]||k}</button>`).join('');
-  const appChips = data.apps.map(a=>
-      `<button class="pjlane${_tqView.app===a.id?' on':''}" onclick="tqApp('${a.id}')" title="show only ${esc(a.name)}">${esc(a.emoji||'🫧')} ${esc(a.name)} ${appCounts[a.id]||0}</button>`).join('');
+  const rows = fSort(_tqView, all.filter(r=>fMatch(_tqView,r)));
 
   const toggles=`<div class="psort"><span class="psortlab">Sort</span>`
     +`<button class="psortbtn ${auto?'on':''}" onclick="setPortfolioSort('auto')" title="re-sorts by priority on every load">⟳ Auto · priority</button>`
@@ -2542,10 +2679,7 @@ function renderPortfolio(){
     +`<button class="psortbtn ${tqGrouped?'on':''}" onclick="setTqGrouped(true)" title="one section per lane, each with its count">▤ Grouped · by lane</button>`
     +`<button class="psortbtn ${tqGrouped?'':'on'}" onclick="setTqGrouped(false)" title="one list, ${TQ_PAGE} at a time">≡ Flat · one list</button></div>`;
 
-  const tools=`<div class="pjtools">`
-    +`<input id="tqq" class="pjq" placeholder="search all open work…" value="${esc(_tqView.q)}" oninput="tqSearch(this.value)">`
-    +(filtering?`<button class="tb" onclick="tqClear()">Clear filter</button>`:'')
-    +`</div><div class="pjlanes">${laneChips}</div><div class="pjlanes">${appChips}</div>`;
+  const tools=filterBar('tq', all, {shown:rows.length, apps:true, sort:false, placeholder:'search all open work…'});
 
   let body;
   if(!all.length){
@@ -2575,7 +2709,7 @@ function renderPortfolio(){
   }
 
   const head = `<div class="phead"><b>${rows.length}</b> open item${rows.length===1?'':'s'}`
-    + (filtering?` of ${all.length}`:` across ${data.apps.length} project${data.apps.length===1?'':'s'}`)
+    + (fActive(_tqView)?` of ${all.length}`:` across ${data.apps.length} project${data.apps.length===1?'':'s'}`)
     + ` · ${auto?'highest priority first':'your project order'}</div>`;
   el.innerHTML = head + toggles + tools + body;
 }
@@ -2600,12 +2734,14 @@ function render(){
     // The cap states both numbers, because a truncation that does not announce itself is the
     // disease this project exists to treat. It could not land before #76: onRowReorder used to
     // rebuild the queue from the rows in the DOM, so hiding any row corrupted it. (#84)
-    let activeRows='', doneRows='', shown=0, hidden=0;
+    let activeRows='', doneRows='', shown=0, hidden=0, matched=0;
     a.queue.forEach((q,i)=>{ if(q.status==='done'){ doneRows+=rowHtml(q,i); return; }
+      if(!fMatch(_bdView,{a,q})) return;
+      matched++;
       if(shown<CARD_CAP){ activeRows+=rowHtml(q,i); shown++; } else hidden++; });
     const capLine = hidden
-      ? `<div class="capline">showing <b>${shown}</b> of ${open} · <button class="caplink" onclick="openProject('${a.id}')">open ${esc(a.name)}'s page for the other ${hidden} ↗</button></div>`
-      : '';
+      ? `<div class="capline">showing <b>${shown}</b> of ${matched}${matched!==open?` matching (of ${open} open)`:''} · <button class="caplink" onclick="openProject('${a.id}')">open ${esc(a.name)}'s page for the other ${hidden} ↗</button></div>`
+      : (fActive(_bdView)&&matched!==open ? `<div class="capline">showing <b>${matched}</b> of ${open} open · the rest do not match the filter</div>` : '');
     const doneFold = doneRows ? `<details class="donefold" data-key="done:${a.id}" ${openState.has('done:'+a.id)?'open':''}><summary>✅ Done · ${dn}</summary>${doneRows}</details>` : '';
     return `<details class="app" data-key="app:${a.id}" ${openState.has('app:'+a.id)?'open':''}>
       <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><a class="nm nmlink" href="#" onclick="event.stopPropagation();event.preventDefault();openProject('${a.id}')" title="open ${esc(a.name)}'s own page">${esc(a.name)}</a>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span>${kebab('app:'+a.id,[
@@ -2621,14 +2757,18 @@ function render(){
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:var(--st-doing)">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a)&&boardFor(a))?`<div class="actions"><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} board ↗</a><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
-        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||'<div class="muted">nothing active 🎉</div>'}</div>${capLine}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" value="${esc(draftFor(a.id).title||'')}" oninput="draftFor('${a.id}').title=this.value" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42)" onchange="draftType('${a.id}',this.value)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${draftFor(a.id).type===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><select id="addprio-${a.id}" class="chipsel" title="priority (TIA-65). Written to the board's Priority field on create." onchange="draftFor('${a.id}').prio=this.value">${PRIO_ORDER.map(p=>`<option value="${p}"${(draftFor(a.id).prio||'med')===p?' selected':''}>${PRIO_META[p].t}</option>`).join('')}</select><button onclick="addItem('${a.id}')">add</button></div>${composeHtml(a.id)}</div></details>
+        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||(fActive(_bdView)?'<div class="muted">nothing here matches</div>':'<div class="muted">nothing active 🎉</div>')}</div>${capLine}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" value="${esc(draftFor(a.id).title||'')}" oninput="draftFor('${a.id}').title=this.value" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42)" onchange="draftType('${a.id}',this.value)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${draftFor(a.id).type===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><select id="addprio-${a.id}" class="chipsel" title="priority (TIA-65). Written to the board's Priority field on create." onchange="draftFor('${a.id}').prio=this.value">${PRIO_ORDER.map(p=>`<option value="${p}"${(draftFor(a.id).prio||'med')===p?' selected':''}>${PRIO_META[p].t}</option>`).join('')}</select><button onclick="addItem('${a.id}')">add</button></div>${composeHtml(a.id)}</div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         <div class="scnote">repo: ${esc(a.repo)}</div>
       </div></details>`;
   }).join('');
+  // Portfolio is the main tab and was the one surface with no way to narrow anything at all.
+  const bdRows=[]; data.apps.forEach(a=>(a.queue||[]).forEach(q=>{ if(itemStatus(q)!=='done') bdRows.push({a,q}); }));
+  const bdShown=bdRows.filter(r=>fMatch(_bdView,r)).length;
+  const bdBar=filterBar('bd', bdRows, {shown:bdShown, apps:true, sort:false, placeholder:'search every card…'});
   $('#board').innerHTML = (_loading && !data.apps.length)
     ? '<div class="muted" style="margin-bottom:.6rem">reading your boards…</div>'+'<div class="skel" style="height:4.2rem"></div>'.repeat(4)
-    : b;
+    : bdBar + b;
   renderBackChip();
 
   const rbSel = '';
@@ -2659,7 +2799,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v85';
+const TIARA_VERSION = 'board-v86';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
