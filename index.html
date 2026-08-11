@@ -1598,19 +1598,40 @@ function onAppReorder(){
   const next=order.map(id=>byId[id]).filter(Boolean);
   if(next.length===data.apps.length){ data.apps=next; touch(); }
 }
+// One drag moves ONE item. The queue is edited by splice, and every item the drag did not touch
+// keeps the index it had, on screen or not.
+//
+// It used to rebuild the whole active queue out of the rows that happened to be in the DOM:
+//   const order=[...list.querySelectorAll(':scope > .qitem')].map(el=>+el.getAttribute('data-qi'));
+//   const activeObjs=order.map(i=>a.queue[i]).filter(Boolean);
+//   if(activeObjs.length!==order.length||!moved) return;
+//   let k=0; a.queue=a.queue.map(q=> q.status==='done' ? q : activeObjs[k++]);
+// Both sides of that guard are read from the same DOM, so it compares a number with itself and
+// always passes. Today every active row is rendered, so it happens to hold. The moment a list is
+// capped, paged or filtered, the map walks more items than the DOM has and writes `undefined` into
+// every slot past the visible ones; migrate() then reads `q.id` off undefined and render() throws
+// before it assigns innerHTML, which blanks the board. (tiara-site#76)
 function onRowReorder(ev,appId){
   const a=app(appId); if(!a) return;
   const list=ev.to; if(!list) return;
-  // Read straight off the (already-moved) DOM, using each item's ORIGINAL queue index in data-qi.
+  // data-qi is each row's index in a.queue as of the last render. Only the dragged row moved, so
+  // its neighbours' indexes are still true, and they are all this needs.
   const moved=a.queue[+ev.item.getAttribute('data-qi')];
-  const prevEl=ev.item.previousElementSibling;
-  const afterObj=(prevEl&&prevEl.classList.contains('qitem'))?a.queue[+prevEl.getAttribute('data-qi')]:null;
+  if(!moved) return;
+  const sib=(el,dir)=>{ for(let n=el[dir]; n; n=n[dir]) if(n.classList&&n.classList.contains('qitem')) return n; return null; };
+  const at=el=>{ if(!el) return null; const q=a.queue[+el.getAttribute('data-qi')]; return (q&&q!==moved)?q:null; };
+  const afterObj=at(sib(ev.item,'previousElementSibling'));
+  const beforeObj=at(sib(ev.item,'nextElementSibling'));
   const afterId=afterObj?afterObj.itemId:null;
-  // New visual order of the active items → rebuild a.queue, leaving done items where they sit.
-  const order=[...list.querySelectorAll(':scope > .qitem')].map(el=>+el.getAttribute('data-qi'));
-  const activeObjs=order.map(i=>a.queue[i]).filter(Boolean);
-  if(activeObjs.length!==order.length||!moved) return;
-  let k=0; a.queue=a.queue.map(q=> q.status==='done' ? q : activeObjs[k++]);
+  const cut=a.queue.indexOf(moved); if(cut<0) return;
+  a.queue.splice(cut,1);
+  // After the anchor if there is one, before the next row if there is not, and back where it was
+  // if the row has no neighbours at all, which is a drag that changed nothing.
+  let to = afterObj ? a.queue.indexOf(afterObj)+1
+         : beforeObj ? a.queue.indexOf(beforeObj)
+         : cut;
+  if(to<0) to=cut;
+  a.queue.splice(to,0,moved);
   if(boardFor(a)){
     captureOpen(); render();
     bReorder(a,moved,afterId).then(()=>setStatus('🟢 reordered on the board')).catch(e=>setStatus('⚠ reorder didn\'t save - refresh to see true order ('+e.message+')'));
@@ -2428,7 +2449,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v77';
+const TIARA_VERSION = 'board-v78';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
