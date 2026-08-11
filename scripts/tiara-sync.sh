@@ -139,8 +139,12 @@ docraw=$(gh api "repos/$DOC_REPO/contents/docs/HOW-TIARA-WORKS.md" -H "Accept: a
 if [ -z "$docraw" ]; then
   warn "couldn't read the private doc — check 'gh auth status' and access to $DOC_REPO"; ISSUES=$((ISSUES+1))
 else
-  docv=$(printf '%s' "$docraw" | grep -oE "board-v[0-9]+" | head -1)
-  if [ -z "$docv" ]; then info "doc reachable, but no board-vNN marker to compare (consider stamping the version in it)"
+  # Match the stamp by its label, never by position. The first `board-v` in the doc is prose
+  # describing when some past behaviour landed, and every version adds another such sentence
+  # above where the stamp sits, so an unfiltered read got further from the truth over time and
+  # warned on every sync. Same defect as the live-page read in TIA-59. (TIA-70)
+  docv=$(printf '%s' "$docraw" | grep -E "^\*\*Describes:\*\*" | grep -oE "board-v[0-9]+" | head -1)
+  if [ -z "$docv" ]; then warn "the doc carries no '**Describes:** board-vNN' stamp, so staleness cannot be checked. Add one to docs/HOW-TIARA-WORKS.md in '$DOC_REPO'"; ISSUES=$((ISSUES+1))
   elif [ "$docv" = "$ghv" ]; then ok "doc matches the live board ($docv)"
   else warn "doc says $docv but the board is $ghv — the doc has fallen behind; update docs/HOW-TIARA-WORKS.md in '$DOC_REPO'"; ISSUES=$((ISSUES+1)); fi
 fi
