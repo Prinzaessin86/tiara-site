@@ -87,6 +87,13 @@ documents.
 Another session was editing `index.html` in the same working tree for TIA-70. We split it by
 message: my `board-v76` landed first, theirs went on top as `board-v77`.
 
-**Nothing is pushed.** Four commits are sitting local: `tiara-site` `6aefb4e`, `e9019da`; `tiara`
-`efa172f`, `b123f04`, plus the other session's. Neither ticket was moved to Verify, because the work
-is not on GitHub yet and a board that says "verify" over an unpushed commit is a lie.
+**I pushed nothing, and #74 is live anyway.** `com.princess.tiara.autosync.plist` runs
+`tiara-sync.sh --auto` every 30 minutes and pushes `tiara-site` when it is ahead. It took `6aefb4e`
+(board-v76) and the other session's `c175ecf` (board-v77) at 11:20, so the markdown renderer is on
+the public page now. Still local at the time of writing: `tiara-site` `e9019da` and `2b70b6f` (the
+proposal and this file), and `tiara` `efa172f`, `6e034ba`, `b123f04`. The same agent will take them.
+The private repo is also one commit behind its remote, a scheduled TestFlight-status write.
+
+Neither ticket was moved to Verify. #74 is on the page and could be, but moving a ticket is a write
+to the board and was not asked for; #75 is a proposal waiting on approval, which is the one thing
+"verify" cannot mean.
