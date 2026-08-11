@@ -454,6 +454,7 @@
     <select id="ai-app" title="which app"></select>
     <input id="ai-title" placeholder="what needs doing…" onkeydown="if(event.key==='Enter')submitAddIssue()">
     <select id="ai-type" title="a type is required (D42)" onchange="aiTypeChange()"><option value="">pick a type</option></select>
+    <select id="ai-prio" title="priority (TIA-65). Written to the board's Priority field on create."><option value="high">high</option><option value="med" selected>med</option><option value="low">low</option></select>
     <button class="tb primary" onclick="submitAddIssue()">Add to New</button>
     <button class="tb" onclick="toggleAddIssue()">Cancel</button>
     <!-- The fields for the chosen type. Static markup rather than rendered, so what you type
@@ -882,7 +883,7 @@ async function bLoadNotes(a,q){ const or=appOwnerRepo(a); const r=await ghApi('/
     const m=(c.body||'').match(NOTE_PREFIX);
     const legacy=!!(m&&/claude/i.test(m[1]));
     return { by:(bot||legacy)?'claude':'you', text:(c.body||'').replace(NOTE_PREFIX,'') }; }); q._notesLoaded=true; }
-async function bAddItem(a,title,type,body){
+async function bAddItem(a,title,type,body,prio){
   const or=appOwnerRepo(a);
   // The body is the ticket. A title-only issue carries no Definition of Done, so it can never be
   // promoted to Verify once the criterion gate lands, and it cannot be fixed afterwards without
@@ -904,6 +905,11 @@ async function bAddItem(a,title,type,body){
     await ghGraphQL(`mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ projectV2Item{ id } } }`,{ p:meta.projectId, i:itemId, f:f.id, o:f.opts[name] }); };
   await setf('lane','New');                       // D41
   if(type) await setf('type', cap(type));         // D42: never created without one
+  // Priority was never set here, so every ticket filed from Tiara landed with the field empty while
+  // the row displayed 'med'. 38 of 72 items on this board were in that state. Set it for the same
+  // reason `lane` is set: an unset field is invisible to the queries that read it, and Auto sort
+  // orders by exactly this value. (TIA-65)
+  await setf('priority', cap(prio || 'med'));
   return { issueNumber:iss.number, itemId, url:iss.html_url };
 }
 async function bReorder(a,q,afterId){ const meta=await resolveBoard(a);
@@ -1084,8 +1090,14 @@ const collapsed = new Set(); // for default-OPEN sections (the Queue): tracks wh
 function captureOpen(){ document.querySelectorAll('details[data-key]').forEach(d=>{ const k=d.getAttribute('data-key'); if(d.hasAttribute('data-defopen')){ if(d.open) collapsed.delete(k); else collapsed.add(k); } else { if(d.open) openState.add(k); else openState.delete(k); } }); saveOpen(); }
 // Which cards are expanded and which lanes are closed used to live only in memory, so every reload
 // collapsed everything you had arranged. Same pattern as tiaraPortfolioSort (board-v66).
+//
+// `item:` keys are deliberately NOT persisted. They are two different things sharing one mechanism:
+// an expanded `app:` card is the arrangement you built and is worth keeping, while an expanded
+// `item:` panel is reading state that carries a whole issue body plus its notes. Several of those
+// left open is what turns a reload into a page you have to scroll past. They stay open while you
+// work and are closed on the next load, so the page opens short without undoing board-v66. (TIA-67)
 function saveOpen(){
-  try{ localStorage.setItem('tiaraOpen', JSON.stringify([...openState]));
+  try{ localStorage.setItem('tiaraOpen', JSON.stringify([...openState].filter(k=>!k.startsWith('item:'))));
        localStorage.setItem('tiaraCollapsed', JSON.stringify([...collapsed])); }
   catch(e){ noted('open state (save)',e); }
 }
@@ -1160,9 +1172,10 @@ function submitAddIssue(){
   const missing=missingFields(vals,ty);
   if(missing.length){ setStatus('⚠ still needed: '+missing.join(', ')); const t=document.querySelector('#ai-fields textarea[data-ail="'+missing[0]+'"]'); if(t) t.focus(); return; }
   const body=bodyFromVals(vals,ty);
-  const tmp={id:'saving…',title:v,body,status:'new',done:false,type:ty,priority:'med',notes:[],_notesLoaded:true,_pending:true};
+  const prio=($('#ai-prio')&&$('#ai-prio').value)||'med';   // same fix as the Queue box (TIA-65)
+  const tmp={id:'saving…',title:v,body,status:'new',done:false,type:ty,priority:prio,notes:[],_notesLoaded:true,_pending:true};
   a.queue.push(tmp); captureOpen(); render(); setStatus('adding to '+a.name+'…');
-  bAddItem(a,v,ty,body).then(res=>{ tmp.id='#'+res.issueNumber; tmp.issueNumber=res.issueNumber; tmp.itemId=res.itemId; tmp.url=res.url;
+  bAddItem(a,v,ty,body,prio).then(res=>{ tmp.id='#'+res.issueNumber; tmp.issueNumber=res.issueNumber; tmp.itemId=res.itemId; tmp.url=res.url;
       delete tmp._pending;
       // cleared only once GitHub has it, so a failed create keeps what you typed
       $('#ai-title').value=''; $('#ai-type').value=''; aiTypeChange();
@@ -1810,9 +1823,13 @@ function addItem(id){
   const missing=missingFields(d.vals,ty);
   if(missing.length){ setStatus('⚠ still needed: '+missing.join(', ')); return; }
   const body=draftBody(id,ty);
-  const tmp={id:'saving…',title:v,body,status:'new',done:false,type:ty,priority:'med',notes:[],_notesLoaded:true,_pending:true};
+  // The priority the row displays and the priority written to the board must be the same value.
+  // This used to be hardcoded 'med' locally while nothing set the board field at all, so the page
+  // showed med for a ticket the board had no priority for. (TIA-65)
+  const prio=d.prio||'med';
+  const tmp={id:'saving…',title:v,body,status:'new',done:false,type:ty,priority:prio,notes:[],_notesLoaded:true,_pending:true};
   a.queue.push(tmp); captureOpen(); render(); setStatus('adding to GitHub…');
-  bAddItem(a,v,ty,body).then(res=>{ tmp.id='#'+res.issueNumber; tmp.issueNumber=res.issueNumber; tmp.itemId=res.itemId; tmp.url=res.url; delete tmp._pending;
+  bAddItem(a,v,ty,body,prio).then(res=>{ tmp.id='#'+res.issueNumber; tmp.issueNumber=res.issueNumber; tmp.itemId=res.itemId; tmp.url=res.url; delete tmp._pending;
     _drafts[id]={type:'',vals:{},title:''};   // cleared only once GitHub has it, so a failure keeps what you typed
     captureOpen(); render(); setStatus('\ud83d\udfe2 added #'+res.issueNumber+' \u00b7 '+ty+' \u00b7 New'); })
     .catch(e=>{ const k=a.queue.indexOf(tmp); if(k>=0) a.queue.splice(k,1); captureOpen(); render(); setStatus('\u26a0 couldn\'t add, removed ('+e.message+')'); });
@@ -2204,7 +2221,7 @@ function render(){
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:#e0932b">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a)&&boardFor(a))?`<div class="actions"><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} board ↗</a><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
-        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||'<div class="muted">nothing active 🎉</div>'}</div><div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" value="${esc(draftFor(a.id).title||'')}" oninput="draftFor('${a.id}').title=this.value" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42)" onchange="draftType('${a.id}',this.value)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${draftFor(a.id).type===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><button onclick="addItem('${a.id}')">add</button></div>${composeHtml(a.id)}</div></details>
+        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||'<div class="muted">nothing active 🎉</div>'}</div><div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" value="${esc(draftFor(a.id).title||'')}" oninput="draftFor('${a.id}').title=this.value" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42)" onchange="draftType('${a.id}',this.value)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${draftFor(a.id).type===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><select id="addprio-${a.id}" class="chipsel" title="priority (TIA-65). Written to the board's Priority field on create." onchange="draftFor('${a.id}').prio=this.value">${PRIO_ORDER.map(p=>`<option value="${p}"${(draftFor(a.id).prio||'med')===p?' selected':''}>${PRIO_META[p].t}</option>`).join('')}</select><button onclick="addItem('${a.id}')">add</button></div>${composeHtml(a.id)}</div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         <div class="scnote repoedit" style="margin-top:8px" onclick="setRepo('${a.id}')" title="click to set the GitHub repo">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
         <button class="delproj" onclick="delApp('${a.id}')">Remove project from board</button>
@@ -2243,7 +2260,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v74';
+const TIARA_VERSION = 'board-v75';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
