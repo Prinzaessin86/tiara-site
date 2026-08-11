@@ -519,6 +519,16 @@
   .md .mdt th,.md .mdt td{border:1.5px solid var(--line);padding:var(--sp-30) var(--sp-55);text-align:left;vertical-align:top;}
   .md .mdt th{background:var(--c-faf6ff);color:var(--brand);font-weight:800;white-space:nowrap;}
 
+  /* #84: the cap says what it is not showing, and where the rest is. */
+  .capline{font-size:var(--t-xs);color:var(--ink-3);background:var(--c-faf6ff);
+       border:1.5px dashed var(--c-e3cdf3);border-radius:var(--r-md);
+       padding:var(--sp-40) var(--sp-70);margin-top:var(--sp-40);}
+  .capline b{color:var(--ink-1);}
+  .caplink{font-family:'Quicksand';font-weight:700;font-size:var(--t-xs);color:var(--brand);
+       background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;
+       text-underline-offset:2px;text-decoration-color:var(--pink);}
+  .caplink:hover{color:var(--pink);}
+
   /* ---------- board-v84: an open row and its panel are one thing (#82) ----------
      The panel used to be a lavender card holding white cards, indented 28px away from the row it
      belonged to, and it printed its ticket's id but never its title. Three containers of chrome,
@@ -1391,6 +1401,7 @@ let _pjCommits = {};   // appId -> [{sha,msg}], memory only. Read live, stored n
 // the view. Resets when you open a different project, because a filter you cannot see is a lie.
 let _pjView = { id:null, q:'', lane:'', page:0 };
 const PJ_PAGE = 10;
+const CARD_CAP = 10;   // a Portfolio card shows this many open items, then says so (#84)
 function pjSearch(v){ _pjView.q=v; _pjView.page=0; renderProject(_pjView.id); const el=$('#pjq'); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } }
 function pjLane(k){ _pjView.lane = (_pjView.lane===k?'':k); _pjView.page=0; renderProject(_pjView.id); }
 function pjPage(d){ _pjView.page += d; renderProject(_pjView.id); window.scrollTo(0,0); }
@@ -2584,8 +2595,17 @@ function render(){
     const open = a.queue.filter(q=>q.status!=='done').length, dn = a.queue.filter(q=>q.status==='done').length;
     const next = a.queue.find(q=>q.status!=='done' && q.status!=='blocked' && q.status!=='verify');
     const rowHtml=(q,i)=>boardRowHtml(a,q,i);
-    let activeRows='', doneRows='';
-    a.queue.forEach((q,i)=>{ if(q.status==='done') doneRows+=rowHtml(q,i); else activeRows+=rowHtml(q,i); });
+    // A card renders the first ten of its open queue. The project page pages at 10 and Task queue
+    // at 25; this was the one surface with no bound at all, and three boards are over 30 open.
+    // The cap states both numbers, because a truncation that does not announce itself is the
+    // disease this project exists to treat. It could not land before #76: onRowReorder used to
+    // rebuild the queue from the rows in the DOM, so hiding any row corrupted it. (#84)
+    let activeRows='', doneRows='', shown=0, hidden=0;
+    a.queue.forEach((q,i)=>{ if(q.status==='done'){ doneRows+=rowHtml(q,i); return; }
+      if(shown<CARD_CAP){ activeRows+=rowHtml(q,i); shown++; } else hidden++; });
+    const capLine = hidden
+      ? `<div class="capline">showing <b>${shown}</b> of ${open} · <button class="caplink" onclick="openProject('${a.id}')">open ${esc(a.name)}'s page for the other ${hidden} ↗</button></div>`
+      : '';
     const doneFold = doneRows ? `<details class="donefold" data-key="done:${a.id}" ${openState.has('done:'+a.id)?'open':''}><summary>✅ Done · ${dn}</summary>${doneRows}</details>` : '';
     return `<details class="app" data-key="app:${a.id}" ${openState.has('app:'+a.id)?'open':''}>
       <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><a class="nm nmlink" href="#" onclick="event.stopPropagation();event.preventDefault();openProject('${a.id}')" title="open ${esc(a.name)}'s own page">${esc(a.name)}</a>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span>${kebab('app:'+a.id,[
@@ -2601,7 +2621,7 @@ function render(){
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:var(--st-doing)">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a)&&boardFor(a))?`<div class="actions"><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} board ↗</a><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
-        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||'<div class="muted">nothing active 🎉</div>'}</div><div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" value="${esc(draftFor(a.id).title||'')}" oninput="draftFor('${a.id}').title=this.value" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42)" onchange="draftType('${a.id}',this.value)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${draftFor(a.id).type===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><select id="addprio-${a.id}" class="chipsel" title="priority (TIA-65). Written to the board's Priority field on create." onchange="draftFor('${a.id}').prio=this.value">${PRIO_ORDER.map(p=>`<option value="${p}"${(draftFor(a.id).prio||'med')===p?' selected':''}>${PRIO_META[p].t}</option>`).join('')}</select><button onclick="addItem('${a.id}')">add</button></div>${composeHtml(a.id)}</div></details>
+        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||'<div class="muted">nothing active 🎉</div>'}</div>${capLine}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" value="${esc(draftFor(a.id).title||'')}" oninput="draftFor('${a.id}').title=this.value" onkeydown="if(event.key==='Enter')addItem('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42)" onchange="draftType('${a.id}',this.value)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${draftFor(a.id).type===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><select id="addprio-${a.id}" class="chipsel" title="priority (TIA-65). Written to the board's Priority field on create." onchange="draftFor('${a.id}').prio=this.value">${PRIO_ORDER.map(p=>`<option value="${p}"${(draftFor(a.id).prio||'med')===p?' selected':''}>${PRIO_META[p].t}</option>`).join('')}</select><button onclick="addItem('${a.id}')">add</button></div>${composeHtml(a.id)}</div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         <div class="scnote">repo: ${esc(a.repo)}</div>
       </div></details>`;
@@ -2639,7 +2659,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v84';
+const TIARA_VERSION = 'board-v85';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
