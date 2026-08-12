@@ -8,6 +8,16 @@ set -uo pipefail
 
 # Only act when index.html is part of this commit.
 if git diff --cached --name-only | grep -qx 'index.html'; then
+  # The design system's one rule: a size, a colour and a radius are declared in :root and
+  # referenced everywhere else (AD-0001 decision 1a, #77). Linted on the STAGED content, not the
+  # working tree, so what is checked is what is committed. No bypass: TIARA_SKIP_DOC waives the
+  # doc reminder, never the tokens.
+  staged=$(mktemp -t tiara-index) || exit 1
+  git show :index.html > "$staged" || exit 1
+  out=$(python3 scripts/lint-tokens.py "$staged" 2>&1); rc=$?
+  rm -f "$staged"
+  printf '%s\n' "${out//$staged/index.html}"
+  [ "$rc" = 0 ] || exit 1
   if [ "${TIARA_SKIP_DOC:-0}" = "1" ]; then
     echo "tiara: TIARA_SKIP_DOC=1 — skipping the doc/version checkpoint this once."
     exit 0
