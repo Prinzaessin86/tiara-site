@@ -16,7 +16,7 @@ TICKET: https://github.com/Prinzaessin86/tiara-site/issues/77
   Both in commit `3901f2d`.
 
 `_bootstrap`
-- `scripts/compliance.mjs` — records `id`, `enabled` and `url` per cloud workflow. Commit `e47cf3d`.
+- `scripts/compliance.mjs` — records `id`, `enabled` and `url` per cloud workflow. Commit `2f9ac09`.
 
 Nothing was written to `scripts/hooks/pre-commit`.
 
@@ -68,8 +68,14 @@ a throwaway clone first.
 - The link is **per app, not per workflow**, which is not literally what the comment asked for. The
   API exposes no per-workflow web address, so the alternative was a fabricated path. The caption on
   the page says which it is.
-- The real gate is still unwired: the script is on #77, unrun by me, because an agent may not edit a
-  gate script.
+- **#77 is now wired and closed out.** Princess ran the script; `scripts/hooks/pre-commit` lints the
+  staged `index.html`, committed as `1f518cd`. Proved in this repo, not a scratch one: a staged
+  `index.html` carrying `#ff00aa` and `13px` was refused `rc=1` naming both at `index.html:396`, the
+  commit did not land, and `TIARA_SKIP_DOC=1` was refused the same way. Her step-2 restore had not
+  run, so that canary was still sitting in the working tree and the index; restored from HEAD and
+  the linter is green.
+- `_bootstrap`'s two commits were rebased to drop a `Closes #73` that would have cross-referenced an
+  unrelated already-closed `_bootstrap#73` on push. New hashes `2c8cead` and `2f9ac09`.
 - Still nothing against a real GitHub board, no hand-clicked browser, no phone.
 - Nothing pushed. Six local commits now across three repos.
 
