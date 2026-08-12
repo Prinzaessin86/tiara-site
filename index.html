@@ -378,21 +378,22 @@
   .kbtag{display:inline-block;font-size:var(--t-xs);font-weight:800;padding:var(--sp-2px) var(--sp-8px);border-radius:var(--r-md);margin-left:auto;letter-spacing:.03em;}
   .kbtag.local{background:var(--c-e7f7ef);color:var(--c-2f9e6e);} .kbtag.cloud{background:var(--c-e6effb);color:var(--c-4a7ed6);}
   footer{text-align:center;margin-top:var(--sp-24px);font-size:var(--t-sm);color:var(--soft);font-weight:700;}
-  /* Runbook · each product's real workflows (#72). Three answers, and the styling keeps them
-     apart: a list, an explicit none, and an unknown. A grey "none" chip that also means
-     "nobody looked" is the dead link this was written to avoid. */
-  .wfbox{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-85) var(--sp-100);margin:0 0 var(--sp-110);}
-  .wfrow{display:flex;align-items:baseline;gap:var(--sp-55);flex-wrap:wrap;padding:var(--sp-50) 0;border-top:1.5px solid var(--line2);}
-  .wfrow.wffirst{border-top:0;padding-top:0;}
-  .wfapp{font-weight:800;font-size:var(--t-sm);color:var(--ink-1);flex:0 0 11rem;}
-  .wfset{display:flex;gap:var(--sp-35);flex-wrap:wrap;flex:1 1 18rem;}
-  .wfchip{font-size:var(--t-xs);font-weight:800;padding:var(--sp-18) var(--sp-55);border-radius:var(--r-pill);white-space:nowrap;text-decoration:none;}
-  .wfchip.wfact{background:var(--c-e7f7ef);color:var(--c-2f9e6e);}
-  .wfchip.wfact:hover{text-decoration:underline;}
-  .wfchip.wfcloud{background:var(--c-e6effb);color:var(--c-4a7ed6);}
-  .wfchip.wfnil{background:var(--c-f1eef6);color:var(--c-8a7a98);}
-  .wfchip.wfunk{background:var(--c-fdeecd);color:var(--c-9a6a12);white-space:normal;}
-  .wfflag{font-weight:700;opacity:.75;}
+  /* This project's Xcode Cloud workflows, on the project page (#72). Three answers and the styling
+     keeps them apart: a list, an explicit none, and an unknown. A grey chip that means both "there
+     is none" and "nobody looked" would be the same dishonesty as a dead link.
+     Every label is measured on its own fill, per AD-0001 decision 1a and #79: 5.32:1 blue,
+     5.71:1 grey, 4.94:1 amber. The obvious --c-4a7ed6 for the blue reads 3.45:1 and is a fill
+     colour, not a word. */
+  .wfset{display:flex;gap:var(--sp-40);flex-wrap:wrap;align-items:center;}
+  .wfchip{display:inline-flex;align-items:center;min-height:2.75rem;font-size:var(--t-xs);font-weight:800;
+    padding:var(--sp-30) var(--sp-70);border-radius:var(--r-pill);text-decoration:none;line-height:1.35;}
+  a.wfchip.wfcloud{background:var(--c-e6effb);color:var(--c-245fb8);border:1.5px solid var(--c-bcd9ff);}
+  a.wfchip.wfcloud:hover{background:var(--c-dcebff);text-decoration:underline;}
+  a.wfchip.wfcloud:focus-visible{outline:var(--sp-2px) solid var(--brand);outline-offset:var(--sp-2px);}
+  span.wfchip.wfcloud{background:var(--c-e6effb);color:var(--c-245fb8);}
+  .wfchip.wfnil{background:var(--c-f1eef6);color:var(--upnext-i);}
+  .wfchip.wfunk{background:var(--c-fdeecd);color:var(--c-8a5e20);}
+  .wfflag{font-weight:700;opacity:.8;}
   /* Compliance tab */
   .cmeta{font-size:var(--t-sm);color:var(--ink-3,var(--ink-3));margin:0 0 var(--sp-65);line-height:1.5;max-width:78ch;}
   .clegend{display:flex;gap:var(--sp-40);flex-wrap:wrap;align-items:center;font-size:var(--t-xs);color:var(--ink-3,var(--ink-3));margin-bottom:var(--sp-90);}
@@ -776,7 +777,6 @@
         <button class="tb danger" onclick="ghDisconnect()">Disconnect GitHub</button>
       </div>
     </div>
-    <div id="runbookworkflows"></div>
     <div id="runbookrecipes"></div>
   </div>
   <div id="compliance" style="display:none"></div>
@@ -1789,6 +1789,8 @@ function renderProject(id){
           <button class="tb" onclick="pjPage(1)" ${from+PJ_PAGE>=filtered.length?'disabled':''}>next \u2192</button>
         </div>`:''}</div>
 
+    ${(function(){ try{ return wfSection(a); }catch(e){ noted("this project's workflows",e); return ''; } })()}
+
     <div class="pjsec"><h3>Last 5 commits</h3>${commits}
       <div class="muted" style="margin-top:.4rem">Read from GitHub each time you open this page, never stored.</div></div>
 
@@ -2579,62 +2581,70 @@ async function loadCompliance(){
     _compliance = JSON.parse(f.text);
   }catch(e){ noted('compliance scan file',e,'stale'); }   // never let a missing/bad file break load
 }
-// ---- Runbook · each product's real workflows (#72) --------------------------------------------
+// ---- Xcode Cloud · what actually runs, on the project page (#72) -----------------------------
 // compliance.json has recorded every app's real workflows since _bootstrap 0d5a650 and no page
-// read them, so the Runbook went on describing a generic workflow next to live data saying
-// otherwise. TIA-44 asked for exactly this and only its scanner half landed.
+// read them. This is the half of TIA-44 that never landed. It sits on the project page rather than
+// in the Runbook, because "what does THIS app build with" is a question about one app, and the
+// Runbook is the reference for all of them.
 //
-// Three answers, never collapsed into two:
+// Three answers, and they are never collapsed into two:
 //   a list  · these workflows exist
 //   []      · this app has none, and somebody looked
 //   null    · nobody looked, because no App Store Connect key was present at scan time
-// GitHub Actions entries link, using the url the scanner already wrote. Xcode Cloud entries are
-// named and never linked: an individual workflow has no address outside a team-scoped App Store
-// Connect path, and inventing one would be the dead link TIA-44 refused.
+// GitHub Actions is deliberately not shown: no app here has any, and a permanent row of "none" is
+// noise rather than information.
+//
+// The chip links to `https://appstoreconnect.apple.com/apps/<ascAppId>/ci`, written by the scanner
+// from the App Store Connect app id. Every workflow of one app therefore shares one address: the
+// API exposes no per-workflow web URL, and inventing a deeper path would be the dead link TIA-44
+// refused. A workflow scanned before the id was recorded has `url: null` and renders unlinked.
 function wfFlags(w){
   const f=[];
   if(w.archives) f.push('archives');
   if(w.tests) f.push('tests');
   if(w.versionTriggered) f.push('version-triggered');
-  return f.length?` <span class="wfflag">· ${esc(f.join(' · '))}</span>`:'';
+  if(w.enabled===false) f.push('DISABLED');
+  // &nbsp; rather than a plain space: the chip is a flex item and the browser was eating the
+  // leading space, printing "CI CD rainybow· tests".
+  return f.length?`<span class="wfflag">&nbsp;· ${esc(f.join(' · '))}</span>`:'';
 }
-function wfChips(a){
-  const w=a.workflows;
-  // Infrastructure entries and products with no repo on this machine carry no workflows key at
+// compliance.json keys products by repo and tiara-data keys them by name, and the two disagree
+// ("SparkleReef" vs "Sparkle Reef"), so match on the repo exactly as compIcon does.
+function compAppFor(a){
+  const c=_compliance; if(!c||!Array.isArray(c.apps)||!a) return null;
+  const or=(appOwnerRepo(a)||'').toLowerCase(); if(!or) return null;
+  return c.apps.find(x=>x&&(x.repo||'').toLowerCase()===or)||null;
+}
+function wfChips(ca){
+  const w=ca&&ca.workflows;
+  if(ca&&ca.missing) return `<span class="wfchip wfunk">no repository in ~/Developer at scan time, so nothing could be checked</span>`;
+  // Infrastructure entries and records written before the key existed carry no workflows object at
   // all. render() must never throw, so that shape is a sentence rather than a crash.
-  if(!w || typeof w!=='object') return `<span class="wfchip wfunk">not scanned for workflows</span>`;
-  const out=[];
-  const acts=Array.isArray(w.actions)?w.actions:null;
-  if(acts===null) out.push(`<span class="wfchip wfunk">GitHub Actions: unknown</span>`);
-  else if(!acts.length) out.push(`<span class="wfchip wfnil">no GitHub Actions</span>`);
-  else acts.forEach(x=>{
-    const n=esc(x&&x.name||'workflow');
-    out.push(x&&x.url?`<a class="wfchip wfact" href="${esc(x.url)}" target="_blank" rel="noopener" title="GitHub Actions workflow">${n} ↗</a>`
-                     :`<span class="wfchip wfact" title="GitHub Actions workflow">${n}</span>`);
-  });
+  if(!w||typeof w!=='object') return `<span class="wfchip wfunk">not scanned for workflows</span>`;
   const xc=w.xcodeCloud;
-  if(xc===null||xc===undefined) out.push(`<span class="wfchip wfunk" title="the scan ran without an App Store Connect key, so nobody looked. This is not the same as having none.">Xcode Cloud: unknown, no App Store Connect key at scan time</span>`);
-  else if(!Array.isArray(xc)||!xc.length) out.push(`<span class="wfchip wfnil" title="checked, and there genuinely is no Xcode Cloud workflow">no Xcode Cloud workflow</span>`);
-  else xc.forEach(x=>out.push(`<span class="wfchip wfcloud" title="Xcode Cloud workflow. Named, not linked: a workflow has no address outside a team-scoped App Store Connect path, and a made-up link is worse than none.">${esc(x&&x.name||'workflow')}${wfFlags(x||{})}</span>`));
-  return out.join('');
+  if(xc===null||xc===undefined) return `<span class="wfchip wfunk" title="the scan ran without an App Store Connect key, so nobody looked. That is not the same as having none.">unknown · no App Store Connect key at scan time</span>`;
+  if(!Array.isArray(xc)||!xc.length) return `<span class="wfchip wfnil" title="checked, and there genuinely is no Xcode Cloud workflow">no Xcode Cloud workflow · checked</span>`;
+  return xc.map(x=>{
+    const label=`${esc((x&&x.name)||'workflow')}${wfFlags(x||{})}`;
+    return (x&&x.url)
+      ? `<a class="wfchip wfcloud" href="${esc(x.url)}" target="_blank" rel="noopener" title="open this app's Xcode Cloud page in App Store Connect. A workflow has no address of its own, so every workflow of one app opens the same page.">${label}&nbsp;↗</a>`
+      : `<span class="wfchip wfcloud" title="scanned before the App Store Connect app id was recorded, so there is nothing to link to. Re-run the scan.">${label}</span>`;
+  }).join('');
 }
-function renderRunbookWorkflows(){
-  const el=$('#runbookworkflows'); if(!el) return;
+function wfSection(a){
   const c=_compliance;
-  const head=`<div class="phead">What actually runs · each product's real workflows</div>`;
-  if(!c || !Array.isArray(c.apps)){
-    el.innerHTML=head+`<div class="cmeta">No scan yet, so this page will not guess. In <code>_bootstrap</code> run <code>bash scripts/compliance-refresh.sh</code>, then reload.</div>`;
-    return;
-  }
-  const rows=[...c.apps]
-    .filter(a=>a && a.kind!=='infrastructure')
-    .sort((a,b)=>String(a.name).localeCompare(String(b.name)))
-    .map((a,i)=>`<div class="wfrow${i?'':' wffirst'}"><span class="wfapp">${compIcon(a)}${esc(a.name)}</span><span class="wfset">${
-      a.missing?`<span class="wfchip wfunk">no repository in ~/Developer, so nothing could be checked</span>`:wfChips(a)
-    }</span></div>`).join('');
+  if(!c||!Array.isArray(c.apps))
+    return `<div class="pjsec"><h3>Xcode Cloud</h3><div class="muted">No compliance scan on this browser yet. In <code>_bootstrap</code> run <code>bash scripts/compliance-refresh.sh</code>, then reload.</div></div>`;
+  const ca=compAppFor(a);
+  if(!ca) return `<div class="pjsec"><h3>Xcode Cloud</h3><div class="muted">This project is not in the scan, so nothing is known about its workflows.</div></div>`;
   let when=''; try{ when=c.generatedAt?new Date(c.generatedAt).toLocaleString():''; }catch(e){ noted('workflow scan timestamp',e); }
-  el.innerHTML=head+`<div class="cmeta">From the compliance scan of ${esc(when)}, not from this recipe. A green chip links to the run history on GitHub. A blue chip is an Xcode Cloud workflow, which has no public address, so it is named and not linked. Grey means checked and there is none; amber means nobody looked.</div>
-    <div class="wfbox">${rows||'<div class="cnote">The scan lists no products.</div>'}</div>`;
+  const chips=wfChips(ca);
+  // Only promise a link when one is actually there. A footnote about clicking a chip, under a row
+  // that says "no Xcode Cloud workflow", is the page telling you about something it did not draw.
+  const linked=chips.indexOf('<a ')>=0;
+  return `<div class="pjsec"><h3>Xcode Cloud \u00b7 what actually runs</h3>
+    <div class="wfset">${chips}</div>
+    <div class="muted" style="margin-top:.5rem">From the compliance scan of ${esc(when)}, not from the runbook.${linked?' A chip opens this app\u2019s Xcode Cloud page in App Store Connect: a workflow has no address of its own, so every workflow here opens the same page.':''}</div></div>`;
 }
 
 // The five dimensions, named once. The overlay (#71) titles itself with the same words the column
@@ -2935,7 +2945,6 @@ function render(){
     return `<details class="rec" data-key="rec:${rec.id}" ${openState.has('rec:'+rec.id)?'open':''}><summary><div class="rt">${esc(rec.title)}</div><div class="rw">${esc(rec.when)}</div></summary>${steps}</details>`;
   }).join('');
   $('#runbookrecipes').innerHTML = r;
-  try{ renderRunbookWorkflows(); }catch(e){ noted('runbook workflows',e); }   // never let one app record blank the tab
   renderPortfolio();
   renderCompliance();
   initSortables();   // (re)wire drag-to-reorder onto the freshly-built board
@@ -2954,7 +2963,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v88';
+const TIARA_VERSION = 'board-v89';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
