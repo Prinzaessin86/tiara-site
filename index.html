@@ -2112,6 +2112,14 @@ function normaliseApps(){
   data.apps.forEach(a=>{
     if(!Array.isArray(a.queue)) a.queue=[];
     if(!a.prefix) a.prefix=(a.name||'ITEM').replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase()||'ITEM';
+    // Products and infrastructure follow different rules, so which one a project is has to be a
+    // flag and not an inference. `kind` already existed in tiara-data.json on three projects and is
+    // already read by _bootstrap's compliance scanner as `a.kind || 'app'`, which excluded them from
+    // per-app scoring. It was never written or offered anywhere. Backfilling the absence to an
+    // explicit 'app' changes nothing the scanner does and turns "nobody said" into "somebody said".
+    // The vocabulary is the scanner's, not this ticket's words: renaming it to product/infra would
+    // have to change compliance.mjs and renderCompliance too. (#93)
+    a.kind = (a.kind==='infrastructure') ? 'infrastructure' : 'app';
   });
 }
 function migrate(){ normaliseApps(); ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>{ if(!q.id) q.id=nextId(a); if(!q.status) q.status=q.done?'done':'todo'; q.done=(q.status==='done'); if(q.type==null) q.type=''; if(q.priority==null) q.priority=''; if(!Array.isArray(q.notes)) q.notes=[]; }); }); }
@@ -2368,12 +2376,23 @@ function setRepo(id){
   touch();
   setStatus(a.repo.startsWith('(')?(a.name+' disconnected from GitHub'):('connected '+a.name+' → '+a.repo));
 }
+// The one control that decides which kind an existing project is. Named the same way the scanner
+// names it, and worded on screen in the words the board uses. (#93)
+function setKind(id){
+  const a=app(id); if(!a) return;
+  const to = (a.kind==='infrastructure') ? 'app' : 'infrastructure';
+  a.kind=to; touch();
+  setStatus('“'+a.name+'” is '+(to==='infrastructure'?'infrastructure':'a product')+' now');
+}
 function addApp(){
   const n=prompt('New app name?'); if(!n)return;
   const e=prompt('An emoji for it?','🫧')||'🫧';
   const p=(prompt('Short tag prefix for its items? (e.g. RB)', n.replace(/[^A-Za-z]/g,'').slice(0,4).toUpperCase())||'ITEM').toUpperCase().replace(/[^A-Z0-9]/g,'');
   const repo=(prompt('Its GitHub repo as owner/name (or leave blank to add later):', (GH.owner||'')+'/'+n.replace(/\s+/g,''))||'').trim()||'(new)';
-  const a={id:n.toLowerCase().replace(/\s+/g,''),prefix:p,name:n,emoji:e,color:'sky',repo:repo,status:'Stage 0 · factory'};   // D39/D41/D44/D46: metadata only
+  // Asked here rather than defaulted, because the two follow different rules and infrastructure is
+  // excluded from per-app compliance scoring. Cancel is the common answer, so it is the product one.
+  const infra=confirm('Is “'+n+'” infrastructure rather than a product?\n\nOK = infrastructure (the factory, the gate, Tiara itself)\nCancel = product (an app that ships)');
+  const a={id:n.toLowerCase().replace(/\s+/g,''),prefix:p,name:n,emoji:e,color:'sky',repo:repo,status:'Stage 0 · factory',kind:infra?'infrastructure':'app'};   // D39/D41/D44/D46: metadata only
   data.apps.push(a);
   ensurePrefixes();
   const seed=confirm('Seed its queue with the factory checklist from the runbook?\n\n(install → run factory → Xcode project → canary → SPEC + roadmap → design system + icon → first slice - each step personalized with this app’s name)');
@@ -2963,6 +2982,7 @@ function render(){
         {label:'Rename project…',do:`renameApp('${a.id}')`},
         {label:'Set the GitHub repo…',do:`setRepo('${a.id}')`},
         {label:a.bundleId?'TestFlight badge: change or turn off…':'TestFlight badge: pick the app…',do:`tfToggle('${a.id}')`},
+        {label:a.kind==='infrastructure'?'This is infrastructure · mark as a product':'This is a product · mark as infrastructure',do:`setKind('${a.id}')`},
         '-',
         {label:'Move up',do:`moveApp('${a.id}',-1)`},
         {label:'Move down',do:`moveApp('${a.id}',1)`},
@@ -3014,7 +3034,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v90';
+const TIARA_VERSION = 'board-v91';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
