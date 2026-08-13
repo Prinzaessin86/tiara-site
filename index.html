@@ -225,7 +225,11 @@
   .notes{margin-bottom:var(--sp-8px);display:flex;flex-direction:column;gap:var(--sp-40);}
   .note{font-size:var(--t-md);line-height:1.45;background:var(--card);border:1.5px solid var(--c-eeddf7);border-radius:var(--r-md);padding:var(--sp-50) var(--sp-70);}
   .note b{color:var(--purple);}
-  .nby{font-family:'Baloo 2';font-weight:700;font-size:var(--t-sm);color:var(--brand);margin-bottom:var(--sp-30);}
+  .nby{font-family:'Baloo 2';font-weight:700;font-size:var(--t-sm);color:var(--brand);margin-bottom:var(--sp-30);display:flex;align-items:baseline;gap:var(--sp-45);flex-wrap:wrap;}
+  /* A date, everywhere one appears: a note's byline, a panel header, a ticket page header. One
+     class so the three surfaces cannot drift apart, and --ink-3 rather than a bright, because a
+     timestamp is text and has to pass the squint test (AD-0001 decision 1c). */
+  .when{font-family:ui-monospace,Menlo,monospace;font-weight:400;font-size:var(--t-xs);color:var(--ink-3);white-space:nowrap;}
   /* the issue body, one block per `### Label` section the forms write */
   .bwrap{margin-bottom:var(--sp-10px);display:flex;flex-direction:column;gap:var(--sp-7px);}
   .bsec{background:var(--card);border:1.5px solid var(--c-eeddf7);border-radius:var(--r-md);padding:var(--sp-8px) var(--sp-11px);}
@@ -1091,7 +1095,7 @@ async function loadBoardItems(a){
       pageInfo{ hasNextPage endCursor }
       nodes{
       id
-      content{ ... on Issue { number title body state url comments{ totalCount } labels(first:20){ nodes{ name } } } }
+      content{ ... on Issue { number title body state url createdAt comments{ totalCount } labels(first:20){ nodes{ name } } } }
       lane: fieldValueByName(name:"Lane"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
       priority: fieldValueByName(name:"Priority"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
       type: fieldValueByName(name:"Type"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
@@ -1118,6 +1122,9 @@ async function loadBoardItems(a){
     const status = (c.state==='CLOSED') ? 'done' : (LANE2STATUS[lane.toLowerCase()] || 'todo');
     return { id: px+'#'+c.number, _lid:lid, issueNumber:c.number, itemId:n.id, url:c.url,
       title:c.title, body:c.body||'', status, done:(status==='done'),
+      // When the ticket was filed. Nothing in this file asked GitHub for it until #91, so "newest
+      // first" sorted by issue number as a stand-in and no surface said when anything happened.
+      created:c.createdAt||'',
       // An absent Priority stays absent. It used to become 'Med' here and again in migrate(), so
       // the row showed a priority nobody had set and nothing could find the untriaged. Type's
       // empty state was preserved a line below all along. (#83)
@@ -1148,12 +1155,16 @@ async function bComment(a,q,text){ const or=appOwnerRepo(a); const r=await ghApi
 // The prefix match survives only for comments written before the App existed, which would
 // otherwise all become 👑 You retroactively.
 const NOTE_PREFIX=/^\s*(🤖\s*claude|🎀\s*claude code|👑\s*you)\s*:?\s*/i;
+// `cid` and `raw` are kept for #92: an edit writes the WHOLE comment back, and `text` has had
+// NOTE_PREFIX stripped off it, so writing `text` would silently delete the "👑 you:" the page put
+// there. `at` is when it was posted (#91). Everything else in the response is still discarded.
 async function bLoadNotes(a,q){ const or=appOwnerRepo(a); const r=await ghApi('/repos/'+or+'/issues/'+q.issueNumber+'/comments'); if(!r.ok) return;
   const cs=await r.json(); q.notes=(cs||[]).map(c=>{
     const bot=!!(c.user&&(c.user.type==='Bot'||/\[bot\]$/.test(c.user.login||'')));
     const m=(c.body||'').match(NOTE_PREFIX);
     const legacy=!!(m&&/claude/i.test(m[1]));
-    return { by:(bot||legacy)?'claude':'you', text:(c.body||'').replace(NOTE_PREFIX,'') }; }); q._notesLoaded=true; }
+    return { by:(bot||legacy)?'claude':'you', text:(c.body||'').replace(NOTE_PREFIX,''),
+             cid:c.id, raw:(c.body||''), at:c.created_at||'' }; }); q._notesLoaded=true; }
 async function bAddItem(a,title,type,body,prio){
   const or=appOwnerRepo(a);
   // The body is the ticket. A title-only issue carries no Acceptance, so it can never be
@@ -1335,6 +1346,37 @@ async function connectGitHub(){
 }
 const $ = s => document.querySelector(s);
 const esc = s => (s+'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// When a thing happened, in words (#91). The DATE AND TIME is the text, because that is what the
+// ticket asked for and because "3 days ago" is unusable for tracing: it changes every time you look
+// and two things a minute apart read identically. The age is the hover, where it is a convenience
+// rather than the record.
+//
+// Total. An unparseable or absent value returns empty strings and every caller renders nothing,
+// because render() must never throw and a bad timestamp is not worth blanking the board for.
+function fmtWhen(iso){
+  const none={abs:'',rel:''};
+  try{
+    if(!iso) return none;
+    const d=new Date(iso); const t=d.getTime();
+    if(!isFinite(t)) return none;
+    const abs=d.toLocaleString(undefined,{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const secs=Math.round((Date.now()-t)/1000);
+    const rel = secs<0            ? 'in the future, which means a clock is wrong'
+              : secs<90           ? 'just now'
+              : secs<5400         ? Math.round(secs/60)+' minutes ago'
+              : secs<172800       ? Math.round(secs/3600)+' hours ago'
+              : secs<5184000      ? Math.round(secs/86400)+' days ago'
+              : secs<63072000     ? Math.round(secs/2592000)+' months ago'
+              :                     Math.round(secs/31536000)+' years ago';
+    return {abs, rel};
+  }catch(e){ noted('formatting a timestamp',e); return none; }
+}
+// The one span every timestamp renders as, so a date looks the same on a note, a panel header and a
+// ticket page. `pre` is the word in front of it ("filed", "") and is part of the visible text.
+function whenHtml(iso,pre,cls){
+  const w=fmtWhen(iso); if(!w.abs) return '';
+  return '<span class="when'+(cls?' '+cls:'')+'" title="'+esc(w.rel)+'">'+(pre?esc(pre)+' ':'')+esc(w.abs)+'</span>';
+}
 // ---------------------------------------------------------------------------------------------
 // noted(): a failure is never simply thrown away. `try{...}catch(e){}` discards the error, so a
 // failure and a success look identical from the outside. That is what let a board save fail while
@@ -1594,8 +1636,16 @@ function fSort(v,rows){
   const prank={high:0,med:1,medium:1,low:2,'':3};
   const c=[...rows];
   if(s==='prio') c.sort((x,y)=>(prank[x.q.priority]??3)-(prank[y.q.priority]??3));
-  if(s==='newest') c.sort((x,y)=>(y.q.issueNumber||0)-(x.q.issueNumber||0));
-  if(s==='oldest') c.sort((x,y)=>(x.q.issueNumber||0)-(y.q.issueNumber||0));
+  // Filed date, now that the page asks GitHub for it (#91). It used to sort by issue number, which
+  // is a proxy that is right for one repo and wrong for Task queue, where thirteen repos' numbering
+  // is interleaved: PACK#3 filed today sorted below TIA#90 filed today. Number stays as the
+  // fallback for a local item that has no createdAt.
+  const when=q=>{ const t=q.created?Date.parse(q.created):NaN; return isFinite(t)?t:null; };
+  const cmp=(x,y)=>{ const a=when(x.q), b=when(y.q);
+    if(a!==null&&b!==null) return a-b;
+    return (x.q.issueNumber||0)-(y.q.issueNumber||0); };
+  if(s==='newest') c.sort((x,y)=>cmp(y,x));
+  if(s==='oldest') c.sort(cmp);
   if(s==='title') c.sort((x,y)=>(x.q.title||'').localeCompare(y.q.title||''));
   return c;
 }
@@ -1703,7 +1753,7 @@ function renderIssue(){
         ${q.url?`<a class="ghlink" href="${q.url}" target="_blank">#${q.issueNumber} on GitHub ↗</a>`:''}</div>
       <div class="ipt">${esc(q.title||'')}</div>
       <div class="ipmeta"><span class="ipid">${esc(q.id)}</span>${chipSel(a.id,i,'status')}${prioDot(a.id,i)}${typeChip(a.id,i)}
-        <span class="ipid">${sm.e} ${esc(sm.t)}</span></div>
+        <span class="ipid">${sm.e} ${esc(sm.t)}</span>${whenHtml(q.created,'filed')}</div>
     </div>
     <div class="ipsec">Description</div>
     <div class="ipbody">${bodyHtml(q)}</div>
@@ -2472,7 +2522,8 @@ function mdHtml(src){
 // One comment, with its author on its own line. The author used to be a bold prefix glued to the
 // first word of the text, which cannot work once the text starts with its own heading or list.
 function noteHtml(n,cls){
-  return '<div class="'+cls+'"><div class="nby">'+(n.by==='claude'?'🎀 Claude Code':'👑 You')+'</div>'
+  return '<div class="'+cls+'"><div class="nby">'+(n.by==='claude'?'🎀 Claude Code':'👑 You')
+    + whenHtml(n.at,'')+'</div>'
     + '<div class="md">'+(mdHtml(n.text)||'<p class="muted">empty</p>')+'</div></div>';
 }
 // The issue body, split back into the `### Label` sections the forms write. Shown read-only:
@@ -2547,7 +2598,7 @@ function detailHtml(a,q,i,scope){ scope=scope||'';
     ? `<div class="dsec"><div class="dlab">Notes · ${notes.length}</div>${noteHtml(newest,'note')}</div>`
     : `<div class="dsec"><div class="dlab">Notes</div><div class="muted">no notes yet</div></div>`;
   return `<div class="detail">`
-    + `<div class="dhead"><span class="did">${esc(q.id)}</span><span class="dtitle">${esc(q.title||'')}</span>${full}</div>`
+    + `<div class="dhead"><span class="did">${esc(q.id)}</span><span class="dtitle">${esc(q.title||'')}</span>${whenHtml(q.created,'filed')}${full}</div>`
     + body + note
     + (bits.length?`<div class="dmore">${bits.join(' and ')} on the ${full}</div>`:'')
     + `<div class="addbox"><input id="note-${scope}${a.id}-${i}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${a.id}',${i},'${scope}')"><button onclick="addNote('${a.id}',${i},'${scope}')">note</button></div>`
@@ -2963,7 +3014,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v89';
+const TIARA_VERSION = 'board-v90';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
