@@ -857,6 +857,10 @@
        -webkit-background-clip:text;background-clip:text;color:transparent;}
   .pgnote{font-size:var(--t-xs);color:var(--ink-2);font-weight:700;}
   .pgcards{display:flex;flex-direction:column;gap:var(--sp-12px);}
+  /* Out of scope reads as out of scope: quieter, and it says so in words rather than only by
+     being paler, so it survives a squint and a screenshot. (#64) */
+  .pg-excluded{border-color:var(--line2);background:var(--c-f4f0f8);}
+  .pg-excluded .pgcards{opacity:.72;}
   /* The card's own disclosure says, in words, which way it will go. It is a <span> and not a
      button because the whole <summary> is already the control - <details> gives keyboard support,
      Escape and correct semantics for free, and the brief says not to reinvent that. The word is
@@ -1207,7 +1211,7 @@ const _tfstatus = {};                // bundleId -> live TestFlight build {name,
 const _icon = {};                    // appId -> data URL of the app's AppIcon (falls back to the emoji)
 // pull each app's AppIcon PNG from its repo, so cards show the real icon instead of an emoji
 async function discoverIcons(){
-  for(const a of data.apps){ const or=appOwnerRepo(a); if(!or||_icon[a.id]) continue;
+  for(const a of data.apps){ const or=appOwnerRepo(a); if(!or||a.excluded||_icon[a.id]) continue;
     try{
       const tr=await ghApi('/repos/'+or+'/git/trees/HEAD?recursive=1'); if(!tr.ok) continue;
       const tree=((await tr.json()).tree||[]).filter(t=>t.path&&/AppIcon[^/]*\.appiconset\/.+\.png$/i.test(t.path));
@@ -1240,7 +1244,7 @@ async function loadTFStatus(){
 function tfLive(a){ const b=a&&a.bundleId; return (b && _tfstatus[b]) ? _tfstatus[b] : null; }
 // auto-discovery: any app whose repo has a linked board (Lane field) becomes a board app; also pull each app's current version
 async function discoverBoards(){
-  for(const a of data.apps){ const or=appOwnerRepo(a); if(!or) continue;
+  for(const a of data.apps){ const or=appOwnerRepo(a); if(!or||a.excluded) continue;
     const owner=or.split('/')[0], repo=or.split('/')[1]; if(!owner||!repo) continue;
     try{ const d=await ghGraphQL(`query($o:String!,$r:String!){ repository(owner:$o,name:$r){
         pyml: object(expression:"HEAD:project.yml"){ ... on Blob{ text } }
@@ -1412,7 +1416,7 @@ let _loadFailures = [];
 let _loadedOnce = false;      // has a read ever completed? "no apps yet" and "no apps" differ.
 async function loadBoardApps(){
   const failed=[];
-  for(const a of data.apps){ if(boardFor(a)){
+  for(const a of data.apps){ if(boardFor(a) && !a.excluded){
     try{ await loadBoardItems(a); a._loadFailed=null; }
     catch(e){ const m=((e&&e.message)?e.message:String(e)); failed.push(a.name+': '+m);
       a._loadFailed=m; noted('board '+a.name,e,'tell'); }
@@ -1560,7 +1564,7 @@ async function loadFromGitHub(){
   // exactly one place, inside pollBoards, so the two paths a human triggers were invisible to it.
   // Recorded here too, and honest about the failures loadBoardApps just collected. (#107)
   _loadedOnce = true;
-  const boardCount = data.apps.filter(a=>boardFor(a)).length;
+  const boardCount = data.apps.filter(a=>boardFor(a) && !a.excluded).length;
   lastPoll = { at:new Date(), ok:Math.max(0, boardCount-_loadFailures.length),
                failed:_loadFailures.length, scope:'every board' };
   renderFreshness();
@@ -1604,7 +1608,7 @@ async function pollBoards(){
   try{
     const now=Date.now();
     const full=(now-lastFullPoll)>=3600000;
-    const targets=data.apps.filter(a=>boardFor(a) && (full || openState.has('app:'+a.id)));
+    const targets=data.apps.filter(a=>boardFor(a) && !a.excluded && (full || openState.has('app:'+a.id)));
     if(targets.length){
       let ok=0; const failed=[];
       for(const a of targets){
@@ -1781,7 +1785,7 @@ const TABS=['board','portfolio','runbook','compliance','knowledge'];
    project keeps each project's half-written ticket and a background poll cannot eat what you are
    typing. */
 let _niApp = null;
-function niAppList(){ return data.apps.filter(a=>boardFor(a)); }
+function niAppList(){ return data.apps.filter(a=>boardFor(a) && !a.excluded); }
 function openNewIssue(appId, opts){
   opts=opts||{};
   rememberScroll(); captureOpen();
@@ -2644,6 +2648,12 @@ function normaliseApps(){
     // The vocabulary is the scanner's, not this ticket's words: renaming it to product/infra would
     // have to change compliance.mjs and renderCompliance too. (#93)
     a.kind = (a.kind==='infrastructure') ? 'infrastructure' : 'app';
+    // Out of scope, permanently and on purpose. A repo can exist on GitHub and still not be part
+    // of the portfolio - an experiment, a fork, something archived - and until now that was a
+    // conversation you had to have again every time somebody looked. It is a flag now, kept in
+    // tiara-data.json beside `kind`, which is already the registry every other tool reads.
+    // Boolean, and always present, so "nobody said" and "somebody said no" stop looking alike. (#64)
+    a.excluded = (a.excluded===true);
   });
 }
 function migrate(){ normaliseApps(); ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>{ if(!q.id) q.id=nextId(a); if(!q.status) q.status=q.done?'done':'todo'; q.done=(q.status==='done'); if(q.type==null) q.type=''; if(q.priority==null) q.priority=''; if(!Array.isArray(q.notes)) q.notes=[]; }); }); }
@@ -2946,6 +2956,15 @@ function setRepo(id){
 }
 // The one control that decides which kind an existing project is. Named the same way the scanner
 // names it, and worded on screen in the words the board uses. (#93)
+// Excluded is a statement, not a hiding place: the project stays on the board, greyed and labelled,
+// so it is obvious that something was decided rather than forgotten. Every count that describes the
+// portfolio skips it. (#64)
+function setExcluded(id){
+  const a=app(id); if(!a) return;
+  if(!a.excluded && !confirm('Exclude “'+a.name+'” from the portfolio?\n\nIt stays on the board, marked as out of scope, and stops counting towards portfolio totals and compliance. Nothing on GitHub changes.')) return;
+  a.excluded=!a.excluded; touch();
+  setStatus(a.excluded ? ('“'+a.name+'” is out of scope now') : ('“'+a.name+'” is back in the portfolio'));
+}
 function setKind(id){
   const a=app(id); if(!a) return;
   const to = (a.kind==='infrastructure') ? 'app' : 'infrastructure';
@@ -3492,7 +3511,9 @@ function renderPortfolio(){
   }
   const auto = portfolioSort!=='manual';
   const all=[];
-  data.apps.forEach(a=>{ (a.queue||[]).forEach((q,i)=>{ if(itemStatus(q)!=='done') all.push({a,q,i}); }); });
+  // Task queue is "everything outstanding across the portfolio", so an excluded project's items
+  // are not in it. Its own project page still shows them: excluded means out of scope, not hidden. (#64)
+  data.apps.forEach(a=>{ if(a.excluded) return; (a.queue||[]).forEach((q,i)=>{ if(itemStatus(q)!=='done') all.push({a,q,i}); }); });
   if(auto){ const prank={high:0,med:1,medium:1,low:2,'':3};
     all.sort((x,y)=>(prank[x.q.priority]??1)-(prank[y.q.priority]??1) || (x.a.name||'').localeCompare(y.a.name||'')); }
   // manual: leave rows in project order (data.apps) + queue order exactly as you arranged them
@@ -3701,6 +3722,7 @@ function render(){
         {label:'Set the GitHub repo…',do:`setRepo('${escArg(a.id)}')`},
         {label:a.bundleId?'TestFlight badge: change or turn off…':'TestFlight badge: pick the app…',do:`tfToggle('${escArg(a.id)}')`},
         {label:a.kind==='infrastructure'?'This is infrastructure · mark as a product':'This is a product · mark as infrastructure',do:`setKind('${escArg(a.id)}')`},
+        {label:a.excluded?'Excluded from the portfolio · put it back':'Exclude from the portfolio…',do:`setExcluded('${escArg(a.id)}')`},
         '-',
         {label:'Move up',do:`moveApp('${escArg(a.id)}',-1)`},
         {label:'Move down',do:`moveApp('${escArg(a.id)}',1)`},
@@ -3722,17 +3744,22 @@ function render(){
     { kind:'app', label:'Apps',
       note:n=>n+' product'+(n===1?'':'s')+', each with its own GitHub board' },
     { kind:'infrastructure', label:'Infrastructure',
-      note:n=>n+' repo'+(n===1?' that builds':'s that build')+' the others. Not products, and not scored like one. Use More actions on any card to move one here.' }
+      note:n=>n+' repo'+(n===1?' that builds':'s that build')+' the others. Not products, and not scored like one. Use More actions on any card to move one here.' },
+    // Out of scope, and visible. Hiding them would make "excluded" and "forgotten" look the same,
+    // which is the thing #64 is tired of re-litigating. (#64)
+    { kind:'excluded', label:'Out of scope',
+      note:n=>n+' repo'+(n===1?'':'s')+' deliberately not part of the portfolio. They still exist on GitHub; they do not count towards anything here, and they are not scanned. Use More actions to put one back.' }
   ];
   const b = GROUPS.map(g=>{
-    const idx=data.apps.map((a,k)=>k).filter(k=>(data.apps[k].kind==='infrastructure'?'infrastructure':'app')===g.kind);
+    const roleOf=a=>a.excluded ? 'excluded' : (a.kind==='infrastructure'?'infrastructure':'app');
+    const idx=data.apps.map((a,k)=>k).filter(k=>roleOf(data.apps[k])===g.kind);
     if(!idx.length) return '';
     return `<section class="pgroup pg-${g.kind}">`
       + `<div class="pghead"><h2 class="pgname">${g.label}</h2><span class="pgnote">${esc(g.note(idx.length))}</span></div>`
       + `<div class="pgcards">${idx.map(k=>cardHtml[k]).join('')}</div></section>`;
   }).join('');
   // Portfolio is the main tab and was the one surface with no way to narrow anything at all.
-  const bdRows=[]; data.apps.forEach(a=>(a.queue||[]).forEach(q=>{ if(itemStatus(q)!=='done') bdRows.push({a,q}); }));
+  const bdRows=[]; data.apps.forEach(a=>{ if(a.excluded) return; (a.queue||[]).forEach(q=>{ if(itemStatus(q)!=='done') bdRows.push({a,q}); }); });
   const bdShown=bdRows.filter(r=>fMatch(_bdView,r)).length;
   const bdBar=filterBar('bd', bdRows, {shown:bdShown, apps:true, sort:false, placeholder:'search every card…'});
   $('#board').innerHTML = ((_loading || !_loadedOnce) && !data.apps.length)
@@ -3768,7 +3795,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v107';
+const TIARA_VERSION = 'board-v108';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
