@@ -833,6 +833,26 @@
   .pgn.on{border-color:transparent;background:linear-gradient(90deg,var(--c-ffd9ee),var(--c-e6dbff));color:var(--c-7a4a9e);}
   .pgn:focus-visible{outline:2px solid var(--purple);outline-offset:2px;}
 
+  /* ---- Portfolio, apps apart from infrastructure (#95) ---------------------------------------
+     Two labelled groups rather than one undifferentiated list. The label says what the group is
+     and the note says what that means, because "Infrastructure" on its own is a word, not an
+     explanation. A group with nothing in it is not drawn at all. */
+  .pgroup{border:1.5px solid var(--line2);border-radius:var(--r-18);background:var(--c-fdfaff);
+       padding:var(--sp-12px);margin-bottom:var(--sp-14px);}
+  .pg-infrastructure{border-color:var(--c-e3cdf3);background:var(--c-fbf5ff);}
+  .pghead{display:flex;align-items:baseline;gap:var(--sp-10px);flex-wrap:wrap;padding:0 var(--sp-2px) var(--sp-8px);}
+  .pgname{margin:0;font-family:'Baloo 2';font-weight:800;font-size:var(--t-lg);text-transform:uppercase;
+       letter-spacing:.06em;background:linear-gradient(90deg,var(--pink),var(--purple));
+       -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .pgnote{font-size:var(--t-xs);color:var(--ink-2);font-weight:700;}
+  .pgcards{display:flex;flex-direction:column;gap:var(--sp-12px);}
+  /* The card's own disclosure says, in words, which way it will go. It is a <span> and not a
+     button because the whole <summary> is already the control - <details> gives keyboard support,
+     Escape and correct semantics for free, and the brief says not to reinvent that. The word is
+     the label the disclosure never had. */
+  .cardtog{pointer-events:none;}
+  details.app>summary .ibtn{flex-shrink:0;}
+
   /* A phone. The page had no media query at all until board-v65, so every size was a clamp on the
      viewport that scaled type and never changed a layout. These only ever make things bigger or
      let them wrap; no desktop size changes. */
@@ -3510,7 +3530,7 @@ function render(){
   // The ticket page is its own node outside the tab panes, so a board redraw does not reach it.
   // Without this, changing a chip from the ticket page leaves the page showing the old value.
   renderIssue();
-  const b = data.apps.map((a,ai)=>{
+  const cardHtml = data.apps.map((a,ai)=>{
     const open = a.queue.filter(q=>q.status!=='done').length, dn = a.queue.filter(q=>q.status==='done').length;
     const next = a.queue.find(q=>q.status!=='done' && q.status!=='blocked' && q.status!=='verify');
     const rowHtml=(q,i)=>boardRowHtml(a,q,i);
@@ -3529,7 +3549,10 @@ function render(){
       : (fActive(_bdView)&&matched!==open ? `<div class="capline">showing <b>${matched}</b> of ${open} open · the rest do not match the filter</div>` : '');
     const doneFold = doneRows ? `<details class="donefold" data-key="done:${a.id}" ${openState.has('done:'+a.id)?'open':''}><summary>✅ Done · ${dn}</summary>${doneRows}</details>` : '';
     return `<details class="app" data-key="app:${a.id}" ${openState.has('app:'+a.id)?'open':''}>
-      <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><a class="nm nmlink" href="#" onclick="event.stopPropagation();event.preventDefault();openProject('${a.id}')" title="open ${esc(a.name)}'s own page">${esc(a.name)}</a>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span>${kebab('app:'+a.id,[
+      <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><a class="nm nmlink" href="#" onclick="event.stopPropagation();event.preventDefault();openProject('${a.id}')" title="open ${esc(a.name)}'s own page">${esc(a.name)}</a>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span>`
+      + `<button class="ibtn" onclick="event.stopPropagation();event.preventDefault();openProject('${a.id}')">Open project page</button>`
+      + `<span class="ibtn cardtog" aria-hidden="true">${openState.has('app:'+a.id)?'Hide the queue':('Show the queue ('+open+')')}</span>`
+      + `${kebab('app:'+a.id,[
         {label:'Rename project…',do:`renameApp('${a.id}')`},
         {label:'Set the GitHub repo…',do:`setRepo('${a.id}')`},
         {label:a.bundleId?'TestFlight badge: change or turn off…':'TestFlight badge: pick the app…',do:`tfToggle('${a.id}')`},
@@ -3547,6 +3570,22 @@ function render(){
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}</summary><div class="laneb">${doneRows}</div></details>`:''}
         <div class="scnote">repo: ${esc(a.repo)}</div>
       </div></details>`;
+  });
+  // Products and infrastructure follow different rules, so Portfolio shows them apart (#95). The
+  // flag is `kind`, set in board-v91 and until now written and never read here. A group that has no
+  // projects in it is not drawn, so a board with only apps looks exactly as it did.
+  const GROUPS=[
+    { kind:'app', label:'Apps',
+      note:n=>n+' product'+(n===1?'':'s')+', each with its own GitHub board' },
+    { kind:'infrastructure', label:'Infrastructure',
+      note:n=>n+' repo'+(n===1?' that builds':'s that build')+' the others. Not products, and not scored like one. Use More actions on any card to move one here.' }
+  ];
+  const b = GROUPS.map(g=>{
+    const idx=data.apps.map((a,k)=>k).filter(k=>(data.apps[k].kind==='infrastructure'?'infrastructure':'app')===g.kind);
+    if(!idx.length) return '';
+    return `<section class="pgroup pg-${g.kind}">`
+      + `<div class="pghead"><h2 class="pgname">${g.label}</h2><span class="pgnote">${esc(g.note(idx.length))}</span></div>`
+      + `<div class="pgcards">${idx.map(k=>cardHtml[k]).join('')}</div></section>`;
   }).join('');
   // Portfolio is the main tab and was the one surface with no way to narrow anything at all.
   const bdRows=[]; data.apps.forEach(a=>(a.queue||[]).forEach(q=>{ if(itemStatus(q)!=='done') bdRows.push({a,q}); }));
@@ -3585,7 +3624,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v96';
+const TIARA_VERSION = 'board-v97';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
