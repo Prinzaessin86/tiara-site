@@ -777,6 +777,45 @@
   .ibtn:focus-visible{outline:2px solid var(--purple);outline-offset:2px;}
   .ibtn.on{border-color:transparent;background:linear-gradient(90deg,var(--c-ffd9ee),var(--c-e6dbff));color:var(--c-7a4a9e);}
 
+  /* ---- jump to an item (#95) ----------------------------------------------------------------
+     One box, on every surface, that takes an issue number the way you actually think of one. */
+  .jumpwrap{position:relative;flex:1 1 22rem;min-width:14rem;}
+  #jump{width:100%;min-height:2.25rem;border:1.5px solid var(--c-b09bc9);border-radius:var(--r-pill);
+       background:var(--card);padding:0 var(--sp-16px) 0 var(--sp-30px);font-family:'Quicksand';
+       font-size:var(--t-sm);font-weight:600;color:var(--ink-1);outline:none;}
+  #jump:focus{border-color:var(--purple);box-shadow:0 0 0 3px var(--c-f6f0ff);}
+  .jumpicon{position:absolute;left:var(--sp-13px);top:50%;transform:translateY(-50%);
+       font-size:var(--t-md);color:var(--c-b09bc9);font-weight:800;pointer-events:none;}
+  .jumpres{position:absolute;left:0;right:0;top:calc(100% + var(--sp-6px));z-index:60;background:var(--card);
+       border:1.5px solid var(--c-e3cdf3);border-radius:var(--r-14);box-shadow:0 10px 28px rgba(155,93,229,.20);
+       padding:var(--sp-6px);display:flex;flex-direction:column;gap:var(--sp-2px);max-height:24rem;overflow:auto;}
+  .jumphint{font-size:var(--t-xs);font-weight:700;color:var(--ink-3);padding:var(--sp-6px) var(--sp-10px) var(--sp-4px);}
+  .jumpres button{display:flex;align-items:center;gap:var(--sp-10px);text-align:left;border:none;
+       background:none;border-radius:var(--r-10);padding:var(--sp-9px) var(--sp-10px);cursor:pointer;
+       min-height:2.25rem;font-family:'Quicksand';width:100%;}
+  .jumpres button:hover,.jumpres button.sel{background:var(--c-faf6ff);}
+  .jumpres button:focus-visible{outline:2px solid var(--purple);outline-offset:-2px;}
+  .jumpres .jid{font-size:var(--t-xs);font-weight:800;color:var(--card);background:var(--purple);
+       padding:var(--sp-2px) var(--sp-7px);border-radius:var(--r-6);white-space:nowrap;flex-shrink:0;}
+  .jumpres .jt{flex:1;font-size:var(--t-sm);font-weight:600;color:var(--ink-1);min-width:0;
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .jumpres .japp{font-size:var(--t-xs);font-weight:700;color:var(--ink-3);white-space:nowrap;flex-shrink:0;}
+  .jumpnone{font-size:var(--t-xs);color:var(--ink-2);font-weight:600;padding:var(--sp-10px);line-height:1.5;}
+
+  /* A real empty state, not the word "nothing". It says what was searched, offers the match that
+     is one project away, and gives you the way out. (#95) */
+  .pjempty{border:1.5px dashed var(--c-e3cdf3);border-radius:var(--r-14);background:var(--c-faf6ff);
+       padding:var(--sp-18px) var(--sp-20px);display:flex;flex-direction:column;gap:var(--sp-10px);
+       align-items:flex-start;font-size:var(--t-sm);color:var(--ink-2);}
+  .pjempty b{font-family:'Baloo 2';font-weight:700;font-size:var(--t-lg);color:var(--ink-1);}
+  .pjelse{display:flex;flex-direction:column;gap:var(--sp-6px);align-items:flex-start;}
+  .pjelselab{font-size:var(--t-xs);font-weight:700;color:var(--ink-3);}
+  .linkbtn{border:none;background:none;color:var(--brand);font-family:'Quicksand';font-weight:800;
+       font-size:var(--t-xs);cursor:pointer;text-decoration:underline;text-underline-offset:2px;
+       padding:var(--sp-4px) 0;min-height:2.25rem;}
+  .linkbtn:hover{color:var(--pink);}
+  .linkbtn:focus-visible{outline:2px solid var(--purple);outline-offset:2px;border-radius:var(--r-4);}
+
   /* A phone. The page had no media query at all until board-v65, so every size was a clamp on the
      viewport that scaled type and never changed a layout. These only ever make things bigger or
      let them wrap; no desktop size changes. */
@@ -815,6 +854,16 @@
   </header>
 
   <div class="bar">
+    <!-- Jump to an item, from anywhere (#95). "in a project I want to just type an issue number and
+         find it" was the ask; this takes a bare number, a PREFIX#n id, or words from a title, across
+         every board, and goes straight to the ticket's own page. -->
+    <div class="jumpwrap">
+      <input id="jump" type="search" autocomplete="off" placeholder="Jump to an item: 212, TIA#88, or words from a title"
+             aria-label="jump to an item" aria-controls="jumpres" aria-expanded="false"
+             oninput="onJump()" onfocus="onJump()" onkeydown="jumpKey(event)">
+      <span class="jumpicon" aria-hidden="true">⌕</span>
+      <div id="jumpres" class="jumpres" role="listbox" aria-label="matching items" style="display:none"></div>
+    </div>
     <button class="tb primary" onclick="openNewIssue()" title="open an issue on any board, on its own page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add issue</button>
     <span id="status">connecting…</span>
     <!-- The freshness strip IS the refresh button. It was an indicator whose only remedy lived two
@@ -2007,6 +2056,23 @@ async function loadCommits(id){
 // A project page row. Every row on the page is now the same row (#95); this one is compact,
 // because the project is already named by the page it is on.
 function pjRowHtml(a,x,qi){ return itemRow(a,x,qi,'j',{compact:true}); }
+// "Nothing matches" is a dead end when the thing you are looking for is one project away. If the
+// query finds nothing here but does find something elsewhere, say so and offer the way there (#95).
+// This is the same search the jump box runs, scoped differently, so the two cannot disagree.
+function pjEmptyHtml(a){
+  const q=(_pjView.q||'').trim();
+  if(!q) return '<div class="pjempty"><b>This project has nothing open.</b></div>';
+  const elsewhere=jumpMatches(q).filter(h=>h.a.id!==a.id).slice(0,4);
+  let h=`<div class="pjempty"><b>Nothing in ${esc(a.name)} matches “${esc(q)}”.</b>`;
+  if(elsewhere.length){
+    h+=`<div class="pjelse"><span class="pjelselab">Found in another project:</span>`
+      + elsewhere.map(e=>`<button class="ibtn" onclick="jumpGo('${esc(e.a.id)}','${esc(e.q.id)}')">`
+          + `${esc(e.q.id||'')} in ${esc(e.a.name)} · ${esc((e.q.title||'').slice(0,60))}</button>`).join('')
+      + `</div>`;
+  }
+  h+=`<button class="linkbtn" onclick="fSetQ('pj','')">Clear the search</button></div>`;
+  return h;
+}
 function renderProject(id){
   const a=app(id); const p=$('#project'); if(!a||!p) return;
   const q=a.queue||[];
@@ -2046,7 +2112,7 @@ function renderProject(id){
 
     <div class="pjsec"><h3>Open work \u00b7 ${openQ.length}</h3>
       ${filterBar('pj', rowsAll, {shown:filtered.length, placeholder:'search this project…'})}
-      ${filtered.length?'':'<div class="muted">nothing matches</div>'}
+      ${filtered.length?'':pjEmptyHtml(a)}
       ${page.map(row).join('')}
       ${filtered.length?`<div class="pjpage">
           <span>page ${_pjView.page+1} of ${maxPage+1} · items ${from+1} to ${from+page.length}</span>
@@ -3238,6 +3304,83 @@ function renderPortfolio(){
     + ` · ${auto?'highest priority first':'your project order'}</div>`;
   el.innerHTML = head + toggles + tools + body;
 }
+// ---- jump to an item, from anywhere (#95) ---------------------------------------------------
+// Finding one ticket used to mean picking the right surface first, then filtering it. This asks the
+// question the way it is actually asked: a bare issue number, a PREFIX#n id, or words. It searches
+// every board, so it works the same on a project page as on Portfolio, which is what the ticket
+// note asked for. Read-only and cheap: it walks the queues already in memory, no request.
+let _jumpSel = -1;
+function jumpMatches(raw){
+  const s=(raw||'').trim().toLowerCase(); if(!s) return [];
+  // A bare number, or #212, is an issue number first. That is how a ticket is referred to
+  // everywhere else - in a commit, in the gate, on GitHub - so it wins over a title that
+  // happens to contain the digits.
+  const numM=/^#?(\d+)$/.exec(s); const num=numM?parseInt(numM[1],10):null;
+  const out=[];
+  for(const a of (data.apps||[])) for(let i=0;i<(a.queue||[]).length;i++){
+    const q=a.queue[i]; if(!q) continue;
+    let hit=false;
+    if(num!==null) hit = (q.issueNumber===num) || String(q.id||'').toLowerCase().includes(String(num));
+    else hit = ((q.id||'')+' '+(q.title||'')+' '+(a.name||'')).toLowerCase().includes(s);
+    if(hit) out.push({a,q,i});
+  }
+  // An exact issue-number match first, then open before done, then by id.
+  out.sort((x,y)=>{
+    if(num!==null){ const ex=(x.q.issueNumber===num?0:1)-(y.q.issueNumber===num?0:1); if(ex) return ex; }
+    const d=(itemStatus(x.q)==='done'?1:0)-(itemStatus(y.q)==='done'?1:0); if(d) return d;
+    return String(x.q.id||'').localeCompare(String(y.q.id||''));
+  });
+  return out.slice(0,8);
+}
+function onJump(){
+  const inp=$('#jump'), box=$('#jumpres'); if(!inp||!box) return;
+  const v=inp.value.trim();
+  if(!v){ box.style.display='none'; inp.setAttribute('aria-expanded','false'); return; }
+  const hits=jumpMatches(v); _jumpSel=-1;
+  const isNum=/^#?\d+$/.test(v);
+  let html=`<span class="jumphint">${isNum?('Issue number '+esc(v.replace('#',''))):'Matching items'}</span>`;
+  if(!hits.length){
+    html+=`<div class="jumpnone">Nothing matches. An id looks like <b>TIA#88</b>, and a bare number matches the GitHub issue number. Only items already read from a board can be found here.</div>`;
+  } else {
+    html+=hits.map((h,k)=>{
+      const st=STATUS_META[h.q.status]||STATUS_META.todo;
+      return `<button role="option" data-k="${k}" onclick="jumpGo('${esc(h.a.id)}','${esc(h.q.id)}')">`
+        + `<span class="jid">${esc(h.q.id||'')}</span>`
+        + `<span class="jt">${esc(h.q.title||'')}</span>`
+        + `<span class="japp">${st.e} ${esc(st.t)} · ${esc(h.a.name||'')}</span></button>`;
+    }).join('');
+  }
+  box.innerHTML=html; box.style.display='block'; inp.setAttribute('aria-expanded','true');
+}
+function jumpGo(appId,itemId){
+  const inp=$('#jump'), box=$('#jumpres');
+  if(inp) inp.value=''; if(box) box.style.display='none';
+  if(inp) inp.setAttribute('aria-expanded','false');
+  openIssue(appId,itemId);
+}
+// Arrow keys and Enter, because a list you can only reach with a mouse is not reachable from a
+// keyboard, and nothing else in this file was either until now.
+function jumpKey(e){
+  const box=$('#jumpres'); if(!box||box.style.display==='none'){ if(e.key==='Escape'&&$('#jump')) $('#jump').blur(); return; }
+  const btns=[...box.querySelectorAll('button')];
+  if(e.key==='Escape'){ box.style.display='none'; $('#jump').setAttribute('aria-expanded','false'); return; }
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    e.preventDefault(); if(!btns.length) return;
+    _jumpSel = e.key==='ArrowDown' ? Math.min(_jumpSel+1, btns.length-1) : Math.max(_jumpSel-1, 0);
+    btns.forEach((b,k)=>b.classList.toggle('sel',k===_jumpSel));
+    // Guarded: scrollIntoView is not on every element in every engine, and a keyboard handler that
+    // throws would break arrow-key navigation entirely rather than just failing to scroll.
+    try{ const el=btns[_jumpSel]; if(el && el.scrollIntoView) el.scrollIntoView({block:'nearest'}); }
+    catch(e){ noted('scrolling the jump list',e); }
+    return;
+  }
+  if(e.key==='Enter'){ e.preventDefault(); const pick=btns[_jumpSel>=0?_jumpSel:0]; if(pick) pick.click(); }
+}
+document.addEventListener('click', e=>{
+  const box=$('#jumpres'); if(!box || box.style.display==='none') return;
+  if(e.target.closest && e.target.closest('.jumpwrap')) return;
+  box.style.display='none'; const inp=$('#jump'); if(inp) inp.setAttribute('aria-expanded','false');
+});
 // ---- one row, three surfaces (#95) ---------------------------------------------------------
 // Portfolio, the project page and Task queue drew three different rows with three different
 // control sets, which is the thing AD-0001 set out to fix and then only half fixed. This is the
@@ -3375,7 +3518,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v94';
+const TIARA_VERSION = 'board-v95';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
