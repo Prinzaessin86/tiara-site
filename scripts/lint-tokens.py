@@ -72,10 +72,44 @@ for mo in re.finditer(r'style\s*=\s*(?:"([^"]*)"|\'([^\']*)\'|`([^`]*)`)', rest)
     for hit in re.finditer(r'border-radius:\s*(' + LEN + ')', val):
         fail(mo.start(), 'raw border-radius ' + hit.group(1) + ' in a style attribute', 'use var(--r-…)')
 
+# Before scanning JavaScript, blank the two places a hex is legitimately raw, to the SAME LENGTH so
+# every later offset still points at the right line.
+#
+#   SVG presentation attributes (fill=, stroke=, stop-color=, flood-color=). This is the one stated
+#   exemption in the docstring: var() is not valid in a presentation attribute, so the Knowledge
+#   tab's diagram cannot use a token there. The old JS scan missed these by accident, because it
+#   required a `:` or `,` in front; widening the rule made the exemption something that has to be
+#   written down rather than relied on.
+#
+#   Comments. `'#500'` in a sentence about issue 500 is not a colour, and `#fff` in a note about a
+#   colour is a description of one, not a use of one. A `//` preceded by `:` is left alone so URLs
+#   survive.
+js = re.sub(r'(fill|stroke|stop-color|flood-color)\s*=\s*"[^"]*"',
+            lambda m: ' ' * len(m.group(0)), rest)
+js = re.sub(r"(fill|stroke|stop-color|flood-color)\s*=\s*'[^']*'",
+            lambda m: ' ' * len(m.group(0)), js)
+js = re.sub(r'/\*.*?\*/', lambda m: ' ' * len(m.group(0)), js, flags=re.S)
+js = re.sub(r'(?<!:)//[^\n]*', lambda m: ' ' * len(m.group(0)), js)
+
 # A colour sitting in a JS string is still a colour: this is where the chip palette used to live.
-for mo in re.finditer(r"[:,]\s*'(#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3}))'", rest):
-    fail(mo.start(), 'raw colour ' + mo.group(1) + ' in a JavaScript literal',
+#
+# Any quote, not just a single one. This used to be `'(#…)'` — single quotes only — so
+# `ink: "#6d38b0"` passed while `ink: '#6d38b0'` failed, which is a rule about typography rather
+# than about colour. Found while porting a design whose whole palette was double quoted: a verbatim
+# paste would have satisfied the linter and broken the rule it exists to enforce. (#102)
+#
+# The `[:,]` lead-in is gone too. `const c = "#ff00aa"` and `bg = '#123456'` are colours wherever
+# they sit, and requiring a preceding `:` or `,` was an accident of where the palette happened to
+# live when this was written.
+for mo in re.finditer(r"""(['"])(#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3}))\1""", js):
+    fail(mo.start(), 'raw colour ' + mo.group(2) + ' in a JavaScript literal',
          "declare it in :root and put 'var(--…)' here instead")
+
+# A size or a radius inside a JS-built style string is still CSS. The scan above only reaches a
+# real `style="…"` attribute, so `headStyle = "…border-radius: 14px…"` was invisible. (#102)
+for mo in re.finditer(r'(?:font-size|border-radius)\s*:\s*(' + LEN + ')', js):
+    fail(mo.start(), 'raw ' + mo.group(0).split(':')[0].strip() + ' ' + mo.group(1) + ' in a JavaScript string',
+         'use var(--t-…) or var(--r-…)')
 
 if fails:
     print('⛔ lint-tokens: %d raw value%s in %s' % (len(fails), '' if len(fails) == 1 else 's', PATH))
