@@ -547,9 +547,11 @@
   .tqempty{font-size:var(--t-sm);color:var(--ink-3,var(--ink-3));padding:var(--sp-10) 0 var(--sp-50);}
 
   /* A write says so on its own row, not only in a strip you may not be looking at. */
-  .qrow.flash,.prow.flash{animation:tiaraFlash 1.5s ease-out;}
-  .prow.busy,.qrow.busy{opacity:.55;}
+  .qrow.flash,.prow.flash,.ihead.flash{animation:tiaraFlash 1.5s ease-out;}
+  .prow.busy,.qrow.busy,.ihead.busy{opacity:.55;}
   .prow.failed,.qrow.failed{background:var(--c-fdeef2);border-color:var(--c-f0c9d6);}
+  /* The row is a card now, so a failed write tints the card rather than a bare line (#95). */
+  .ihead.failed{background:var(--c-fdeef2);border-radius:var(--r-12);}
 
   /* A page that is still reading must not render the sentence for a page that has finished and
      found nothing. Three states, not two. */
@@ -728,6 +730,52 @@
        padding:var(--sp-2px) var(--sp-8px);cursor:pointer;flex-shrink:0;}
   .dets:hover{border-color:var(--pink);color:var(--brand);}
   .dets:focus-visible{outline:2px solid var(--purple);outline-offset:1px;}
+
+  /* ---- the queue row, v2 (#95) -------------------------------------------------------------
+     The complaint this answers: "actions can't be determined from information/explanations".
+     A row is now three visible groups, left to right - what it IS (handle and id, in a capsule),
+     what it SAYS (title, project, and the three values each carrying its name), and what you can
+     DO to it (three controls, all with words on them). The brief's rule is that a control says
+     what it does in words, always, and that grouping is what makes a crowded row readable rather
+     than deletion. One row shape on all three surfaces, so every row is the same row; `compact`
+     changes only the arrangement, never which controls exist. */
+  .irow{background:var(--card);border:1.5px solid var(--line2);border-radius:var(--r-12);
+       margin-bottom:var(--sp-8px);box-shadow:0 3px 12px rgba(155,93,229,.07);}
+  .irow.open{border-color:var(--c-e3cdf3);box-shadow:0 6px 20px rgba(155,93,229,.14);}
+  .ihead{display:flex;align-items:center;gap:var(--sp-12px);padding:var(--sp-10px) var(--sp-12px);flex-wrap:wrap;}
+  .irail{width:4px;align-self:stretch;min-height:2rem;border-radius:var(--r-pill);flex-shrink:0;}
+  .icap{display:flex;align-items:center;gap:var(--sp-4px);background:var(--c-faf6ff);
+       border:1.5px solid var(--line2);border-radius:var(--r-10);
+       padding:var(--sp-3px) var(--sp-8px) var(--sp-3px) var(--sp-3px);flex-shrink:0;}
+  .iid{font-size:var(--t-xs);font-weight:800;color:var(--card);background:var(--purple);
+       padding:var(--sp-2px) var(--sp-7px);border-radius:var(--r-6);white-space:nowrap;}
+  .imid{flex:1 1 20rem;min-width:12rem;display:flex;flex-direction:column;gap:var(--sp-7px);}
+  .irow.compact .imid{flex-direction:row;align-items:center;gap:var(--sp-10px);flex-wrap:wrap;}
+  .ititle{text-align:left;border:none;background:none;padding:0;cursor:pointer;font-family:'Baloo 2';
+       font-weight:700;font-size:var(--t-lg);line-height:1.3;color:var(--ink-1);min-height:2.25rem;}
+  .irow.compact .ititle{flex:1 1 14rem;min-width:0;}
+  .ititle:hover{color:var(--brand);}
+  .ititle:focus-visible{outline:2px solid var(--purple);outline-offset:2px;border-radius:var(--r-4);}
+  .ivals{display:flex;align-items:center;gap:var(--sp-7px);flex-wrap:wrap;}
+  /* The name in front of the value. This is the whole point of the row change: a coloured chip on
+     its own reads as a label, and the word in front is what says it is a control. */
+  .vfield{display:inline-flex;align-items:center;gap:var(--sp-5px);}
+  .vname{font-size:var(--t-xs);font-weight:700;color:var(--ink-3);white-space:nowrap;}
+  .apptag{display:inline-flex;align-items:center;gap:var(--sp-5px);font-size:var(--t-xs);font-weight:700;
+       color:var(--ink-2);background:var(--c-f4f0f8);border:1.5px solid var(--line2);
+       border-radius:var(--r-6);padding:var(--sp-3px) var(--sp-9px);white-space:nowrap;}
+  .apptag .appicon{width:1rem;height:1rem;}
+  .iacts{display:flex;align-items:center;gap:var(--sp-7px);margin-left:auto;flex-wrap:wrap;}
+  /* Three shapes, kept apart, as the brief asks: a hollow pill is a toggle, a quiet pill is a
+     button that goes somewhere, and the destructive one lives in the menu and names what it
+     destroys. Nothing here is a bare glyph. */
+  .ibtn{font-family:'Quicksand';font-weight:700;font-size:var(--t-xs);white-space:nowrap;
+       min-height:2.25rem;display:inline-flex;align-items:center;cursor:pointer;
+       border:1.5px solid var(--c-b09bc9);border-radius:var(--r-pill);
+       background:var(--c-f3e9fb);color:var(--c-5a4a6e);padding:0 var(--sp-13px);}
+  .ibtn:hover{border-color:var(--pink);color:var(--brand);}
+  .ibtn:focus-visible{outline:2px solid var(--purple);outline-offset:2px;}
+  .ibtn.on{border-color:transparent;background:linear-gradient(90deg,var(--c-ffd9ee),var(--c-e6dbff));color:var(--c-7a4a9e);}
 
   /* A phone. The page had no media query at all until board-v65, so every size was a clamp on the
      viewport that scaled type and never changed a layout. These only ever make things bigger or
@@ -1956,15 +2004,9 @@ async function loadCommits(id){
   }catch(e){ _pjCommits[id]={ error:(e&&e.message)?e.message:String(e) }; }
   const p=$('#project'); if(p && p.style.display!=='none') renderProject(id);
 }
-// A project page row, lifted out of renderProject for the same reason as boardRowHtml.
-function pjRowHtml(a,x,qi){
-  const det=openState.has('item:'+x.id)?detailHtml(a,x,qi,'j'):'';
-  return `<div class="pjitem" data-item="${esc(x.id)}"><div class="row qrow">${prioDot(a.id,qi)}${chipSel(a.id,qi,'status')}<span class="t">${x.id?`<span class="id">${esc(x.id)}</span>`:''}${esc(x.title)}</span>`
-    + typeChip(a.id,qi)
-    + (x.url?`<a class="ghlink" href="${x.url}" target="_blank">#${x.issueNumber}↗</a>`:'')
-    + `<button class="dets" onclick="toggleProjDetail('${esc(x.id)}',this)" title="the body of this ticket and its notes">${openState.has('item:'+x.id)?'close':'details'}</button>`
-    + `</div><div class="dslot" id="jds-${dsId(x.id)}">${det}</div></div>`;
-}
+// A project page row. Every row on the page is now the same row (#95); this one is compact,
+// because the project is already named by the page it is on.
+function pjRowHtml(a,x,qi){ return itemRow(a,x,qi,'j',{compact:true}); }
 function renderProject(id){
   const a=app(id); const p=$('#project'); if(!a||!p) return;
   const q=a.queue||[];
@@ -2186,12 +2228,12 @@ function editingIn(sel){
 // redraw the box, move the caret to the end and refresh the body the edit was measured against.
 // The ticket page was also missing from the surface list, so a poll could replace a note box on it.
 function busyTyping(){ return ipEditOpen() || editingIn('#board,#portfolio,#project,#issuepage'); }
-function markBusy(id,on){ itemNodes(id).forEach(n=>{ const r=n.querySelector('.qrow,.prow')||n; r.classList.toggle('busy',!!on); }); }
+function markBusy(id,on){ itemNodes(id).forEach(n=>{ const r=n.querySelector('.ihead')||n; r.classList.toggle('busy',!!on); }); }
 // The row says what happened to it. The status strip is sticky now, but a confirmation you have to
 // look up for is still a confirmation you miss.
 function flashItem(id,failed){
   itemNodes(id).forEach(n=>{
-    const r=n.querySelector('.qrow,.prow')||n;
+    const r=n.querySelector('.ihead')||n;
     r.classList.remove('flash','failed','busy'); void r.offsetWidth;
     r.classList.add(failed?'failed':'flash');
     if(!failed) setTimeout(()=>r.classList.remove('flash'),1700);
@@ -2435,12 +2477,23 @@ function chipSel(id,i,kind){
 // exists anywhere in this file and all of which a custom menu would have to invent.
 function prioDot(id,i){ return chipSel(id,i,'prio'); }
 function typeChip(id,i){ return chipSel(id,i,'type'); }
+// A value carries its name, in words, beside it (#95). A coloured chip on its own is a label until
+// you click it; the word in front is what makes it read as a control you can change. The `title`
+// the chip already carried said the same thing and only on hover, which the brief calls out as the
+// fault: "you cannot tell a control from a label". The <label> also makes the name a click target
+// for the select, which is free with the element and was not there before.
+const VNAME={status:'Status',prio:'Priority',type:'Type'};
+function chipField(id,i,kind){
+  return `<label class="vfield"><span class="vname">${VNAME[kind]}</span>${chipSel(id,i,kind)}</label>`;
+}
 // A menu with words in it, for the actions that were bare glyphs. <details> rather than a custom
 // popover, for the same reason the chips are a <select>: the summary is focusable, it toggles from
 // the keyboard, and there is no state to get wrong. The two lines below are what <details> does not
 // give you: a click elsewhere, and Escape.
+// The summary says "More actions", in words, rather than being a bare ⋯. The brief: an icon may sit
+// beside a label, it may not replace one. The ▾ stays because it says the thing opens. (#95)
 function kebab(key, items){
-  return `<details class="kebab" data-key="menu:${key}"><summary title="more actions" aria-label="more actions">⋯</summary>`
+  return `<details class="kebab" data-key="menu:${key}"><summary title="more actions for this item" aria-label="more actions">More actions <span class="caret" aria-hidden="true">▾</span></summary>`
     + `<div class="pop">` + items.map(it => it==='-' ? '<div class="sep"></div>'
         : `<button class="${it.danger?'danger':''}" onclick="closeMenus();${it.do}">${it.label}</button>`).join('')
     + `</div></details>`;
@@ -2453,8 +2506,25 @@ document.addEventListener('click', e=>{ if(e.target.closest && e.target.closest(
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMenus(null); });
 function delApp(id){ const a=app(id); if(!a)return; if(!confirm('Remove the project "'+a.name+'" from your Tiara board?\n\nThis only clears it from the board - it does NOT touch any files, folders, or repos on your Mac.')) return; data.apps=data.apps.filter(x=>x.id!==id); openState.delete('app:'+id); touch(); setStatus('removed '+a.name+' from the board'); }
 function cycleStatus(id,i){ const a=app(id); const q=a.queue[i]; const idx=STATUS_ORDER.indexOf(q.status||'todo'); q.status=STATUS_ORDER[(idx+1)%4]; q.done=(q.status==='done'); touch(); }
+// The toggle says which state the click will move you to, and the row shows which state it is in.
+// Both were wrong before #95. The word was `close`, which on the same row also meant "close the
+// GitHub issue" one control away - the exact collision the brief asks to fix - and the open styling
+// only ever appeared on a full re-render, because these handlers patch one slot and never touched
+// the row wrapper. So an in-place toggle left the row looking shut while its panel was open.
+function markRowOpen(itemId,open,btn){
+  if(btn){ btn.textContent = open ? 'Hide details' : 'Details';
+           btn.classList.toggle('on',open); btn.setAttribute('aria-expanded',String(open)); }
+  itemNodes(itemId).forEach(n=>{
+    if(!n.classList.contains('irow')) return;
+    n.classList.toggle('open',open);
+    // The button inside a row that is NOT the one clicked - the same item on another surface.
+    const b=n.querySelector('.iacts .ibtn[aria-expanded]');
+    if(b && b!==btn){ b.textContent = open ? 'Hide details' : 'Details';
+                      b.classList.toggle('on',open); b.setAttribute('aria-expanded',String(open)); }
+  });
+}
 function toggleDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
-  if(btn) btn.textContent=willOpen?'close':'details';
+  markRowOpen(itemId,willOpen,btn);
   let a,q,i=-1; for(const ap of data.apps){ const idx=(ap.queue||[]).findIndex(x=>x.id===itemId); if(idx>=0){ a=ap; q=ap.queue[idx]; i=idx; break; } }
   const slot=document.getElementById(dsId(itemId));
   if(!slot||!a){ render(); return; }                       // fallback: full redraw if the slot isn't found
@@ -2463,7 +2533,7 @@ function toggleDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openS
 }
 // same as toggleDetail but writes into the Portfolio tab's own detail slot (the board's is hidden but still in the DOM)
 function togglePortDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
-  if(btn) btn.textContent=willOpen?'close':'details';
+  markRowOpen(itemId,willOpen,btn);
   let a,q,i=-1; for(const ap of data.apps){ const idx=(ap.queue||[]).findIndex(x=>x.id===itemId); if(idx>=0){ a=ap; q=ap.queue[idx]; i=idx; break; } }
   const slot=document.getElementById('pds-'+dsId(itemId));
   if(!slot||!a){ renderPortfolio(); return; }
@@ -2472,7 +2542,7 @@ function togglePortDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!o
 }
 // same as toggleDetail but writes into the project page's own detail slot (the board's is hidden but still in the DOM)
 function toggleProjDetail(itemId,btn){ const k='item:'+itemId; const willOpen=!openState.has(k); willOpen?openState.add(k):openState.delete(k);
-  if(btn) btn.textContent=willOpen?'close':'details';
+  markRowOpen(itemId,willOpen,btn);
   let a,q,i=-1; for(const ap of data.apps){ const idx=(ap.queue||[]).findIndex(x=>x.id===itemId); if(idx>=0){ a=ap; q=ap.queue[idx]; i=idx; break; } }
   const slot=document.getElementById('jds-'+dsId(itemId));
   if(!slot||!a){ if(_pjView.id) renderProject(_pjView.id); return; }
@@ -3106,11 +3176,10 @@ function tqToggleLane(k){ tqClosed.has(k)?tqClosed.delete(k):tqClosed.add(k); tq
 // A row here carries the same live controls as a Portfolio card row: status, priority and type
 // all write straight to GitHub through the same setters (#56). A list you cannot work from is
 // a report, and this tab is called Task queue.
-function tqRow({a,q,i}){
-  const icon=_icon[a.id]?`<img class="appicon" style="width:17px;height:17px" src="${_icon[a.id]}" alt="">`:`<span class="em">${esc(a.emoji||'🫧')}</span>`;
-  const det=openState.has('item:'+q.id)?detailHtml(a,q,i,'p'):'';
-  return `<div class="tqitem" data-item="${esc(q.id)}"><div class="prow"><span class="papp" title="${esc(a.name)}">${icon}${esc(a.name)}</span>${q.id?`<span class="pid">${esc(q.id)}</span>`:''}${chipSel(a.id,i,'status')}<span class="pt pttap" onclick="gotoBoardItem('${esc(q.id)}')" title="jump to this item in Portfolio">${esc(q.title||'')}</span>${prioDot(a.id,i)}${typeChip(a.id,i)}${q.url?`<a class="ghlink" href="${q.url}" target="_blank" title="open issue #${q.issueNumber}">#${q.issueNumber}↗</a>`:''}<button class="dets" onclick="togglePortDetail('${esc(q.id)}',this)" title="the body of this ticket and its notes">${openState.has('item:'+q.id)?'close':'details'}</button></div><div class="pdslot" id="pds-${dsId(q.id)}">${det}</div></div>`;
-}
+// Task queue is the one surface that spans projects, so its row is the only one that has to say
+// which project the item belongs to. Full arrangement rather than compact, because this is the
+// list you work from rather than a summary of one card.
+function tqRow({a,q,i}){ return itemRow(a,q,i,'p',{showApp:true}); }
 function renderPortfolio(){
   const el=$('#portfolio'); if(!el) return;
   // Three states, not two. A page still reading must not print the sentence for a page that
@@ -3169,12 +3238,62 @@ function renderPortfolio(){
     + ` · ${auto?'highest priority first':'your project order'}</div>`;
   el.innerHTML = head + toggles + tools + body;
 }
+// ---- one row, three surfaces (#95) ---------------------------------------------------------
+// Portfolio, the project page and Task queue drew three different rows with three different
+// control sets, which is the thing AD-0001 set out to fix and then only half fixed. This is the
+// one row they all use. `compact` puts the title and the values on one line for the two surfaces
+// that are summaries; it never removes a control, because "is anything harder to reach than it
+// was before" is a fail however tidy it looks.
+//
+// Three groups, and the gaps between them are what does the work:
+//   ⠿ + id      what this is
+//   title, project, Status/Priority/Type   what it says, each value carrying its name
+//   Open item page · Details · More actions ▾   what you can do to it
+const ROW_SURFACE={
+  '':  { wrap:'qitem',  slot:id=>dsId(id),         slotCls:'dslot',  toggle:'toggleDetail' },
+  'p': { wrap:'tqitem', slot:id=>'pds-'+dsId(id),  slotCls:'pdslot', toggle:'togglePortDetail' },
+  'j': { wrap:'pjitem', slot:id=>'jds-'+dsId(id),  slotCls:'dslot',  toggle:'toggleProjDetail' }
+};
+function itemRow(a,q,i,scope,opts){
+  opts=opts||{}; scope=scope||'';
+  const S=ROW_SURFACE[scope]||ROW_SURFACE[''];
+  const open=openState.has('item:'+q.id);
+  const det=open?detailHtml(a,q,i,scope):'';
+  const icon=_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:`<span aria-hidden="true">${esc(a.emoji||'🫧')}</span>`;
+  const menu=[{label:'Edit this ticket…',do:`openIssue('${esc(a.id)}','${esc(q.id)}')`}];
+  if(q.url) menu.push({label:'Open #'+q.issueNumber+' on GitHub ↗',do:`window.open('${q.url}','_blank')`},
+                      {label:'Copy the issue link',do:`copyIssueLink('${esc(q.url)}')`});
+  menu.push('-',{label:'Close issue on GitHub',danger:true,do:`delItem('${a.id}',${i})`});
+  return `<div class="${S.wrap} irow${open?' open':''}${opts.compact?' compact':''}" data-qi="${i}" data-item="${esc(q.id)}">`
+    + `<div class="ihead">`
+      + `<span class="irail rib r-${esc(a.color||'sky')}" aria-hidden="true"></span>`
+      + `<span class="icap"><span class="grip" title="drag to reorder this item">⠿</span>`
+      + `${q.id?`<span class="iid">${esc(q.id)}</span>`:''}</span>`
+      + `<div class="imid">`
+        + `<button class="ititle" onclick="openIssue('${esc(a.id)}','${esc(q.id)}')" title="open this ticket's own page">${esc(q.title||'')}</button>`
+        + `<div class="ivals">`
+          + (opts.showApp?`<span class="apptag" title="${esc(a.name)}">${icon}${esc(a.name)}</span>`:'')
+          + chipField(a.id,i,'status') + chipField(a.id,i,'prio') + chipField(a.id,i,'type')
+        + `</div>`
+      + `</div>`
+      + `<div class="iacts">`
+        + `<button class="ibtn" onclick="openIssue('${esc(a.id)}','${esc(q.id)}')">Open item page</button>`
+        + `<button class="ibtn${open?' on':''}" onclick="${S.toggle}('${esc(q.id)}',this)" aria-expanded="${open}" title="the acceptance criterion and the newest note, without leaving this list">${open?'Hide details':'Details'}</button>`
+        + kebab(q.id,menu)
+      + `</div>`
+    + `</div><div class="${S.slotCls}" id="${S.slot(q.id)}">${det}</div></div>`;
+}
+// `Copy issue link` is the one menu item the design adds that did not exist. It is three lines and
+// no new capability: the URL is already on the row as a link.
+function copyIssueLink(url){
+  if(!url){ setStatus('⚠ that item has no GitHub issue yet'); return; }
+  try{ navigator.clipboard.writeText(url).then(()=>setStatus('🟢 link copied · '+url),
+        ()=>setStatus('⚠ the browser refused the clipboard. The link is '+url)); }
+  catch(e){ noted('copying an issue link',e); setStatus('⚠ could not copy. The link is '+url); }
+}
 // A Portfolio card's row. Lifted out of render() so one row can be rebuilt on its own, without
 // rebuilding twelve cards to change one chip (board-v66).
-function boardRowHtml(a,q,i){
-  const det = openState.has('item:'+q.id) ? detailHtml(a,q,i) : '';
-  return `<div class="qitem" data-qi="${i}" data-item="${esc(q.id)}"><div class="row qrow ${q.status==='done'?'done':''}"><span class="grip" title="drag to reorder">⠿</span>${prioDot(a.id,i)}${chipSel(a.id,i,'status')}<span class="t">${q.id?`<span class="id">${esc(q.id)}</span>`:''}${esc(q.title)}</span>${typeChip(a.id,i)}${q.url?`<a class="ghlink" href="${q.url}" target="_blank" onclick="event.stopPropagation()" title="open issue #${q.issueNumber} on GitHub">#${q.issueNumber}↗</a>`:''}<button class="dets" onclick="toggleDetail('${esc(q.id)}',this)" title="the body of this ticket and its notes">${openState.has('item:'+q.id)?'close':'details'}</button>${kebab(q.id,[{label:'Edit this ticket…',do:`openIssue('${esc(a.id)}','${esc(q.id)}')`},{label:'Open #'+q.issueNumber+' on GitHub ↗',do:`window.open('${q.url}','_blank')`},'-',{label:'Close issue on GitHub',danger:true,do:`delItem('${a.id}',${i})`}])}</div><div class="dslot" id="${dsId(q.id)}">${det}</div></div>`;
-}
+function boardRowHtml(a,q,i){ return itemRow(a,q,i,'',{compact:true}); }
 function render(){
   const _scrollY = window.scrollY;   // keep the page from jumping when a re-render rebuilds the board
   migrate();
@@ -3256,7 +3375,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v93';
+const TIARA_VERSION = 'board-v94';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
