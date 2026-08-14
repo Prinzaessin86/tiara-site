@@ -1620,6 +1620,21 @@ async function connectGitHub(){
 }
 const $ = s => document.querySelector(s);
 const esc = s => (s+'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// A value that has to travel INSIDE a handler attribute, e.g. onclick="f('…')". esc() is not enough
+// on its own: it deliberately does not escape an apostrophe, so a value containing one closes the
+// JS string early, the handler becomes a syntax error, and the control silently does nothing - no
+// message, no dialog, nothing. That has now bitten three times: the compose panel's labels (hence
+// data-cmpl), the ticket-page title (#105), and the two sites this fixes. (#109)
+//
+// Order matters. Backslash first, or it re-escapes the ones added after it. Then the quote, then
+// the characters that would break out of the attribute or end the script block early.
+function escArg(v){
+  return String(v==null?'':v)
+    .replace(/\\/g,'\\\\')
+    .replace(/'/g,"\\'")
+    .replace(/\r?\n/g,'\\n')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 // When a thing happened, in words (#91). The DATE AND TIME is the text, because that is what the
 // ticket asked for and because "3 days ago" is unusable for tracing: it changes every time you look
 // and two things a minute apart read identically. The age is the hover, where it is a convenience
@@ -1786,9 +1801,9 @@ function renderNewIssue(){
         // one with an apostrophe would close the handler string and silently stop recording what
         // you type, which is the defect #66 found in the card panel.
         + (f.k==='select'
-            ? `<select data-cmpl="${esc(f.l)}" onchange="draftSet('${esc(a.id)}',this.dataset.cmpl,this.value)"><option value="">choose one…</option>`
+            ? `<select data-cmpl="${esc(f.l)}" onchange="draftSet('${escArg(a.id)}',this.dataset.cmpl,this.value)"><option value="">choose one…</option>`
               + f.o.map(o=>`<option value="${esc(o)}"${(d.vals[f.l]||'')===o?' selected':''}>${esc(o)}</option>`).join('')+`</select>`
-            : `<textarea data-cmpl="${esc(f.l)}" placeholder="${esc(f.h)}" oninput="draftSet('${esc(a.id)}',this.dataset.cmpl,this.value)">${esc(d.vals[f.l]||'')}</textarea>`)
+            : `<textarea data-cmpl="${esc(f.l)}" placeholder="${esc(f.h)}" oninput="draftSet('${escArg(a.id)}',this.dataset.cmpl,this.value)">${esc(d.vals[f.l]||'')}</textarea>`)
         + `</div>`).join('') + `</div>`;
   const b=boardFor(a);
   p.innerHTML=`<div class="ipwrap">
@@ -1946,7 +1961,7 @@ function filterBar(scope, rows, opts){
   const nVerify    = rows.filter(r=>fMatch({...v,quick:''},r) && itemStatus(r.q)==='verify').length;
   const quick = `<button class="fquick${v.quick==='untriaged'?' on':''}" onclick="fSet('${scope}','quick','untriaged')" title="no type, or no priority: nobody has triaged these">untriaged<span class="c">${nUntriaged}</span></button>`
     + `<button class="fquick${v.quick==='verify'?' on':''}" onclick="fSet('${scope}','quick','verify')" title="waiting for you to look at them">needs verify<span class="c">${nVerify}</span></button>`;
-  const tag=(key,text)=>`<span class="ftag">${esc(text)}<button onclick="fSet('${scope}','${key}','${esc(v[key])}')" title="remove this filter" aria-label="remove ${esc(text)}">✕</button></span>`;
+  const tag=(key,text)=>`<span class="ftag">${esc(text)}<button onclick="fSet('${scope}','${key}','${escArg(v[key])}')" title="remove this filter" aria-label="remove ${esc(text)}">✕</button></span>`;
   const tags=[ v.q?tag('q','“'+v.q+'”'):'', v.lane?tag('lane',BOARD_STATUS_LABEL[v.lane]||v.lane):'',
     v.type?tag('type',TYPE_META[v.type]?TYPE_META[v.type].t:v.type):'', v.prio?tag('prio',PRIO_META[v.prio]?PRIO_META[v.prio].t:v.prio):'',
     v.app?tag('app',(app_(v.app)||{name:v.app}).name):'', v.quick?tag('quick',v.quick==='untriaged'?'untriaged':'needs verify'):'' ].filter(Boolean).join('');
@@ -2077,7 +2092,7 @@ function renderIssue(){
       + `</div>`;
     const html=mdHtml(x.val);
     return `<div class="bsec${x.dod?' dod':''}">`
-      + (x.label?`<div class="blab">${esc(x.label)}${canEdit?`<button class="ipx" onclick="ipEdit('sec','${esc(x.label)}',ipSecVal('${esc(x.label)}'))" title="edit this section">✎</button>`:''}</div>`:'')
+      + (x.label?`<div class="blab">${esc(x.label)}${canEdit?`<button class="ipx" onclick="ipEdit('sec','${escArg(x.label)}',ipSecVal('${escArg(x.label)}'))" title="edit this section">✎</button>`:''}</div>`:'')
       + (html?`<div class="bval md">${html}</div>`:'<div class="bval muted">empty</div>')+'</div>';
   }).join('');
   const notes=(q.notes||[]).map(n=>{
@@ -2087,7 +2102,7 @@ function renderIssue(){
   }).join('')||(q._notesFailed?`<div class="muted">⛔ the notes could not be read (${esc(q._notesFailed)}). This ticket has ${q._commentCount||0} comment${(q._commentCount===1)?'':'s'} on GitHub.</div>`:'<div class="muted">no notes yet</div>');
   p.innerHTML=`<div class="ipwrap">
     <div class="iphead">
-      <div class="ipcrumb"><button class="backchip" onclick="openProject('${esc(a.id)}')">← ${esc(a.name)}</button>
+      <div class="ipcrumb"><button class="backchip" onclick="openProject('${escArg(a.id)}')">← ${esc(a.name)}</button>
         ${q.url?`<a class="ghlink" href="${q.url}" target="_blank">#${q.issueNumber} on GitHub ↗</a>`:''}</div>
       ${titleBlock}
       <div class="ipmeta"><span class="ipid">${esc(q.id)}</span>${chipSel(a.id,q.id,'status')}${prioDot(a.id,q.id)}${typeChip(a.id,q.id)}
@@ -2216,7 +2231,7 @@ function pjEmptyHtml(a){
   let h=`<div class="pjempty"><b>Nothing in ${esc(a.name)} matches “${esc(q)}”.</b>`;
   if(elsewhere.length){
     h+=`<div class="pjelse"><span class="pjelselab">Found in another project:</span>`
-      + elsewhere.map(e=>`<button class="ibtn" onclick="jumpGo('${esc(e.a.id)}','${esc(e.q.id)}')">`
+      + elsewhere.map(e=>`<button class="ibtn" onclick="jumpGo('${escArg(e.a.id)}','${escArg(e.q.id)}')">`
           + `${esc(e.q.id||'')} in ${esc(e.a.name)} · ${esc((e.q.title||'').slice(0,60))}</button>`).join('')
       + `</div>`;
   }
@@ -2312,10 +2327,10 @@ function renderProject(id){
         </div>`:''}</div>
 
     <div class="pjsec"><h3>Settings</h3>
-      <div class="scnote repoedit" onclick="setRepo('${a.id}')">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
+      <div class="scnote repoedit" onclick="setRepo('${escArg(a.id)}')">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
       <div class="adminrow" style="margin-top:.6rem">
-        <button class="tb" onclick="renameApp('${a.id}')">Rename project</button>
-        <button class="tb danger" onclick="delApp('${a.id}')">Remove from Tiara</button>
+        <button class="tb" onclick="renameApp('${escArg(a.id)}')">Rename project</button>
+        <button class="tb danger" onclick="delApp('${escArg(a.id)}')">Remove from Tiara</button>
       </div></div>`;
 }
 
@@ -2742,7 +2757,7 @@ function chipSel(id,itemId,kind){
   const opts=(order.map(k=>`<option value="${k}" ${k===cur?'selected':''}>${meta[k]?meta[k].e:''} ${label(k)}</option>`).join(''))
     + ((!cur&&(kind==='type'||kind==='prio'))?`<option value="" selected>${kind==='type'?'no type':'not set'}</option>`:'');
   const TITLE={status:'lane on the board',type:'type',prio:'priority'}[kind];
-  return `<select class="chipsel ${kind}" title="${TITLE}: ${esc(label(cur)||'not set')}" aria-label="${TITLE}" style="background-color:${m.f2};color:${m.c}" onchange="${fn}('${esc(id)}','${esc(itemId)}',this.value)">${opts}</select>`;
+  return `<select class="chipsel ${kind}" title="${TITLE}: ${esc(label(cur)||'not set')}" aria-label="${TITLE}" style="background-color:${m.f2};color:${m.c}" onchange="${fn}('${escArg(id)}','${escArg(itemId)}',this.value)">${opts}</select>`;
 }
 // Three values on a row, one shape. chipSel already knew how to draw all three; it was only ever
 // asked for the status. A native <select> and not a popover, deliberately: it brings keyboard
@@ -3164,7 +3179,7 @@ function detailHtml(a,q,i,scope){ scope=scope||'';
   if(moreNotes) bits.push(moreNotes+(moreNotes===1?' older note':' older notes'));
   // The one route to the editors, and it is already on all three row surfaces, so the project row
   // and the Task queue row do not need a kebab of their own to reach them (#92).
-  const full=`<button class="openfull" onclick="openIssue('${esc(a.id)}','${esc(q.id)}')" title="the whole ticket on its own page, where the title, the body and the notes can be edited">open full page ⤢</button>`;
+  const full=`<button class="openfull" onclick="openIssue('${escArg(a.id)}','${escArg(q.id)}')" title="the whole ticket on its own page, where the title, the body and the notes can be edited">open full page ⤢</button>`;
   const body = noBody ? '<div class="muted">no description</div>'
     : `<div class="dsec${pick.dod?' dod':''}"><div class="dlab">${esc(pick.label||'Description')}${pick.dod?' · what you will look at':''}</div>`
       + (mdHtml(pick.val)?`<div class="bval md">${mdHtml(pick.val)}</div>`:'<div class="bval muted">empty</div>')+'</div>';
@@ -3175,7 +3190,7 @@ function detailHtml(a,q,i,scope){ scope=scope||'';
     + `<div class="dhead"><span class="did">${esc(q.id)}</span><span class="dtitle">${esc(q.title||'')}</span>${whenHtml(q.created,'filed')}${full}</div>`
     + body + note
     + (bits.length?`<div class="dmore">${bits.join(' and ')} on the ${full}</div>`:'')
-    + `<div class="addbox"><input id="note-${scope}${dsId(q.id)}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${esc(a.id)}','${esc(q.id)}','${scope}')"><button onclick="addNote('${esc(a.id)}','${esc(q.id)}','${scope}')">note</button></div>`
+    + `<div class="addbox"><input id="note-${scope}${dsId(q.id)}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${escArg(a.id)}','${escArg(q.id)}','${scope}')"><button onclick="addNote('${escArg(a.id)}','${escArg(q.id)}','${scope}')">note</button></div>`
     + `</div>`;
 }
 // Task queue tab (id 'portfolio') - every open item across every project, one list.
@@ -3540,7 +3555,7 @@ function onJump(){
   } else {
     html+=hits.map((h,k)=>{
       const st=STATUS_META[h.q.status]||STATUS_META.todo;
-      return `<button role="option" data-k="${k}" onclick="jumpGo('${esc(h.a.id)}','${esc(h.q.id)}')">`
+      return `<button role="option" data-k="${k}" onclick="jumpGo('${escArg(h.a.id)}','${escArg(h.q.id)}')">`
         + `<span class="jid">${esc(h.q.id||'')}</span>`
         + `<span class="jt">${esc(h.q.title||'')}</span>`
         + `<span class="japp">${st.e} ${esc(st.t)} · ${esc(h.a.name||'')}</span></button>`;
@@ -3613,15 +3628,15 @@ function itemRow(a,q,i,scope,opts){
       + `<span class="icap"><span class="grip" title="drag to reorder this item">⠿</span>`
       + `${q.id?`<span class="iid">${esc(q.id)}</span>`:''}</span>`
       + `<div class="imid">`
-        + `<button class="ititle" onclick="openIssue('${esc(a.id)}','${esc(q.id)}')" title="open this ticket's own page">${esc(q.title||'')}</button>`
+        + `<button class="ititle" onclick="openIssue('${escArg(a.id)}','${escArg(q.id)}')" title="open this ticket's own page">${esc(q.title||'')}</button>`
         + `<div class="ivals">`
           + (opts.showApp?`<span class="apptag" title="${esc(a.name)}">${icon}${esc(a.name)}</span>`:'')
           + chipField(a.id,q.id,'status') + chipField(a.id,q.id,'prio') + chipField(a.id,q.id,'type')
         + `</div>`
       + `</div>`
       + `<div class="iacts">`
-        + `<button class="ibtn" onclick="openIssue('${esc(a.id)}','${esc(q.id)}')">Open item page</button>`
-        + `<button class="ibtn${open?' on':''}" onclick="${S.toggle}('${esc(q.id)}',this)" aria-expanded="${open}" title="the acceptance criterion and the newest note, without leaving this list">${open?'Hide details':'Details'}</button>`
+        + `<button class="ibtn" onclick="openIssue('${escArg(a.id)}','${escArg(q.id)}')">Open item page</button>`
+        + `<button class="ibtn${open?' on':''}" onclick="${S.toggle}('${escArg(q.id)}',this)" aria-expanded="${open}" title="the acceptance criterion and the newest note, without leaving this list">${open?'Hide details':'Details'}</button>`
       + `</div>`
     + `</div><div class="${S.slotCls}" id="${S.slot(q.id)}">${det}</div></div>`;
 }
@@ -3649,28 +3664,28 @@ function render(){
       matched++;
       if(shown<CARD_CAP){ activeRows+=rowHtml(q,i); shown++; } else hidden++; });
     const capLine = hidden
-      ? `<div class="capline">showing <b>${shown}</b> of ${matched}${matched!==open?` matching (of ${open} open)`:''} · <button class="caplink" onclick="openProject('${a.id}')">open ${esc(a.name)}'s page for the other ${hidden} ↗</button></div>`
+      ? `<div class="capline">showing <b>${shown}</b> of ${matched}${matched!==open?` matching (of ${open} open)`:''} · <button class="caplink" onclick="openProject('${escArg(a.id)}')">open ${esc(a.name)}'s page for the other ${hidden} ↗</button></div>`
       : (fActive(_bdView)&&matched!==open ? `<div class="capline">showing <b>${matched}</b> of ${open} open · the rest do not match the filter</div>` : '');
     const doneFold = doneRows ? `<details class="donefold" data-key="done:${a.id}" ${openState.has('done:'+a.id)?'open':''}><summary>✅ Done · ${dn}${discWord(openState.has('done:'+a.id),'what shipped')}</summary>${doneRows}</details>` : '';
     return `<details class="app" data-key="app:${a.id}" ${openState.has('app:'+a.id)?'open':''}>
-      <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><a class="nm nmlink" href="#" onclick="event.stopPropagation();event.preventDefault();openProject('${a.id}')" title="open ${esc(a.name)}'s own page">${esc(a.name)}</a>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span>`
-      + `<button class="ibtn" onclick="event.stopPropagation();event.preventDefault();openProject('${a.id}')">Open project page</button>`
+      <summary><span class="app-grip" title="drag to reorder projects">⠿</span><span class="rib r-${a.color}"></span><span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:a.emoji}</span><a class="nm nmlink" href="#" onclick="event.stopPropagation();event.preventDefault();openProject('${escArg(a.id)}')" title="open ${esc(a.name)}'s own page">${esc(a.name)}</a>${_version[a.id]?`<span class="appver" title="current version (project.yml MARKETING_VERSION, else latest tag)">${esc(_version[a.id])}</span>`:''}${tfBadge(a)}<span class="pill">${esc(pillStatus(a))}</span><span class="cnt">${dn} done · <b>${open} open</b></span>`
+      + `<button class="ibtn" onclick="event.stopPropagation();event.preventDefault();openProject('${escArg(a.id)}')">Open project page</button>`
       + `<span class="ibtn cardtog" aria-hidden="true">${openState.has('app:'+a.id)?'Hide the queue':('Show the queue ('+open+')')}</span>`
       + `${kebab('app:'+a.id,[
-        {label:'Rename project…',do:`renameApp('${a.id}')`},
-        {label:'Set the GitHub repo…',do:`setRepo('${a.id}')`},
-        {label:a.bundleId?'TestFlight badge: change or turn off…':'TestFlight badge: pick the app…',do:`tfToggle('${a.id}')`},
-        {label:a.kind==='infrastructure'?'This is infrastructure · mark as a product':'This is a product · mark as infrastructure',do:`setKind('${a.id}')`},
+        {label:'Rename project…',do:`renameApp('${escArg(a.id)}')`},
+        {label:'Set the GitHub repo…',do:`setRepo('${escArg(a.id)}')`},
+        {label:a.bundleId?'TestFlight badge: change or turn off…':'TestFlight badge: pick the app…',do:`tfToggle('${escArg(a.id)}')`},
+        {label:a.kind==='infrastructure'?'This is infrastructure · mark as a product':'This is a product · mark as infrastructure',do:`setKind('${escArg(a.id)}')`},
         '-',
-        {label:'Move up',do:`moveApp('${a.id}',-1)`},
-        {label:'Move down',do:`moveApp('${a.id}',1)`},
+        {label:'Move up',do:`moveApp('${escArg(a.id)}',-1)`},
+        {label:'Move down',do:`moveApp('${escArg(a.id)}',1)`},
         '-',
-        {label:'Remove project from Tiara',danger:true,do:`delApp('${a.id}')`},
+        {label:'Remove project from Tiara',danger:true,do:`delApp('${escArg(a.id)}')`},
       ])}</summary>
       <div class="body">
         ${next?`<div class="muted" style="margin-bottom:10px">→ up next: <b style="color:var(--st-doing)">${esc(next.id||'')} ${esc(next.title)}</b></div>`:''}
         ${(HELPER.on&&appOwnerRepo(a)&&boardFor(a))?`<div class="actions"><a class="runbtn" href="${boardFor(a).url}" target="_blank" style="text-decoration:none">${esc(a.name)} board ↗</a><pre class="runout" id="run-${a.id}" style="display:none"></pre></div>`:''}
-        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}${discWord(!collapsed.has('q:'+a.id),'the queue')}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||(a._loadFailed?`<div class="muted">⛔ this board did not load (${esc(a._loadFailed)}) - this is not an empty queue, it is an unread one</div>`:(fActive(_bdView)?'<div class="muted">nothing here matches</div>':'<div class="muted">nothing active 🎉</div>'))}</div>${capLine}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" value="${esc(draftFor(a.id).title||'')}" oninput="draftFor('${a.id}').title=this.value" onkeydown="if(event.key==='Enter')openNewIssue('${a.id}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42). Picking one opens the full form." onchange="if(this.value)openNewIssue('${a.id}',{type:this.value})"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${draftFor(a.id).type===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><select id="addprio-${a.id}" class="chipsel" title="priority (TIA-65). Written to the board's Priority field on create." onchange="draftFor('${a.id}').prio=this.value">${PRIO_ORDER.map(p=>`<option value="${p}"${(draftFor(a.id).prio||'med')===p?' selected':''}>${PRIO_META[p].t}</option>`).join('')}</select><button onclick="openNewIssue('${a.id}')" title="opens the full form, on its own page">add…</button></div></div></details>
+        <details class="lane q" data-key="q:${a.id}" data-defopen ${collapsed.has('q:'+a.id)?'':'open'}><summary>Queue · ${open}${discWord(!collapsed.has('q:'+a.id),'the queue')}</summary><div class="laneb"><div class="qlist" data-app="${a.id}">${activeRows||(a._loadFailed?`<div class="muted">⛔ this board did not load (${esc(a._loadFailed)}) - this is not an empty queue, it is an unread one</div>`:(fActive(_bdView)?'<div class="muted">nothing here matches</div>':'<div class="muted">nothing active 🎉</div>'))}</div>${capLine}<div class="addbox"><input id="add-${a.id}" placeholder="add a queue item…" value="${esc(draftFor(a.id).title||'')}" oninput="draftFor('${escArg(a.id)}').title=this.value" onkeydown="if(event.key==='Enter')openNewIssue('${escArg(a.id)}')"><select id="addtype-${a.id}" class="chipsel" title="a type is required (D42). Picking one opens the full form." onchange="if(this.value)openNewIssue('${escArg(a.id)}',{type:this.value})"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${draftFor(a.id).type===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select><select id="addprio-${a.id}" class="chipsel" title="priority (TIA-65). Written to the board's Priority field on create." onchange="draftFor('${escArg(a.id)}').prio=this.value">${PRIO_ORDER.map(p=>`<option value="${p}"${(draftFor(a.id).prio||'med')===p?' selected':''}>${PRIO_META[p].t}</option>`).join('')}</select><button onclick="openNewIssue('${escArg(a.id)}')" title="opens the full form, on its own page">add…</button></div></div></details>
         ${doneRows?`<details class="lane done" data-key="donef:${a.id}" ${openState.has('donef:'+a.id)?'open':''}><summary>Done · ${dn}${discWord(openState.has('donef:'+a.id),'what shipped')}</summary><div class="laneb">${doneRows}</div></details>`:''}
         <div class="scnote">repo: ${esc(a.repo)}</div>
       </div></details>`;
@@ -3728,7 +3743,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v104';
+const TIARA_VERSION = 'board-v105';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
