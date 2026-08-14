@@ -72,6 +72,9 @@
     --st-todo:var(--upnext-i); --st-todo-f:#8877a01a; --st-todo-f2:#8877a022;
     --st-doing:var(--doing-i); --st-doing-f:#e0932b1a; --st-doing-f2:#e0932b22;
     --st-verify:var(--verify-i); --st-verify-f:#4ea8ff1a; --st-verify-f2:#4ea8ff22;
+    /* Needs You: a lane that means "waiting on Princess", between verify and blocked. Its ink is
+       the doing amber, which already passes the squint test, rather than a seventh hue. (#96) */
+    --st-needsyou:var(--doing-i); --st-needsyou-f:#e0932b1a; --st-needsyou-f2:#e0932b22;
     --st-blocked:var(--blocked-i); --st-blocked-f:#d0567f1a; --st-blocked-f2:#d0567f22;
     --st-done:var(--done-i); --st-done-f:#2fbf7e1a; --st-done-f2:#2fbf7e22;
     --ty-none:var(--ink-3); --ty-none-f:#8877a01a; --ty-none-f2:#8877a022;
@@ -1270,10 +1273,10 @@ async function discoverBoards(){
 const _boardMeta = {};              // appId -> { projectId, fields:{lane,priority,type}{id,opts{name:id}} }
 const cap = s => (s||'').charAt(0).toUpperCase()+(s||'').slice(1);
 // lane <-> Tiara status
-const LANE2STATUS = {'new':'new','up next':'todo','doing':'doing','verify':'verify','blocked':'blocked','done':'done'};
-const STATUS2LANE = {'new':'New','todo':'Up next','doing':'Doing','verify':'Verify','blocked':'Blocked','done':'Done'};
-const BOARD_STATUS_ORDER = ['new','todo','doing','verify','blocked','done'];
-const BOARD_STATUS_LABEL = {new:'new',todo:'up next',doing:'doing',verify:'verify',blocked:'blocked',done:'done'};
+const LANE2STATUS = {'new':'new','up next':'todo','doing':'doing','verify':'verify','needs you':'needsyou','blocked':'blocked','done':'done'};
+const STATUS2LANE = {'new':'New','todo':'Up next','doing':'Doing','verify':'Verify','needsyou':'Needs You','blocked':'Blocked','done':'Done'};
+const BOARD_STATUS_ORDER = ['new','todo','doing','verify','needsyou','blocked','done'];
+const BOARD_STATUS_LABEL = {new:'new',todo:'up next',doing:'doing',verify:'verify',needsyou:'needs you',blocked:'blocked',done:'done'};
 
 async function ghGraphQL(query, variables){
   const r = await fetch('https://api.github.com/graphql', { method:'POST',
@@ -1292,9 +1295,27 @@ async function resolveBoard(a){
       fields(first:50){ nodes{ ... on ProjectV2SingleSelectField { id name options{ id name } } } } } } }`,
     { login:cfg.login, num:cfg.number });
   const p = d.user.projectV2; if(!p) throw new Error('project not found');
+  // A board's fields are matched by NAME, and the name is not always the one we chose. `Type` is a
+  // reserved Projects field name on newer boards, so ensure-board.sh has had to create `Work type`
+  // instead - and a board whose field is called that had its type silently unreadable and unsettable
+  // here, because this looked for the exact string `type`. Each role now has a small list of names
+  // it answers to, most specific first, and the first match wins. (#98)
+  const FIELD_ALIASES = { lane:['lane','status'], priority:['priority','prio'], type:['work type','type','item type','ticket type'] };
   const fields = {};
-  (p.fields.nodes||[]).forEach(f=>{ if(!f||!f.name) return; const k=f.name.toLowerCase();
-    if(k==='lane'||k==='priority'||k==='type'){ fields[k]={ id:f.id, opts:{} }; (f.options||[]).forEach(o=>fields[k].opts[o.name]=o.id); } });
+  (p.fields.nodes||[]).forEach(f=>{ if(!f||!f.name) return; const nm=f.name.toLowerCase().trim();
+    for(const role of Object.keys(FIELD_ALIASES)){
+      if(fields[role]) continue;                       // first match wins, so an alias never displaces an exact one
+      if(FIELD_ALIASES[role].indexOf(nm)<0) continue;
+      fields[role]={ id:f.id, name:f.name, opts:{} }; (f.options||[]).forEach(o=>fields[role].opts[o.name]=o.id);
+      break;
+    } });
+  // `Lane` and `Status` are both listed for the lane role, and a board can carry both. If the alias
+  // matched and the exact name is also present, prefer the exact one.
+  (p.fields.nodes||[]).forEach(f=>{ if(!f||!f.name) return; const nm=f.name.toLowerCase().trim();
+    for(const role of Object.keys(FIELD_ALIASES)){
+      if(nm!==role || (fields[role]&&fields[role].name&&fields[role].name.toLowerCase()===role)) continue;
+      fields[role]={ id:f.id, name:f.name, opts:{} }; (f.options||[]).forEach(o=>fields[role].opts[o.name]=o.id);
+    } });
   return _boardMeta[a.id] = { projectId:p.id, fields };
 }
 // An item's id, derived in ONE place. The reader built `px+'#'+n` and submitNewIssue built `'#'+n`,
@@ -1307,7 +1328,11 @@ function itemIdFor(a,number){
 }
 // load the board's items into a.queue (replaces the local queue for board apps)
 async function loadBoardItems(a){
-  const cfg = boardFor(a); await resolveBoard(a);
+  const cfg = boardFor(a); const meta = await resolveBoard(a);
+  // Read the fields back by the names this board ACTUALLY uses, not the names we hoped for. The
+  // query used to hardcode "Type", so a board whose field is `Work type` returned null for every
+  // item and every row read as untriaged. resolveBoard already worked out the real names. (#98)
+  const fname = (role,dflt)=>((meta&&meta.fields&&meta.fields[role]&&meta.fields[role].name)||dflt).replace(/"/g,'');
   // PAGINATE. `items(first:100)` with no cursor is a hard cap, not a page size: a board with more
   // than 100 items showed the first 100 and said nothing at all. One board was hiding 42 items,
   // 14 of them open work. A bounded query states its bound and its total (D13), so this walks
@@ -1320,9 +1345,9 @@ async function loadBoardItems(a){
       nodes{
       id
       content{ ... on Issue { number title body state url createdAt closedAt comments{ totalCount } labels(first:20){ nodes{ name } } } }
-      lane: fieldValueByName(name:"Lane"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
-      priority: fieldValueByName(name:"Priority"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
-      type: fieldValueByName(name:"Type"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
+      lane: fieldValueByName(name:"${fname('lane','Lane')}"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
+      priority: fieldValueByName(name:"${fname('priority','Priority')}"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
+      type: fieldValueByName(name:"${fname('type','Type')}"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
     } } } } }`, { login:cfg.login, num:cfg.number, after });
     const page = d.user.projectV2.items;
     totalCount = page.totalCount;
@@ -2603,7 +2628,7 @@ function onRowReorder(ev,appId){
   touch();
 }
 const STATUS_ORDER=['todo','doing','verify','blocked','done'];
-const STATUS_META={new:{e:'🆕',t:'new',c:'var(--st-new)',f:'var(--st-new-f)',f2:'var(--st-new-f2)'},todo:{e:'◻',t:'to do',c:'var(--st-todo)',f:'var(--st-todo-f)',f2:'var(--st-todo-f2)'},doing:{e:'🔨',t:'doing',c:'var(--st-doing)',f:'var(--st-doing-f)',f2:'var(--st-doing-f2)'},verify:{e:'🔍',t:'verify',c:'var(--st-verify)',f:'var(--st-verify-f)',f2:'var(--st-verify-f2)'},blocked:{e:'⛔',t:'blocked',c:'var(--st-blocked)',f:'var(--st-blocked-f)',f2:'var(--st-blocked-f2)'},done:{e:'✅',t:'done',c:'var(--st-done)',f:'var(--st-done-f)',f2:'var(--st-done-f2)'}};
+const STATUS_META={new:{e:'🆕',t:'new',c:'var(--st-new)',f:'var(--st-new-f)',f2:'var(--st-new-f2)'},todo:{e:'◻',t:'to do',c:'var(--st-todo)',f:'var(--st-todo-f)',f2:'var(--st-todo-f2)'},doing:{e:'🔨',t:'doing',c:'var(--st-doing)',f:'var(--st-doing-f)',f2:'var(--st-doing-f2)'},verify:{e:'🔍',t:'verify',c:'var(--st-verify)',f:'var(--st-verify-f)',f2:'var(--st-verify-f2)'},needsyou:{e:'🙋',t:'needs you',c:'var(--st-needsyou)',f:'var(--st-needsyou-f)',f2:'var(--st-needsyou-f2)'},blocked:{e:'⛔',t:'blocked',c:'var(--st-blocked)',f:'var(--st-blocked-f)',f2:'var(--st-blocked-f2)'},done:{e:'✅',t:'done',c:'var(--st-done)',f:'var(--st-done-f)',f2:'var(--st-done-f2)'}};
 // Every app carries the fields the rest of the code assumes. Cheap, idempotent, and the one
 // place that decides what an app minimally is.
 function normaliseApps(){
@@ -3743,7 +3768,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v105';
+const TIARA_VERSION = 'board-v106';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
