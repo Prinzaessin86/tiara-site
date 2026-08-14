@@ -2027,7 +2027,9 @@ function renderIssue(){
   const live=!!boardFor(a) && !!q.issueNumber;   // a local item has nothing on GitHub to PATCH
   const titleBlock = (_ipEdit.what==='title')
     ? ipEditor('ipSaveTitle()','the title, as it appears on the board and on GitHub',true)
-    : `<div class="ipt">${esc(q.title||'')}${live?`<button class="ipx" onclick="ipEdit('title','','${esc((q.title||'').replace(/'/g,'&#39;'))}')" title="edit the title">✎</button>`:''}</div>`;
+    : `<div class="ipt">${esc(q.title||'')}`
+      + (live?`<button class="ipx" onclick="ipEdit('title','',ipTitleVal())" title="edit the title">✎</button>`:'')
+      + `</div>`;
   const secs=bodySections(q);
   const body = (typeof secs==='string') ? secs : secs.map(x=>{
     const editing = _ipEdit.what==='sec' && _ipEdit.key===x.label;
@@ -2066,6 +2068,14 @@ function renderIssue(){
 // The raw text of one section, looked up by label at click time rather than interpolated into the
 // handler string. esc() does not escape a single quote, so a body containing one would break out of
 // the attribute; this is the same reason the compose panel passes its label through `data-cmpl`.
+// The title, read at click time. It used to be interpolated straight into the button's own onclick
+// attribute, which is the hazard ipSecVal and ipNoteRaw already exist to avoid and which this one
+// control did anyway: esc() does not escape an apostrophe, so a title containing one closed the JS
+// string early, the handler became a syntax error, and the click silently did nothing. That is why
+// editing a title was "blocked" while every other editor worked. (#105)
+function ipTitleVal(){
+  const f=findItem(_ipView.app,_ipView.item); return f?(f.q.title||''):'';
+}
 function ipSecVal(label){
   const f=findItem(_ipView.app,_ipView.item); if(!f) return '';
   const secs=bodySections(f.q); if(typeof secs==='string') return '';
@@ -2711,14 +2721,18 @@ function chipField(id,i,kind){
 function kebab(key, items){
   return `<details class="kebab" data-key="menu:${key}"><summary title="more actions for this item" aria-label="more actions">More actions <span class="caret" aria-hidden="true">▾</span></summary>`
     + `<div class="pop">` + items.map(it => it==='-' ? '<div class="sep"></div>'
-        : `<button class="${it.danger?'danger':''}" onclick="closeMenus();${it.do}">${it.label}</button>`).join('')
+        : `<button class="${it.danger?'danger':''}" onclick="event.preventDefault();event.stopPropagation();closeMenus();${it.do}">${it.label}</button>`).join('')
     + `</div></details>`;
 }
 function closeMenus(except){ document.querySelectorAll('details.kebab[open]').forEach(d=>{ if(d!==except) d.open=false; }); }
 document.addEventListener('click', e=>{ const d=e.target.closest && e.target.closest('details.kebab'); closeMenus(d||null); });
-// A kebab inside a <summary> is inside the card's own toggle, so a click on it would open the
-// card as well. The menu owns its own clicks.
-document.addEventListener('click', e=>{ if(e.target.closest && e.target.closest('details.kebab')) e.stopPropagation(); }, true);
+// A kebab inside a <summary> is inside the card's own toggle, so a click on it would open the card
+// as well. Only the kebab's own summary needs that; this used to match the whole `details.kebab`,
+// which includes the popup, and a capture-phase stopPropagation at the document stops the event
+// reaching its target - so EVERY menu item was dead. Not one of them ever ran: not `Close issue on
+// GitHub`, not `Open on GitHub`, not `Rename project…`. The items now stop their own click in their
+// own handler, where it cannot swallow anything else.
+document.addEventListener('click', e=>{ if(e.target.closest && e.target.closest('details.kebab>summary')) e.stopPropagation(); }, true);
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMenus(null); });
 function delApp(id){ const a=app(id); if(!a)return; if(!confirm('Remove the project "'+a.name+'" from your Tiara board?\n\nThis only clears it from the board - it does NOT touch any files, folders, or repos on your Mac.')) return; data.apps=data.apps.filter(x=>x.id!==id); openState.delete('app:'+id); touch(); setStatus('removed '+a.name+' from the board'); }
 function cycleStatus(id,i){ const a=app(id); const q=a.queue[i]; const idx=STATUS_ORDER.indexOf(q.status||'todo'); q.status=STATUS_ORDER[(idx+1)%4]; q.done=(q.status==='done'); touch(); }
@@ -3553,7 +3567,9 @@ function itemRow(a,q,i,scope,opts){
   const open=openState.has('item:'+q.id);
   const det=open?detailHtml(a,q,i,scope):'';
   const icon=_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:`<span aria-hidden="true">${esc(a.emoji||'🫧')}</span>`;
-  const menu=[{label:'Edit this ticket…',do:`openIssue('${esc(a.id)}','${esc(q.id)}')`}];
+  // No `Edit this ticket…` here: `Open item page` sits on the row two controls away and goes to the
+  // same place, so the menu item was a second door to one room. (#104)
+  const menu=[];
   if(q.url) menu.push({label:'Open #'+q.issueNumber+' on GitHub ↗',do:`window.open('${q.url}','_blank')`},
                       {label:'Copy the issue link',do:`copyIssueLink('${esc(q.url)}')`});
   menu.push('-',{label:'Close issue on GitHub',danger:true,do:`delItem('${a.id}',${i})`});
@@ -3687,7 +3703,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v99';
+const TIARA_VERSION = 'board-v100';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
