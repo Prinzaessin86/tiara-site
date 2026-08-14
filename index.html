@@ -816,6 +816,23 @@
   .linkbtn:hover{color:var(--pink);}
   .linkbtn:focus-visible{outline:2px solid var(--purple);outline-offset:2px;border-radius:var(--r-4);}
 
+  /* ---- the Done list on a project page (#95) --------------------------------------------------
+     A control with its name above it, which is the v2 pattern everywhere a value is chosen. */
+  .ffield{display:inline-flex;flex-direction:column;gap:var(--sp-4px);}
+  .flabel{font-size:var(--t-xs);font-weight:800;color:var(--brand);}
+  .donebar{display:flex;flex-wrap:wrap;gap:var(--sp-12px);align-items:flex-end;
+       background:var(--c-fbf5ff);border:1.5px solid var(--line2);border-radius:var(--r-14);
+       padding:var(--sp-12px) var(--sp-14px);margin-bottom:var(--sp-10px);}
+  .doneline{font-size:var(--t-xs);color:var(--ink-2);font-weight:700;padding-bottom:var(--sp-10px);}
+  .doneline b{color:var(--ink-1);}
+  /* A numbered page button. The count is real and every page is reachable, which is the whole
+     point: a cap that cannot be walked past is the dead end the brief names. */
+  .pgn{min-width:2.25rem;min-height:2.25rem;padding:0 var(--sp-10px);border-radius:var(--r-pill);
+       font-family:'Quicksand';font-weight:700;font-size:var(--t-xs);cursor:pointer;
+       border:1.5px solid var(--c-b09bc9);background:var(--c-f3e9fb);color:var(--c-5a4a6e);}
+  .pgn.on{border-color:transparent;background:linear-gradient(90deg,var(--c-ffd9ee),var(--c-e6dbff));color:var(--c-7a4a9e);}
+  .pgn:focus-visible{outline:2px solid var(--purple);outline-offset:2px;}
+
   /* A phone. The page had no media query at all until board-v65, so every size was a clamp on the
      viewport that scaled type and never changed a layout. These only ever make things bigger or
      let them wrap; no desktop size changes. */
@@ -1848,7 +1865,7 @@ function filterBar(scope, rows, opts){
 let _pjCommits = {};   // appId -> [{sha,msg}], memory only. Read live, stored nowhere (D46).
 // A view preference. It lives here and never goes to GitHub: GitHub holds the facts, Tiara holds
 // the view. Resets when you open a different project, because a filter you cannot see is a lie.
-let _pjView = { id:null, q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'', page:0 };
+let _pjView = { id:null, q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'', page:0, doneMonth:'', donePer:'10', donePage:0 };
 const PJ_PAGE = 10;
 const CARD_CAP = 10;   // a Portfolio card shows this many open items, then says so (#84)
 function pjPage(d){ _pjView.page += d; renderProject(_pjView.id); window.scrollTo(0,0); }
@@ -1863,7 +1880,7 @@ function openProject(id, opts){
   const ip=$('#issuepage'); if(ip) ip.style.display='none';
   const ni=$('#newissue'); if(ni) ni.style.display='none';   // the filing page is a sibling surface (#69)
   const p=$('#project'); if(!p) return;
-  if(_pjView.id!==id) _pjView={ id:id, q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'', page:0 };
+  if(_pjView.id!==id) _pjView={ id:id, q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'', page:0, doneMonth:'', donePer:'10', donePage:0 };
   p.style.display='block'; renderProject(id);
   _navFrom=null; renderBackChip();
   setHash('project/'+id);
@@ -2059,6 +2076,26 @@ function pjRowHtml(a,x,qi){ return itemRow(a,x,qi,'j',{compact:true}); }
 // "Nothing matches" is a dead end when the thing you are looking for is one project away. If the
 // query finds nothing here but does find something elsewhere, say so and offer the way there (#95).
 // This is the same search the jump box runs, scoped differently, so the two cannot disagree.
+// "What did I ship in July" used to mean opening GitHub. A done item's month comes from when the
+// issue was filed - `created`, which the page has since #91 - because Tiara does not fetch closedAt.
+// That is stated rather than implied: the label says "filed in", not "shipped in", when it has to
+// guess. Items with no date fall into one bucket at the end rather than vanishing. (#95)
+function monthKey(q){ const t=q&&q.created?Date.parse(q.created):NaN; if(!isFinite(t)) return '';
+  const d=new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function monthLabel(k){
+  if(!k) return 'no date';
+  try{ const [y,m]=k.split('-'); return new Date(Number(y),Number(m)-1,1)
+        .toLocaleString(undefined,{month:'short',year:'numeric'}); }
+  catch(e){ noted('naming a month',e); return k; }
+}
+function doneMonthsOf(list){
+  const seen=[]; for(const q of list){ const k=monthKey(q); if(k && !seen.includes(k)) seen.push(k); }
+  seen.sort().reverse(); return seen;
+}
+function pjDoneMonth(v){ _pjView.doneMonth=v||''; _pjView.donePage=0; if(_pjView.id) renderProject(_pjView.id); }
+function pjDonePer(v){ _pjView.donePer=v; _pjView.donePage=0; if(_pjView.id) renderProject(_pjView.id); }
+function pjDonePage(d){ _pjView.donePage=Math.max(0,(_pjView.donePage||0)+d); if(_pjView.id) renderProject(_pjView.id); }
+function pjDoneGo(k){ _pjView.donePage=Math.max(0,k); if(_pjView.id) renderProject(_pjView.id); }
 function pjEmptyHtml(a){
   const q=(_pjView.q||'').trim();
   if(!q) return '<div class="pjempty"><b>This project has nothing open.</b></div>';
@@ -2094,8 +2131,18 @@ function renderProject(id){
   const from=_pjView.page*PJ_PAGE;
   const page=filtered.slice(from, from+PJ_PAGE);
 
-  const DONECAP=20;
-  const doneShown=doneQ.slice(0,DONECAP);
+  // The Done list used to stop dead at 20 with no way to the other items, which were already in
+  // the browser. The brief calls it the clearest single fix on the page. It now filters by the
+  // month a thing shipped, chooses its own page size, and pages. (#95)
+  const doneMonths=doneMonthsOf(doneQ);
+  if(_pjView.doneMonth && !doneMonths.includes(_pjView.doneMonth)) _pjView.doneMonth='';
+  const doneFiltered=doneQ.filter(x=>!_pjView.doneMonth || monthKey(x)===_pjView.doneMonth);
+  const dPer=_pjView.donePer==='all' ? Math.max(1,doneFiltered.length) : (parseInt(_pjView.donePer,10)||10);
+  const dPages=Math.max(1, Math.ceil(doneFiltered.length/dPer));
+  if(_pjView.donePage>dPages-1) _pjView.donePage=dPages-1;
+  if(_pjView.donePage<0) _pjView.donePage=0;
+  const dFrom=_pjView.donePage*dPer;
+  const doneShown=doneFiltered.slice(dFrom, dFrom+dPer);
   const c=_pjCommits[id];
   const commits = !c ? '<div class="muted">reading…</div>'
     : (c.error ? `<div class="muted">could not read commits: ${esc(c.error)}</div>`
@@ -2125,8 +2172,28 @@ function renderProject(id){
     <div class="pjsec"><h3>Last 5 commits</h3>${commits}
       <div class="muted" style="margin-top:.4rem">Read from GitHub each time you open this page, never stored.</div></div>
 
-    <div class="pjsec"><h3>Done \u00b7 showing ${doneShown.length} of ${doneQ.length}</h3>
-      ${doneShown.length?doneShown.map(row).join(''):'<div class="muted">nothing closed yet</div>'}</div>
+    <div class="pjsec"><h3>Done</h3>
+      <div class="donebar">
+        <label class="ffield"><span class="flabel">Shipped in</span>
+          <select class="fsel${_pjView.doneMonth?' on':''}" onchange="pjDoneMonth(this.value)">
+            <option value="">All months</option>
+            ${doneMonths.map(m=>`<option value="${esc(m)}" ${_pjView.doneMonth===m?'selected':''}>${esc(monthLabel(m))}</option>`).join('')}
+          </select></label>
+        <label class="ffield"><span class="flabel">Per page</span>
+          <select class="fsel" onchange="pjDonePer(this.value)">
+            ${['10','20','all'].map(v=>`<option value="${v}" ${String(_pjView.donePer)===v?'selected':''}>${v==='all'?'all of them':v+' per page'}</option>`).join('')}
+          </select></label>
+        <span class="doneline">${doneQ.length
+            ? `showing <b>${doneShown.length}</b> of ${doneFiltered.length}${_pjView.doneMonth?(' shipped in '+esc(monthLabel(_pjView.doneMonth))):' done items'}`
+            : 'nothing closed yet'}</span>
+      </div>
+      ${doneShown.length?doneShown.map(row).join(''):(doneQ.length?'<div class="muted">nothing shipped in that month</div>':'<div class="muted">nothing closed yet</div>')}
+      ${doneFiltered.length>dPer||_pjView.donePage>0?`<div class="pjpage">
+          <button class="tb" onclick="pjDonePage(-1)" ${_pjView.donePage<=0?'disabled':''}>\u2190 newer</button>
+          ${Array.from({length:dPages},(_,k)=>k).map(k=>`<button class="pgn${k===_pjView.donePage?' on':''}" onclick="pjDoneGo(${k})" ${k===_pjView.donePage?'aria-current="true"':''}>${k+1}</button>`).join('')}
+          <button class="tb" onclick="pjDonePage(1)" ${_pjView.donePage>=dPages-1?'disabled':''}>older \u2192</button>
+          <span>page ${_pjView.donePage+1} of ${dPages}</span>
+        </div>`:''}</div>
 
     <div class="pjsec"><h3>Settings</h3>
       <div class="scnote repoedit" onclick="setRepo('${a.id}')">repo: ${esc(a.repo)} <span class="ed">edit</span></div>
@@ -3518,7 +3585,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v95';
+const TIARA_VERSION = 'board-v96';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
