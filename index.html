@@ -29,14 +29,28 @@
     --w-read: 74ch;
 
     /* TYPE. Six steps. Every size on the page is one of these. #77 named the 39 values the
-       file used to have; this is where they collapse. */
-    --t-xs:.72rem; --t-sm:.82rem; --t-md:.92rem; --t-lg:1.05rem; --t-xl:1.3rem; --t-2xl:1.85rem;
+       file used to have; this is where they collapse.
+       Retuned to the approved v2 design (#95). The root is a fixed 16px below, so these read
+       12 / 13 / 15 / 17 / 21 / 27px, which is what the mockup was drawn at. They used to be
+       .72/.82/.92/1.05/1.3/1.85rem against a clamped 17.5-23px root, which rendered up to 45%
+       larger than the design on a wide screen. */
+    --t-root:16px;
+    --t-xs:.75rem; --t-sm:.8125rem; --t-md:.9375rem; --t-lg:1.0625rem; --t-xl:1.3125rem; --t-2xl:1.6875rem;
     /* and three RELATIVE steps, for the markdown block, which renders inside containers of
        different sizes and so cannot use an absolute one. */
     --t-rel-sm:.9em; --t-rel-md:1em; --t-rel-lg:1.1em;
 
-    /* RADIUS. Four, plus a circle, which is a shape rather than a step. */
-    --r-sm:.4rem; --r-md:.6rem; --r-lg:.9rem; --r-pill:999px; --r-circle:50%;
+    /* RADIUS. A nine-step ladder in even 2px increments, plus a pill and a circle, which are
+       shapes rather than steps. It was four steps until #95: the approved v2 design uses a
+       corner per surface size - 2px on the heading underline, 6px on a chip, 10px on a control,
+       12px on a row, 16px on a card, 18px on the group that holds cards - and rounding those
+       into three steps flattened exactly the depth the design uses to say what contains what.
+       Named by their px value so the ladder is legible, since that is how it is reasoned about. */
+    --r-2:2px; --r-4:4px; --r-6:6px; --r-8:8px; --r-10:10px; --r-11:11px; --r-12:12px;
+    --r-14:14px; --r-16:16px; --r-18:18px; --r-pill:999px; --r-circle:50%;
+    /* The three original names stay, mapped onto the ladder, so every existing rule keeps working
+       and this change is a pure addition rather than a rewrite of 200 call sites. */
+    --r-sm:var(--r-6); --r-md:var(--r-10); --r-lg:var(--r-14);
 
     /* SPACE. */
     --sp-1px:1px; --sp-2px:2px; --sp-3px:3px; --sp-4px:4px; --sp-5:.05rem; --sp-5px:5px;
@@ -91,10 +105,19 @@
     --c-ffc2df:#FFC2DF; --c-ffc9d4:#ffc9d4; --c-ffd0e0:#ffd0e0; --c-ffd6ec:#ffd6ec; --c-ffd9ee:#ffd9ee; --c-ffe0a3:#ffe0a3;
     --c-ffe0c7:#ffe0c7; --c-ffe0f0:#ffe0f0; --c-ffe6f4:#ffe6f4; --c-ffe9f3:#ffe9f3; --c-ffeaf6:#ffeaf6; --c-fff4fb:#fff4fb;
     --c-fff5fa:#fff5fa; --c-fff6fb:#fff6fb;
+    /* Transparent white. A gradient that fades to `transparent` fades through grey in some
+       engines, because `transparent` is rgba(0,0,0,0); fading to white-at-zero-alpha does not.
+       The v2 card headers need it. (#95) */
+    --c-ffffff00:#ffffff00;
   }
-  /* Type, icons, spacing and columns grow together on a large screen instead of the page
-     staying a narrow column in the middle of it. */
-  html{font-size:clamp(17.5px, .55vw + 15.4px, 23px);}
+  /* A fixed root, so a step in the scale is the same size everywhere and matches the size the v2
+     design was drawn at. This used to be `clamp(17.5px, .55vw + 15.4px, 23px)`, which grew type,
+     icons, spacing and columns together on a large screen. That is a real thing to lose and it is
+     lost deliberately: it put the root at 23px on a wide screen, so `--t-sm` rendered at 18.9px
+     where the design says 13px, and the whole page ran about 45% large. Two scale mechanisms
+     cannot both be honoured, and the design is the one that was approved. Width still responds,
+     through --w-dense and the body's clamped padding. (#95) */
+  html{font-size:var(--t-root);}
   *{box-sizing:border-box;}
   body{margin:0; padding:1.3rem clamp(.9rem, 2.5vw, 2rem) 4rem; font-family:'Quicksand',system-ui,sans-serif; color:var(--ink); font-size:var(--t-md); line-height:1.5;
     background:radial-gradient(900px 420px at 6% -5%,var(--c-ffe0f0) 0,transparent 60%),radial-gradient(900px 420px at 100% 3%,var(--c-e6ddfc) 0,transparent 55%),linear-gradient(180deg,var(--c-fff4fb),var(--c-f4ecff));}
@@ -3233,7 +3256,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v92';
+const TIARA_VERSION = 'board-v93';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
