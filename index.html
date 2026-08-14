@@ -1319,7 +1319,7 @@ async function loadBoardItems(a){
       pageInfo{ hasNextPage endCursor }
       nodes{
       id
-      content{ ... on Issue { number title body state url createdAt comments{ totalCount } labels(first:20){ nodes{ name } } } }
+      content{ ... on Issue { number title body state url createdAt closedAt comments{ totalCount } labels(first:20){ nodes{ name } } } }
       lane: fieldValueByName(name:"Lane"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
       priority: fieldValueByName(name:"Priority"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
       type: fieldValueByName(name:"Type"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
@@ -1348,6 +1348,9 @@ async function loadBoardItems(a){
       // When the ticket was filed. Nothing in this file asked GitHub for it until #91, so "newest
       // first" sorted by issue number as a stand-in and no surface said when anything happened.
       created:c.createdAt||'',
+      // When it was CLOSED, which is what "shipped in" means. Absent while the ticket is open,
+      // and absent on anything read before #103 asked for it. (#103)
+      closed:c.closedAt||'',
       // An absent Priority stays absent. It used to become 'Med' here and again in migrate(), so
       // the row showed a priority nobody had set and nothing could find the untriaged. Type's
       // empty state was preserved a line below all along. (#83)
@@ -2173,18 +2176,34 @@ function pjRowHtml(a,x,qi){ return itemRow(a,x,qi,'j',{compact:true}); }
 // "What did I ship in July" used to mean opening GitHub. A done item's month comes from when the
 // issue was filed - `created`, which the page has since #91 - because Tiara does not fetch closedAt.
 // That is stated rather than implied: the label says "filed in", not "shipped in", when it has to
-// guess. Items with no date fall into one bucket at the end rather than vanishing. (#95)
-function monthKey(q){ const t=q&&q.created?Date.parse(q.created):NaN; if(!isFinite(t)) return '';
+// guess. Items with no date fall into one bucket at the end rather than vanishing. (#95, and see
+// #103: this reads `closed` now, not `created`, so the label is literally true.)
+// The month a thing SHIPPED, which is when its issue was closed. This used to read `created`,
+// because the page never asked GitHub for `closedAt` - so a ticket filed in June and closed in
+// August filed itself under June, beneath a control labelled "Shipped in". For work done in the
+// month it was filed the two agree, which is why it went unnoticed. (#103)
+//
+// A done item with no close date - closed before #103 shipped, or closed in a way GitHub gives no
+// date for - returns '' and lands in one clearly named bucket rather than vanishing from the list.
+function monthKey(q){ const t=q&&q.closed?Date.parse(q.closed):NaN; if(!isFinite(t)) return '';
   const d=new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 function monthLabel(k){
+  if(k===NO_CLOSE_KEY) return 'no close date on GitHub';
   if(!k) return 'no date';
   try{ const [y,m]=k.split('-'); return new Date(Number(y),Number(m)-1,1)
         .toLocaleString(undefined,{month:'short',year:'numeric'}); }
   catch(e){ noted('naming a month',e); return k; }
 }
+// Newest month first, and a `none` bucket at the end whenever anything in the list has no close
+// date - otherwise those items are visible only under "All months" and disappear the moment you
+// filter, which is the silent truncation this file keeps having to fix. (#103)
+const NO_CLOSE_KEY='(none)';
 function doneMonthsOf(list){
-  const seen=[]; for(const q of list){ const k=monthKey(q); if(k && !seen.includes(k)) seen.push(k); }
-  seen.sort().reverse(); return seen;
+  const seen=[]; let anyMissing=false;
+  for(const q of list){ const k=monthKey(q); if(!k){ anyMissing=true; continue; } if(!seen.includes(k)) seen.push(k); }
+  seen.sort().reverse();
+  if(anyMissing) seen.push(NO_CLOSE_KEY);
+  return seen;
 }
 function pjDoneMonth(v){ _pjView.doneMonth=v||''; _pjView.donePage=0; if(_pjView.id) renderProject(_pjView.id); }
 function pjDonePer(v){ _pjView.donePer=v; _pjView.donePage=0; if(_pjView.id) renderProject(_pjView.id); }
@@ -2230,7 +2249,10 @@ function renderProject(id){
   // month a thing shipped, chooses its own page size, and pages. (#95)
   const doneMonths=doneMonthsOf(doneQ);
   if(_pjView.doneMonth && !doneMonths.includes(_pjView.doneMonth)) _pjView.doneMonth='';
-  const doneFiltered=doneQ.filter(x=>!_pjView.doneMonth || monthKey(x)===_pjView.doneMonth);
+  const doneFiltered=doneQ.filter(x=>{
+    if(!_pjView.doneMonth) return true;
+    if(_pjView.doneMonth===NO_CLOSE_KEY) return !monthKey(x);
+    return monthKey(x)===_pjView.doneMonth; });
   const dPer=_pjView.donePer==='all' ? Math.max(1,doneFiltered.length) : (parseInt(_pjView.donePer,10)||10);
   const dPages=Math.max(1, Math.ceil(doneFiltered.length/dPer));
   if(_pjView.donePage>dPages-1) _pjView.donePage=dPages-1;
@@ -3706,7 +3728,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v103';
+const TIARA_VERSION = 'board-v104';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
