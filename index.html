@@ -1476,23 +1476,6 @@ async function bReorder(a,q,afterId){ const meta=await resolveBoard(a);
   await retry(()=>ghGraphQL(`mutation($p:ID!,$i:ID!,$a:ID){ updateProjectV2ItemPosition(input:{projectId:$p,itemId:$i,afterId:$a}){ items{ totalCount } } }`,{ p:meta.projectId, i:q.itemId, a:afterId })); }
 // GitHub Projects is eventually-consistent right after a mutation, so idempotent writes get a few quiet retries
 async function retry(fn){ let last; for(let k=0;k<5;k++){ try{ return await fn(); }catch(e){ last=e; await new Promise(r=>setTimeout(r,300*(k+1))); } } throw last; }
-// temporary: runs the exact bSetField path the chips run, on a real OPEN item, then reads GitHub back
-async function diagnose(id){ const a=app(id); let out='DIAGNOSE (runs the real chip handler)\n\n'; const cfg=boardFor(a);
-  try{ await resolveBoard(a);
-    const i=(a.queue||[]).findIndex(x=>x.itemId&&x.issueNumber&&x.status!=='done');
-    if(i<0){ alert('no open item with itemId'); return; }
-    const q=a.queue[i]; const num=q.issueNumber; const before=q.type;
-    const nv=TYPE_ORDER[(TYPE_ORDER.indexOf(before)+1)%TYPE_ORDER.length];
-    out+='item #'+num+' at index '+i+'\ntype before = '+before+'\n';
-    setType(a.id, i, nv);                     // <-- the ACTUAL chip change path
-    await new Promise(r=>setTimeout(r,3800));  // let the async save finish
-    const now=a.queue[i]; out+='local type after = '+(now?now.type:'?')+'\n';
-    const chk=await ghGraphQL(`query($l:String!,$n:Int!){user(login:$l){projectV2(number:$n){items(first:100){nodes{content{... on Issue{number}} t:fieldValueByName(name:"Type"){... on ProjectV2ItemFieldSingleSelectValue{name}}}}}}}`,{l:cfg.login,n:cfg.number});
-    const it=(chk.user.projectV2.items.nodes||[]).find(x=>x.content&&x.content.number===num);
-    out+='GitHub type = '+((it&&it.t&&it.t.name)||' - ')+'\n\n';
-    out+=(it&&it.t&&it.t.name)&&(it.t.name.toLowerCase()!==before)?'✅ handler WROTE to GitHub':'❌ handler did NOT write to GitHub';
-  }catch(e){ out+='THREW: '+e.message; }
-  alert(out); }
 
 function ghLoadCfg(){ try{ const c=JSON.parse(localStorage.getItem('tiaraGH')||'{}'); GH.token=c.token||''; GH.owner=c.owner||''; GH.boardRepo=c.boardRepo||'tiara'; }catch(e){ noted('saved GitHub config',e); } }
 function ghSaveCfg(){ localStorage.setItem('tiaraGH', JSON.stringify({token:GH.token,owner:GH.owner,boardRepo:GH.boardRepo})); }
@@ -1706,14 +1689,6 @@ function saveOpen(){
 
 /* ---------- persistence ---------- */
 const hasFS = 'showOpenFilePicker' in window;
-async function connectFile(){
-  if(!hasFS){ setStatus('this browser can’t auto-save - use Export / and re-import. Chrome recommended.'); return; }
-  try{
-    [fileHandle] = await window.showOpenFilePicker({types:[{description:'Tiara data',accept:{'application/json':['.json']}}]});
-    const f = await fileHandle.getFile(); data = JSON.parse(await f.text());
-    render(); setStatus('connected: '+fileHandle.name+' · auto-saving');
-  }catch(e){ setStatus('open cancelled'); }
-}
 async function save(){
   if(HELPER.on) return ghSave();
   if(fileHandle){ try{ const w=await fileHandle.createWritable(); await w.write(JSON.stringify(data,null,2)); await w.close(); setStatus('saved '+new Date().toLocaleTimeString()); }catch(e){ setStatus('save failed: '+e.message); } return; }
@@ -2790,7 +2765,6 @@ document.addEventListener('click', e=>{ const d=e.target.closest && e.target.clo
 document.addEventListener('click', e=>{ if(e.target.closest && e.target.closest('details.kebab>summary')) e.stopPropagation(); }, true);
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeMenus(null); });
 function delApp(id){ const a=app(id); if(!a)return; if(!confirm('Remove the project "'+a.name+'" from your Tiara board?\n\nThis only clears it from the board - it does NOT touch any files, folders, or repos on your Mac.')) return; data.apps=data.apps.filter(x=>x.id!==id); openState.delete('app:'+id); touch(); setStatus('removed '+a.name+' from the board'); }
-function cycleStatus(id,i){ const a=app(id); const q=a.queue[i]; const idx=STATUS_ORDER.indexOf(q.status||'todo'); q.status=STATUS_ORDER[(idx+1)%4]; q.done=(q.status==='done'); touch(); }
 // The toggle says which state the click will move you to, and the row shows which state it is in.
 // Both were wrong before #95. The word was `close`, which on the same row also meant "close the
 // GitHub issue" one control away - the exact collision the brief asks to fix - and the open styling
@@ -2867,14 +2841,6 @@ function addNote(appId,itemId,scope){ scope=scope||''; const inp=document.getEle
     bComment(a,q,'👑 you: '+v).then(()=>setStatus('🟢 note added to '+q.id))
       .catch(e=>{ const k=q.notes.indexOf(note); if(k>=0) q.notes.splice(k,1); captureOpen(); render(); setStatus('⚠ note didn\'t save - removed ('+e.message+')'); }); return; }
   q.notes.push({by:'you',text:v}); inp.value=''; touch(); }
-function toggleItem(id,i){ const a=app(id); a.queue[i].done=!a.queue[i].done; touch(); }
-function delItem(id,itemId){ const f=itemAt(id,itemId); if(!f) return; const {a,q,i}=f;
-  if(boardFor(a)){ if(!q.issueNumber){ setStatus('one sec - still saving that item…'); return; }
-    if(!confirm('Close issue '+q.id+' - "'+q.title+'"?\n\nThis closes it on GitHub. It is fully recoverable (you can reopen it anytime).')) return;
-    a.queue.splice(i,1); captureOpen(); render();
-    bSetState(a,q,'closed').then(()=>setStatus('🟢 closed '+q.id+' (recoverable)'))
-      .catch(e=>{ a.queue.splice(i,0,q); captureOpen(); render(); setStatus('⚠ '+q.id+' didn\'t close - put it back ('+e.message+')'); }); return; }
-  a.queue.splice(i,1); touch(); }
 function personalize(str,a){ return (str||'').replace(/<AppName>/g,a.name).replace(/<PREFIX>/g,a.prefix||'ITEM'); }
 function seedQueueFromRunbook(a){
   const rec=(data.runbook||[]).find(r=>r.id==='newapp'); if(!rec) return 0;
@@ -3161,17 +3127,6 @@ function replaceSection(raw, sec, val){
   const end = tail ? '\n\n' : (/\n$/.test(body) ? '\n' : '');
   return body.slice(0,sec.s) + '\n\n' + v + end + tail.replace(/^\n+/,'');
 }
-// The whole body, every section. The ticket's own page and nothing else: a detail panel shows one
-// section, because the height of one panel is what makes a long list endless. (#82)
-function bodyHtml(q){
-  const secs=bodySections(q);
-  if(typeof secs==='string') return secs;
-  return secs.map(x=>{
-    const html=mdHtml(x.val);
-    return `<div class="bsec${x.dod?' dod':''}">${x.label?`<div class="blab">${esc(x.label)}</div>`:''}`
-      + (html?`<div class="bval md">${html}</div>`:'<div class="bval muted">empty</div>')+'</div>';
-  }).join('');
-}
 function detailHtml(a,q,i,scope){ scope=scope||'';
   const secs=bodySections(q);
   const noBody=(typeof secs==='string');
@@ -3455,7 +3410,6 @@ function tqSave(){
   catch(e){ noted('task queue view (save)',e); }
 }
 function tqPage(d){ _tqView.page+=d; renderPortfolio(); window.scrollTo(0,0); }
-function tqClear(){ fClear('tq'); }
 function setTqGrouped(on){ tqGrouped=!!on; tqSave(); renderPortfolio(); }
 function tqToggleLane(k){ tqClosed.has(k)?tqClosed.delete(k):tqClosed.add(k); tqSave(); renderPortfolio(); }
 
@@ -3649,14 +3603,6 @@ function itemRow(a,q,i,scope,opts){
       + `</div>`
     + `</div><div class="${S.slotCls}" id="${S.slot(q.id)}">${det}</div></div>`;
 }
-// `Copy issue link` is the one menu item the design adds that did not exist. It is three lines and
-// no new capability: the URL is already on the row as a link.
-function copyIssueLink(url){
-  if(!url){ setStatus('⚠ that item has no GitHub issue yet'); return; }
-  try{ navigator.clipboard.writeText(url).then(()=>setStatus('🟢 link copied · '+url),
-        ()=>setStatus('⚠ the browser refused the clipboard. The link is '+url)); }
-  catch(e){ noted('copying an issue link',e); setStatus('⚠ could not copy. The link is '+url); }
-}
 // A Portfolio card's row. Lifted out of render() so one row can be rebuilt on its own, without
 // rebuilding twelve cards to change one chip (board-v66).
 function boardRowHtml(a,q,i){ return itemRow(a,q,i,'',{compact:true}); }
@@ -3760,7 +3706,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v102';
+const TIARA_VERSION = 'board-v103';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
