@@ -1,0 +1,96 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(./**/*.pbxproj)",
+      "Edit(./**/*.xcodeproj/**)",
+      "Edit(./.claude/**)",
+      "Edit(./.claude/allow-changed-override)",
+      "Edit(./CLAUDE.md)",
+      "Edit(./Config.xcconfig)",
+      "Edit(./docs/archive/**)",
+      "Edit(./docs/decisions/*.md)",
+      "Edit(./docs/decisions/factory/**)",
+      "Edit(./scripts/agent-comment.sh)",
+      "Edit(./scripts/agent-edit.sh)",
+      "Edit(./scripts/conform.sh)",
+      "Edit(./scripts/gate-baseline.sh)",
+      "Edit(./scripts/gate-status.sh)",
+      "Edit(./scripts/make-board-ticket.sh)",
+      "Edit(./scripts/move-to-verify.sh)",
+      "Edit(./scripts/tree-fingerprint.sh)",
+      "Read(./**/*.env)",
+      "Read(./Config.xcconfig)",
+      "Read(./docs/archive/**)",
+      "Write(./**/*.pbxproj)",
+      "Write(./.claude/**)",
+      "Write(./CLAUDE.md)",
+      "Write(./Config.xcconfig)",
+      "Write(./docs/archive/**)",
+      "Write(./docs/decisions/*.md)",
+      "Write(./docs/decisions/factory/**)",
+      "Write(./scripts/agent-comment.sh)",
+      "Write(./scripts/agent-edit.sh)",
+      "Write(./scripts/conform.sh)",
+      "Write(./scripts/gate-baseline.sh)",
+      "Write(./scripts/gate-status.sh)",
+      "Write(./scripts/make-board-ticket.sh)",
+      "Write(./scripts/move-to-verify.sh)",
+      "Write(./scripts/tree-fingerprint.sh)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/guard-scope.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/swift-quality.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/verify-on-stop.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/turn-start.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
