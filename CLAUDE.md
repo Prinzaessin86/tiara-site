@@ -4,7 +4,9 @@ The public GitHub Pages page for Tiara: a single static file, `index.html`, HTML
 backend. Board settings live in the separate private repo `Prinzaessin86/tiara`
 (`tiara-data.json`). Each app's live queue is a GitHub Projects v2 board in that app's repo.
 
-It is not an application and has no build, no tests and no Makefile.
+It is not an application and has no build and no tests. It does have a `Makefile` with a
+`verify` target (tiara-site#111): the enforcement layer cannot be installed in a repo without
+one, and the finish gate refuses to end a turn where `make verify` cannot run.
 
 ## Conventions
 
