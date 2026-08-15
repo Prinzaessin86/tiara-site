@@ -1,122 +1,66 @@
 # Finish block
 
-TICKET: https://github.com/Prinzaessin86/tiara-site/issues/95
-TICKET: https://github.com/Prinzaessin86/tiara-site/issues/85
+TICKET: https://github.com/Prinzaessin86/tiara-site/issues/110
 
 ## CHANGED
 
-`tiara-site`
-- `index.html` — the v2 redesign, `board-v92` → `board-v98`, six commits.
+`tiara-site` (committed `a788dcf`, **not pushed**)
+- `index.html` — `board-v108` → `board-v109`. The compose form is read from the field definition.
 - `.gate/finish-block.md` — this file.
 
-`tiara` (private, committed locally, **not pushed**)
-- `docs/HOW-TIARA-WORKS.md` — §4, §5, §6, §8, and `Describes: board-v98`.
-- `docs/UAT-tiara-board-v2.md` — new, the acceptance test.
+`tiara` (private, committed locally `83dffe5`, **not pushed**)
+- `docs/HOW-TIARA-WORKS.md` — the "New issue" section: how the fields are read, what happens when
+  the definition is unreachable, and the controls a record can ask for.
 
-Nothing else. No `.claude/`, no hook, no gate script, no `_bootstrap`, no `_ticketflow`, no
-`ISSUE_FIELDS`.
+Nothing else. No `.claude/`, no hook, no gate script, no `_bootstrap`, no `_ticketflow`.
+The `CLAUDE.md`, `.factory-checksum` and `FD-0014-agents-do-not-push.md` changes already in the
+working tree are a factory vendor pass, were there before this turn, and were left alone.
 
 ## What changed
 
-The approved *Tiara Board v2* mockup, built in six ordered slices, in the brief's own priority order.
-Each has its own version bump and could have been the last one.
+`ISSUE_FIELDS` and the `DELIVERABLE` literal are deleted. The compose form is built from
+`Prinzaessin86/_bootstrap/template/.github/issue-fields.psv`, fetched through the existing
+`ghGetFile` helper — the canonical copy, not the one `vendor-factory.sh` ships into this repo.
 
-| | | |
-|---|---|---|
-| `board-v93` | the scale | type retuned to the design's 12/13/15/17/21/27px, root fixed at 16px, radii from 4 steps to a 2px ladder, one colour token |
-| `board-v94` | the row | three visible groups, every value naming itself, words on every action, one row on three surfaces |
-| `board-v95` | finding | a jump box taking `212` / `TIA#88` / title words, and a project search that offers the match elsewhere |
-| `board-v96` | Done | month filter, per-page, real paging |
-| `board-v97` | Portfolio | Apps and Infrastructure as two labelled groups |
-| `board-v98` | open/closed, phone | one Show/Hide language everywhere, and the 375px pass |
+The blocker the old comments named ("waits for the move off Pages") was checked and is not real:
+no fetch in this page reads its own origin, so where it is served from never mattered.
 
-**Filed first: [#95](https://github.com/Prinzaessin86/tiara-site/issues/95).**
-[#85](https://github.com/Prinzaessin86/tiara-site/issues/85) cannot carry this build. Its
-`Deliverable` is `decision: a proposal in docs/decisions/proposed`, and its own brief says *"Don't
-write an ADR, a decision record, or a document in `docs/decisions/`."* The gate would look for a
-file that will never exist. Splitting the build onto its own ticket is what
-[#88](https://github.com/Prinzaessin86/tiara-site/issues/88) argues for, so this is its first use.
-**#85 remains in Doing and is unmovable as written** — that is a board field and not an agent's.
+- `parseIssueFields` handles `meta`, `field`, `dropdown`, `multiselect`.
+- `checkboxes` and any unrecognised record kind **block that type** and say which field and why,
+  rather than being skipped. A skipped field is a missing `### ` heading, and the two doors would
+  stop agreeing on shape while both still looked fine. Other types still compose.
+- No fallback list. Unreadable and uncached: the form refuses, names the error, offers a retry,
+  draws no fields, disables **Create issue**. `submitNewIssue` refuses independently, because
+  `missingFields` over an empty list reports nothing missing and would file an empty body.
+- A cached copy is used and **announced**, with the date read, the age, and the live read's error.
+- `multiselect` renders as removable chips, writing what GitHub writes.
 
-## Decisions taken, and by whom
+## Proof
 
-- **The type scale**: Princess chose to retune to the mockup rather than keep today's sizes, then
-  confirmed the result at the live board (`board-v94` was deployed at the time): *"currently it
-  reads rather big so keep it around the same"*, then *"size approved"*. The scale stands.
-- **The radii**: match the mockup exactly, so seven values were added rather than rounded away.
-- **Runbook ticks: not built**, on instruction — *"runbook doesn't need ticks at all"*. It was the
-  one part of the design that added state rather than rearranging what exists.
-- **Two controls the design draws are absent** and ticketed rather than shipped dead: *Move to
-  another project…* (a GitHub issue transfer, which changes the number every board item points at)
-  and *Send a build to TestFlight…*. Both are new capability, and the brief says this redesign is
-  about how the board looks and reads, *"not what it does"*.
-- **Knowledge and Compliance are not restyled**, named rather than skipped. Compliance already has
-  the explain overlay and real per-check data where the mockup synthesises it, and neither tab is
-  where the complaint came from.
+Two harnesses in the session scratchpad, both running the real code from `index.html`, not a copy:
+`check.js` slices the functions out of the file and runs them against the real `.psv` (32
+assertions); `dom.js` loads the whole page in jsdom with only the network stubbed and reads what it
+draws (28 assertions). All 60 pass.
 
-## Three bugs found by the tests, not by reading
+- adding a sixth `Deliverable` option to the definition makes it appear, with no edit to
+  `index.html`; removing one removes it; a new `field` record appears in file order
+- headings and required set identical to the generated `bug.yml`, `feature.yml`, `chore.yml`
+- definition unreadable → no fields, no menu, disabled button, `submitNewIssue` refuses
+- a `multiselect` record draws chips; `×` removes one; the body writes `### Repos` then the names
+  comma-and-space separated on one line, in definition order
+- `python3 scripts/lint-tokens.py index.html` green; pre-commit hook green
 
-1. **The toggle handlers wrote the literal word `close`.** So even after the row builder was fixed,
-   clicking a toggle put back the exact collision the brief asks to remove — one control away from
-   `Close issue on GitHub`.
-2. **They patched the panel and never touched the row**, so an in-place toggle left the row styled
-   shut with its panel open. The open state only appeared after a full re-render.
-3. **`scrollIntoView` was called unguarded** in the new keyboard handler. Not every element has it in
-   every engine, and a keyboard handler that throws breaks navigation rather than failing to scroll.
+## Not checked
 
-## Verified
-
-`index.html` driven in **jsdom against a fake GitHub**: **127 checks, 0 failures, no uncaught
-errors**. Driver at
-`/private/tmp/claude-501/-Users-CassandraMyers-Developer-tiara-site/5872574f-532f-4ed8-a6cd-7b382d839e77/scratchpad/drive.js`.
-The fixture was rebuilt partway through to serve **two different boards** rather than the same one
-twice — otherwise "found in another project" was testing against itself.
-
-It asserts, among the rest: all three surfaces use the shared row and each has the capsule, all
-three value names, three live selects and words on its actions; the destructive action is named and
-marked danger; toggling flips both the word and the row's open state; the jump box handles a bare
-number, `#n`, an id, title words and a project name, plus arrow keys, Escape, opening and clearing;
-the project empty state names what it searched and offers the match elsewhere; the Done pager's
-default size, remainder page, both edges disabling, *all of them*, the month filter and the clamp
-when filtering while deep in the pages; both Portfolio groups exist, are named, explain themselves,
-move a card between them and drop an emptied group; and every disclosure carries a Show/Hide word.
-
-`python3 scripts/lint-tokens.py` green before every one of the six commits — the pre-commit hook
-runs it on the staged content and has no bypass.
-
-## NOT VERIFIED
-
-- **Nothing was opened in a browser, at any point.** The Chrome tools were declined this session, so
-  there are **no screenshots**, before or after, for a redesign that changes every surface. Every
-  visual claim in the six commit messages is computed from the tokens, not observed.
-- **No measured contrast.** AD-0001 sets the bar at 4.5:1 and no new label was held to it. The new
-  small text is `--ink-3`, documented at 5.0:1, but that is the token's stated figure and not a
-  measurement against the real fill.
-- **The phone is written and never seen.** Slice 6's media queries are asserted to *exist*; nobody
-  has held a phone. This is the single most likely thing to be wrong, and the row now carries more
-  controls than the one it replaced.
-- **No real GitHub write from the rebuilt row.** The value menus go through the same setters, which
-  are unchanged, but no write has been watched reaching the board since the row was rebuilt.
-  Section 2 of the UAT is the check that proves it, and it is Princess's to run.
-- **`--r-sm/md/lg` were rem and are now px.** They shrank as well as the type (at 1280px `--r-lg`
-  rendered 20.2px, now 14px). That was not separately reviewed.
-- The Done month is **filed date, not closed date**, because the page does not fetch `closedAt`.
-  Stated in the code, the commit, the doc and the UAT; not fixed.
-
-## Board
-
-- [#95](https://github.com/Prinzaessin86/tiara-site/issues/95) → **left in New.** Not moved to
-  Verify. Its Acceptance is judged by looking at the real page, on a phone as well as a desktop, and
-  none of that has happened. Moving it on a green script would be claiming a check that was not run.
-- [#85](https://github.com/Prinzaessin86/tiara-site/issues/85) → **Doing, still unmovable.** Its
-  Deliverable names a decision document that the brief forbids. Princess's to close or to amend.
-
-## Commits
-
-`tiara-site`, on `main`: `board-v93` … `board-v98`, plus this finish block.
-`tiara`, on `main`: the UAT, its extension, and the doc sync to `board-v98`.
-
-**Not pushed by me** (FD-0014). `tiara-sync.sh --auto` pushes `tiara-site` every 1800s and will
-carry the six commits; it `cd`s into `tiara-site` and never leaves, so **the private `tiara` repo
-will not be pushed** — `git -C ~/Developer/tiara push` when you want the doc and the UAT off this
-Mac.
+- **No browser screenshot.** Chrome tooling was unavailable this session. Everything visual is
+  asserted in a real DOM, not looked at by a human. `preview.html` in the scratchpad drives the real
+  page with `?case=multi|error|cache|blocked` if you want to open it.
+- **Not exercised against the live API from a browser.** The parser was fed the real file from disk.
+  `gh api` confirms the path serves 7,949 bytes, so the token needs read access to the private
+  `_bootstrap` repo — the first compose after this ships is the real test.
+- **Multiselect order is declared order, chosen, not proven.** The separator, the single line and
+  `_No response_` are read off `davisking/dlib#3070`. One selection cannot distinguish declared
+  order from click order, and dlib's last 100 issues held only one.
+- The private doc still carries its INACTIVE banner and lags at `board-v98` overall. Only the
+  section this turn touched is current. That is #95, not this ticket.
+- `#47`, the PAT in `localStorage`, is unchanged. One more read, against a private repo.
