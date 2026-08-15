@@ -1,9 +1,9 @@
-# Proposed AD. The finish gate runs here, and device proof is not one of the things it can prove
+# AD-0002. The finish gate runs here, and device proof is not one of the things it can prove
 
-Status: PROPOSED, for Princess to accept or reject
-Raised by: [tiara-site#100](https://github.com/Prinzaessin86/tiara-site/issues/100)
-Date: 2026-08-15
-Enforced by: `.claude/settings.json` and the six hooks installed by
+**Status:** Accepted
+**Date:** 2026-08-15
+**Ticket:** [tiara-site#100](https://github.com/Prinzaessin86/tiara-site/issues/100)
+**Enforced by:** `.claude/settings.json` and the six hooks installed by
 `_bootstrap/scripts/install-enforcement.sh`, plus this document for the one guarantee that is
 deliberately absent.
 
@@ -41,16 +41,7 @@ Three things follow, and they should be read as the whole decision rather than a
    the check while showing none of what changed. That is a check reporting something other than
    what it claims, which is the defect this board keeps filing against itself.
 
-2. **`BOOT-62` already decided this once, in the other direction.** `/Views/` used to match on its
-   own, so any path with a `Views` directory demanded a simulator screenshot outside iOS and left
-   an agent with no legitimate move. Retuning the pattern to `index.html` recreates that state
-   deliberately: a demand with no honest way to meet it, on the repo where a blocked turn is most
-   expensive.
-
-3. **The honest visual check here is a human opening the page**, and it already exists as a
-   practice: `tiara-site#95`'s acceptance is five questions answered by eye at 375px, and the
-   `doc-sync` skill already requires the captured reference to move with the page. Neither is a
-   gate and neither should be pretended into one.
+2. **The visual check here is a human opening the page**
 
 ## What the gate does prove here, after the install
 
@@ -81,6 +72,6 @@ that the visual change was not verified and needs a human at the page.
 - Whether `UI_PATTERN` should become per-repo configurable rather than a constant in the template.
   That is a factory question and belongs in `_bootstrap`, not here.
 - Anything about `tiara-site#95`'s outstanding visual judgement, which stays a human's.
-- Anything about `AD-0002`, whose number is already claimed by the symbol-design work in
-  `tiara-site#85`. This proposal deliberately takes no number until it is accepted, so it cannot
-  collide with a ticket that has been waiting for that path to exist.
+- Anything about the symbol-design work in `tiara-site#85`, which is still owed its own
+  proposal. It does not reserve a number: its Deliverable names `docs/decisions/proposed/`
+  and nothing more, so the next accepted app decision is `AD-0003`.
