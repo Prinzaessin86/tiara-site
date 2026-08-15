@@ -15,3 +15,17 @@ compliance.json
 
 # TestFlight status now lives in the private `tiara` repo (#56), fetched via the token.
 release-status.json
+
+# The enforcement layer's runtime files (tiara-site#100). tree-fingerprint.sh hashes untracked
+# non-ignored files to record that `make verify` passed on the current code, so any of these left
+# tracked moves the fingerprint on its own and .claude/.verify-pass never matches (BOOT-115).
+.claude/.verify-pass
+.verify-pass
+.claude/.turn-start
+.claude/.turn-dirty
+.claude/.last-dirty
+.claude/.last-seen
+.claude/drift.log
+.claude/gate.log
+.gate/
+.artifacts/

@@ -21,6 +21,16 @@ SHELL := /bin/bash
 
 verify: lint syntax version conform
 	@echo "verify: green"
+	@# BOOT-115: record that the gate passed on THIS code. Without it compliance reports
+	@# gate_green false forever, which is indistinguishable from a gate that has never run.
+	@# tree-fingerprint hashes untracked non-ignored files, so .gitignore must carry the
+	@# .claude/ runtime files or gate.log moves the fingerprint and the marker never matches.
+	@# Guarded on the script existing, because it arrives with install-enforcement.sh and a bare
+	@# redirect would otherwise leave a zero byte marker here: a file that exists and means
+	@# nothing, which is worse than no file because only one of the two looks answerable.
+	@if [ -f scripts/tree-fingerprint.sh ]; then \
+	   bash scripts/tree-fingerprint.sh > .claude/.verify-pass 2>/dev/null || true; \
+	 fi
 	@ahead=$$(git rev-list --count @{u}..HEAD 2>/dev/null || echo 0); \
 	 dirty=$$(git status --porcelain --untracked-files=no 2>/dev/null | grep -c . || true); \
 	 if [ "$$ahead" -gt 0 ] && [ "$$dirty" -eq 0 ]; then \
