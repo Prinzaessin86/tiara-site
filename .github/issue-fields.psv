@@ -12,15 +12,22 @@
 #
 # Records:
 #   meta      |<type>|<name>|<description>|<title prefix>|<label>
-#   field     |<type>|<id>|<label>|<required>|<description>|<placeholder>
-#   dropdown  |<type>|<id>|<label>|<required>|<description>|<option>\n<option>\n...
-#   checkboxes|<type>|<id>|<label>|<required>|<description>|<option>\n<option>\n...
+#   field      |<type>|<id>|<label>|<required>|<description>|<placeholder>
+#   dropdown   |<type>|<id>|<label>|<required>|<description>|<option>\n<option>\n...
+#   multiselect|<type>|<id>|<label>|<required>|<description>|<option>\n<option>\n...
+#   checkboxes |<type>|<id>|<label>|<required>|<description>|<option>\n<option>\n...
 #
-# field is a textarea. dropdown and checkboxes take a \n separated option list in the last
-# column instead of a placeholder, need at least two options, and reject an empty or repeated
-# one. A chooser cannot be mistyped, which is the whole reason `Deliverable` is one: a kind the
-# form does not offer cannot be written. On checkboxes, required applies to every option, because
-# GitHub puts requiredness on the option rather than the field.
+# field is a textarea. dropdown, multiselect and checkboxes take a \n separated option list in
+# the last column instead of a placeholder, need at least two options, and reject an empty or
+# repeated one. A chooser cannot be mistyped, which is the whole reason `Deliverable` is one: a
+# kind the form does not offer cannot be written. On checkboxes, required applies to every option,
+# because GitHub puts requiredness on the option rather than the field.
+#
+# multiselect IS a dropdown, emitted with `multiple: true`. It exists because the alternative for
+# picking several things is checkboxes, and a checkboxes record with fifteen options is fifteen
+# permanently visible controls on every form, while a multiselect is one that opens. GitHub has no
+# `multiselect` type, so the generator maps it; writing `dropdown` here and hoping for multiple
+# would produce a single-select silently. (BOOT-110)
 #
 # \n in a PLACEHOLDER becomes a real newline. Descriptions are single line: a \n there stays
 # literal. A placeholder therefore cannot contain a Windows path or a literal backslash-n.
@@ -41,6 +48,8 @@ field|bug|actual|Actual Behavior|yes|What happened instead. Include the error te
 field|bug|acceptance|Acceptance|yes|What you will look at to decide this is done. A judgement is allowed here. This text is fixed at filing and compared against the filed version at every lane move, so write it as if someone else has to read it.|The sheet stays open through a rotation, and the scroll position is where I left it.
 dropdown|bug|deliverable|Deliverable|yes|What comes back when this is done. Choose by what you want, not by how it will be built. At the lane move the agent points at the thing, and the gate checks it is of this shape and in the right place.|code: a change committed in the repo\ndocument: a written file committed at a path\ndecision: a proposal in docs/decisions/proposed for you to approve\ninvestigation: an answer written on this ticket\nmanual: you will look at it yourself. Never blocks
 field|bug|scope|Scope|yes|Which files or areas this work should touch. Checked at close against the files in commits citing this ticket, so it catches doing more, not doing less.|Sources/Today/CardSheet.swift and its tests. Nothing in the design system.
+dropdown|bug|global|Global|no|Almost always leave this blank. Tick yes only when the work genuinely lands in more than one repo and no single one is its home (FD-0016). NOT ENFORCED YET: nothing reads this until _ticketflow#31, so today it is a note.|no: this work lands in one repo\nyes: this work spans several repos
+multiselect|bug|repos|Repos|no|The repos this work spans, if Global is yes. Ignore it otherwise. Each named repo owes the deliverable above: a commit for code, the named file for document and decision. Investigation and manual owe nothing, having no per-repo artefact.|_bootstrap\n_ticketflow\nBetterBubbly\nBubbles\nDressie\nJewels\nOctobrain\nPackMagic\nPagingDrDaddy\nPodaknows\nPodaProject\nrainybow\nSparkleReef\nTentaclePit\ntiara\ntiara-site
 
 meta |feature|Feature|Something that does not exist yet and should.|[Feature]: |feature
 field|feature|summary|Summary|yes|One or two sentences. What this is, in plain language.|What this is, in one or two sentences.\ne.g. Let a card be pinned to the top of the list.
@@ -50,6 +59,8 @@ field|feature|proposal|Proposed Solution|yes|What you would build, in enough det
 field|feature|acceptance|Acceptance|yes|What you will look at to decide this is done. A judgement is allowed here. This text is fixed at filing and compared against the filed version at every lane move, so write it as if someone else has to read it.|A pinned card is still first after a cold launch, and pinning feels obvious without being explained.
 dropdown|feature|deliverable|Deliverable|yes|What comes back when this is done. Choose by what you want, not by how it will be built. At the lane move the agent points at the thing, and the gate checks it is of this shape and in the right place.|code: a change committed in the repo\ndocument: a written file committed at a path\ndecision: a proposal in docs/decisions/proposed for you to approve\ninvestigation: an answer written on this ticket\nmanual: you will look at it yourself. Never blocks
 field|feature|scope|Scope|yes|Which files or areas this work should touch. Checked at close against the files in commits citing this ticket, so it catches doing more, not doing less.|Sources/Today/ and its tests. No schema change.
+dropdown|feature|global|Global|no|Almost always leave this blank. Tick yes only when the work genuinely lands in more than one repo and no single one is its home (FD-0016). NOT ENFORCED YET: nothing reads this until _ticketflow#31, so today it is a note.|no: this work lands in one repo\nyes: this work spans several repos
+multiselect|feature|repos|Repos|no|The repos this work spans, if Global is yes. Ignore it otherwise. Each named repo owes the deliverable above: a commit for code, the named file for document and decision. Investigation and manual owe nothing, having no per-repo artefact.|_bootstrap\n_ticketflow\nBetterBubbly\nBubbles\nDressie\nJewels\nOctobrain\nPackMagic\nPagingDrDaddy\nPodaknows\nPodaProject\nrainybow\nSparkleReef\nTentaclePit\ntiara\ntiara-site
 
 meta |chore|Chore|Maintenance, cleanup, or infrastructure work with no user visible behaviour change.|[Chore]: |chore
 field|chore|summary|Summary|yes|One or two sentences. What this is, in plain language.|What this is, in one or two sentences.\ne.g. Delete the unused colour tokens from the design system.
@@ -58,3 +69,5 @@ field|chore|reason|Reason|yes|Why now. What breaks or drifts if this waits. "Tid
 field|chore|acceptance|Acceptance|yes|What you will look at to decide this is done. A judgement is allowed here. This text is fixed at filing and compared against the filed version at every lane move, so write it as if someone else has to read it.|make conform is green, and it fails on an induced case rather than passing because there was nothing to check.
 dropdown|chore|deliverable|Deliverable|yes|What comes back when this is done. Choose by what you want, not by how it will be built. At the lane move the agent points at the thing, and the gate checks it is of this shape and in the right place.|code: a change committed in the repo\ndocument: a written file committed at a path\ndecision: a proposal in docs/decisions/proposed for you to approve\ninvestigation: an answer written on this ticket\nmanual: you will look at it yourself. Never blocks
 field|chore|scope|Scope|yes|Which files or areas this work should touch. Checked at close against the files in commits citing this ticket, so it catches doing more, not doing less.|scripts/conform.sh only. No change to the vendored hooks.
+dropdown|chore|global|Global|no|Almost always leave this blank. Tick yes only when the work genuinely lands in more than one repo and no single one is its home (FD-0016). NOT ENFORCED YET: nothing reads this until _ticketflow#31, so today it is a note.|no: this work lands in one repo\nyes: this work spans several repos
+multiselect|chore|repos|Repos|no|The repos this work spans, if Global is yes. Ignore it otherwise. Each named repo owes the deliverable above: a commit for code, the named file for document and decision. Investigation and manual owe nothing, having no per-repo artefact.|_bootstrap\n_ticketflow\nBetterBubbly\nBubbles\nDressie\nJewels\nOctobrain\nPackMagic\nPagingDrDaddy\nPodaknows\nPodaProject\nrainybow\nSparkleReef\nTentaclePit\ntiara\ntiara-site

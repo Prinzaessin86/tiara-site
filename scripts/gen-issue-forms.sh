@@ -84,7 +84,12 @@ awk -F'|' -v out="$STAGE" -v src="$SRC" '
   # a placeholder, or a \n separated option list. Keeping one block means a rule added here cannot
   # be forgotten on two of the three, which is how the duplicate-id check came to cover only
   # contiguous types.
-  trim($1) == "field" || trim($1) == "dropdown" || trim($1) == "checkboxes" {
+  # BOOT-110: `multiselect` is a dropdown carrying `multiple: true`. A NEW KIND rather than an eighth
+  # column, because every record here is positional with exactly seven fields and the generator
+  # refuses any other count, so a column would have to be added to all thirty-odd records at once.
+  # The kind reuses the same seven columns and the same validation block, which is the reason those
+  # three share one block already: a rule added here cannot be forgotten on the others.
+  trim($1) == "field" || trim($1) == "dropdown" || trim($1) == "checkboxes" || trim($1) == "multiselect" {
     kind = trim($1)
     if (NF != 7) { err(kind " needs exactly 7 fields, got " NF ". No field may contain a pipe."); next }
     t = trim($2); id = trim($3); label = trim($4); req = trim($5)
@@ -130,15 +135,19 @@ awk -F'|' -v out="$STAGE" -v src="$SRC" '
     }
     if (optbad) next
 
-    print "  - type: " kind             > file
+    # GitHub has no `multiselect` type. It is a dropdown, and the multi-select is an attribute, so
+    # the emitted type must be mapped or the form is rejected outright at upload with no clue why.
+    ghkind = (kind == "multiselect" ? "dropdown" : kind)
+    print "  - type: " ghkind           > file
     print "    id: " id                 > file
     print "    attributes:"             > file
     print "      label: " q(label)      > file
     if (trim($6) != "") print "      description: " q(trim($6)) > file
+    if (kind == "multiselect") print "      multiple: true" > file
     print "      options:"              > file
     for (i = 1; i <= nopt; i++) {
       o = trim(opts[i])
-      if (kind == "dropdown") print "        - " q(o) > file
+      if (ghkind == "dropdown") print "        - " q(o) > file
       else {
         # checkboxes options are mappings, and requiredness is per option rather than on the
         # field. A checkboxes record with required=yes means every box must be ticked.
@@ -147,7 +156,7 @@ awk -F'|' -v out="$STAGE" -v src="$SRC" '
       }
     }
     # Only dropdown carries validations. GitHub rejects a validations block on checkboxes.
-    if (kind == "dropdown") {
+    if (ghkind == "dropdown") {
       print "    validations:"          > file
       print "      required: " (req == "yes" ? "true" : "false") > file
     }

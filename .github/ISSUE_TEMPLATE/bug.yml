@@ -79,3 +79,38 @@ body:
         Sources/Today/CardSheet.swift and its tests. Nothing in the design system.
     validations:
       required: true
+  - type: dropdown
+    id: global
+    attributes:
+      label: "Global"
+      description: "Almost always leave this blank. Tick yes only when the work genuinely lands in more than one repo and no single one is its home (FD-0016). NOT ENFORCED YET: nothing reads this until _ticketflow#31, so today it is a note."
+      options:
+        - "no: this work lands in one repo"
+        - "yes: this work spans several repos"
+    validations:
+      required: false
+  - type: dropdown
+    id: repos
+    attributes:
+      label: "Repos"
+      description: "The repos this work spans, if Global is yes. Ignore it otherwise. Each named repo owes the deliverable above: a commit for code, the named file for document and decision. Investigation and manual owe nothing, having no per-repo artefact."
+      multiple: true
+      options:
+        - "_bootstrap"
+        - "_ticketflow"
+        - "BetterBubbly"
+        - "Bubbles"
+        - "Dressie"
+        - "Jewels"
+        - "Octobrain"
+        - "PackMagic"
+        - "PagingDrDaddy"
+        - "Podaknows"
+        - "PodaProject"
+        - "rainybow"
+        - "SparkleReef"
+        - "TentaclePit"
+        - "tiara"
+        - "tiara-site"
+    validations:
+      required: false
