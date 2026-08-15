@@ -72,7 +72,7 @@ additional repository.
 
 **Recovery when it tangles:** delete the whole product (the GUI blocks deleting the *last*
 workflow, but you can delete the product; or `DELETE /v1/ciProducts/{id}` via the App Store
-Connect API — deletion is async and the list endpoint caches, so verify with a direct
+Connect API, because deletion is async and the list endpoint caches, so verify with a direct
 `GET /v1/ciProducts/{id}` → 404). TestFlight builds survive (they live on the app record, not
 the product). Then re-onboard each app fresh, one at a time, from its own page. The whole
 Xcode Cloud state is inspectable read-only via the ASC CI API (`/v1/ciProducts` +
@@ -89,7 +89,7 @@ disabled."* Fix: `ci_scripts/ci_post_clone.sh` runs `xcodebuild -resolvePackageD
 after `xcodegen generate`, which writes the `Package.resolved` before the archive. This is a
 no-op for a package-free app (like PagingDrDaddy, which is why it never hit this), so the
 template does it unconditionally. Note: the failure looked like a missing *repository grant*
-but was not — public Firebase/Google/Apple package repos resolve without a grant.
+but was not: public Firebase/Google/Apple package repos resolve without a grant.
 
 ## Consequences
 
@@ -100,8 +100,8 @@ Hard: the Xcode Cloud workflow is created once per app in Xcode's Integrate menu
 step, ~10 min, not scriptable). The free tier is 25 compute-hours per month across all apps;
 an archive is 5–15 minutes, so occasional per-app releases stay free.
 
-Conformance: `make conform` asserts there is exactly one release mechanism — the
+Conformance: `make conform` asserts there is exactly one release mechanism: the
 `Config/Version.xcconfig` trigger present and wired, `ci_post_clone.sh` present, and the
-retired `make testflight` targets absent — so a second, parallel release path can never be
+retired `make testflight` targets absent, so a second, parallel release path can never be
 introduced unnoticed again. (That silent parallel-mechanism drift is the exact failure this
 ADR and the conformance check were written in response to.)

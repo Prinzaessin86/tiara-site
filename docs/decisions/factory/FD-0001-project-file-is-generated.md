@@ -44,7 +44,7 @@ Hard: anything that consumes the project must generate it first. CI (Xcode Cloud
 must `make generate` before opening in Xcode. That cost is small and paid in exactly one
 place.
 
-Conformance: `make conform` asserts this ADR mechanically — `project.yml` exists and
-`.xcodeproj` is gitignored — so the record can never silently drift from the code again
+Conformance: `make conform` asserts this ADR mechanically: `project.yml` exists and
+`.xcodeproj` is gitignored, so the record can never silently drift from the code again
 (which is what happened to the original version of this ADR). See 0006 for how releases
 build on the generated project.
