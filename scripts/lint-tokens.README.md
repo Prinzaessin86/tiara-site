@@ -9,14 +9,14 @@ referenced everywhere else (AD-0001 decision 1a,
 It runs in `scripts/hooks/pre-commit`, which is installed through `core.hooksPath`. Every commit
 that touches `index.html` is linted **before** it is created.
 
-This file used to say the opposite — "It is not wired in" — and carried a patch for a human to
+This file used to say the opposite, "It is not wired in", and carried a patch for a human to
 apply. The patch was applied, in `1f518cd`, and the paragraph was never corrected, so the README
 told you the gate was off for as long as it has been on
 ([#99](https://github.com/Prinzaessin86/tiara-site/issues/99)).
 
 **What it checks:** the `<style>` block outside `:root`, every `style="…"` attribute, and
 single-quoted colour literals in JavaScript. That is everywhere CSS is written, with one stated
-exemption — SVG presentation attributes (`fill="#…"`, `stroke="#…"`), because `var()` is not valid
+exemption: SVG presentation attributes (`fill="#…"`, `stroke="#…"`), because `var()` is not valid
 in one.
 
 **What happens when it fails.** The commit is refused. The hook prints every raw value with its
@@ -31,7 +31,7 @@ line number and what to do about each, then exits non-zero:
 **There is no bypass.** `TIARA_SKIP_DOC=1` waives the doc-and-version checkpoint in the same hook;
 it does not waive this. The lint runs first and its exit status is checked before that flag is read.
 
-**It lints the STAGED content, not your working tree** — `git show :index.html` — so what is checked
+**It lints the STAGED content, not your working tree**, `git show :index.html`, so what is checked
 is exactly what is about to be committed. Note `rc` is captured from the command itself and not from
 a pipeline: `python3 … | sed` would report sed's status and the gate would pass while printing its
 own refusal.
