@@ -541,7 +541,18 @@
   .cname .appicon{width:100%;height:100%;object-fit:cover;border-radius:var(--r-sm);display:block;}
   .clegacy{font-size:var(--t-xs);font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:var(--c-f1eef6);color:var(--ink-3,var(--ink-3));padding:var(--sp-12) var(--sp-45);border-radius:var(--r-md);}
   .cpills{display:flex;gap:var(--sp-40);flex-wrap:wrap;margin-left:auto;}
-  .cbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:var(--sp-90);padding:var(--sp-25) var(--sp-100) var(--sp-110);}
+  /* auto-fit with a 15rem minimum meant the column count was whatever happened to fit, so the five
+     dimension boxes reflowed to a different shape at every window width and collapsed to one tall
+     column sooner than expected. Stated steps instead: five, three, one. (ticket 117) */
+  .cbody{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;
+         gap:var(--sp-90);padding:var(--sp-25) var(--sp-100) var(--sp-110);}
+  @media (max-width:1100px){ .cbody{grid-template-columns:repeat(3,minmax(0,1fr));} }
+  @media (max-width:640px){ .cbody{grid-template-columns:minmax(0,1fr);} }
+  /* The rolled-up passing checks. Reads as a row, not as a check: no state word of its own beyond
+     the count, and the same affordance the explain rows use. (ticket 117) */
+  .crollup{font-size:var(--t-sm);color:var(--ink-3,var(--ink-3));line-height:1.5;display:flex;
+           gap:var(--sp-40);align-items:center;padding:var(--sp-12) 0;cursor:pointer;}
+  .crollup:hover .clook{text-decoration:underline;text-underline-offset:2px;}
   .ccol{background:var(--c-faf7fc);border:1.5px solid var(--line2);border-radius:var(--r-lg);padding:var(--sp-75);}
   .ccolh{font-weight:800;font-size:var(--t-sm);color:var(--ink-1,var(--ink-1));margin-bottom:var(--sp-50);display:flex;align-items:center;gap:var(--sp-50);flex-wrap:wrap;}
   .cchk{font-size:var(--t-sm);color:var(--ink-2,var(--ink-2));line-height:1.5;display:flex;gap:var(--sp-40);align-items:flex-start;padding:var(--sp-12) 0;}
@@ -585,6 +596,16 @@
   .tqgroup .gcount{font-family:'Quicksand';font-size:var(--t-sm);font-weight:700;color:var(--ink-3,var(--ink-3));}
   .tqgroup .grule{flex:1;height:1.5px;background:var(--line);}
   .tqempty{font-size:var(--t-sm);color:var(--ink-3,var(--ink-3));padding:var(--sp-10) 0 var(--sp-50);}
+  /* The kind split sits ABOVE the lane groups, so it has to read as the outer one: heavier, and the
+     only rule in the list that is two colours. (ticket 116)
+     NOTE: do not write a three digit ticket reference with a hash in this style block. lint-tokens
+     reads it as a raw colour, correctly, and the JS scan's comment blanking does not reach here. */
+  .tqkind{margin-top:var(--sp-90);}
+  .tqkind:first-child{margin-top:0;}
+  .tqkindh{display:flex;align-items:center;gap:var(--sp-55);margin:0 0 var(--sp-25);}
+  .tqkindt{font-family:'Baloo 2';font-weight:800;font-size:var(--t-lg);color:var(--ink-1,var(--ink-1));}
+  .tqkindc{font-family:'Quicksand';font-size:var(--t-sm);font-weight:700;color:var(--ink-3,var(--ink-3));}
+  .tqkindh .grule{flex:1;height:2.5px;border-radius:var(--r-2);background:var(--line2);}
 
   /* A write says so on its own row, not only in a strip you may not be looking at. */
   .qrow.flash,.prow.flash,.ihead.flash{animation:tiaraFlash 1.5s ease-out;}
@@ -1981,7 +2002,7 @@ setInterval(renderFreshness, 30000);
    priority, and none could find the untriaged. This is one component and one matcher, used by all
    three; each surface keeps its own state object, because a filter belongs to the thing you are
    looking at. */
-const F_EMPTY = { q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'' };
+const F_EMPTY = { q:'', lane:'', type:'', prio:'', app:'', kind:'', quick:'', sort:'' };
 let _fOpen = true;   // the bar is collapsed on a phone only; CSS decides, this is the toggle
 function fView(scope){ return scope==='tq'?_tqView : scope==='pj'?_pjView : _bdView; }
 function fRender(scope){ if(scope==='tq') renderPortfolio(); else if(scope==='pj') renderProject(_pjView.id); else { captureOpen(); render(); } }
@@ -1990,8 +2011,8 @@ function fSetQ(scope,val){ const v=fView(scope); v.q=val; if('page' in v) v.page
   const el=$('#fq-'+scope); if(el){ el.focus(); el.setSelectionRange(el.value.length,el.value.length); } }
 function fClear(scope){ const v=fView(scope); Object.keys(F_EMPTY).forEach(k=>v[k]=''); if('page' in v) v.page=0; fSync(scope); fRender(scope); }
 function fToggleBar(scope){ _fOpen=!_fOpen; fRender(scope); }
-function fActive(v){ return !!(v.q||v.lane||v.type||v.prio||v.app||v.quick); }
-function fCount(v){ return ['q','lane','type','prio','app','quick'].filter(k=>v[k]).length; }
+function fActive(v){ return !!(v.q||v.lane||v.type||v.prio||v.app||v.kind||v.quick); }
+function fCount(v){ return ['q','lane','type','prio','app','kind','quick'].filter(k=>v[k]).length; }
 // One row, one answer. `r` is {a,q} on every surface, so a project page and the Task queue ask the
 // same question of the same shape.
 function fMatch(v,r){
@@ -1999,6 +2020,7 @@ function fMatch(v,r){
   if(needle && !((r.q.title||'')+' '+(r.q.id||'')+' '+((r.a&&r.a.name)||'')).toLowerCase().includes(needle)) return false;
   if(v.lane && itemStatus(r.q)!==v.lane) return false;
   if(v.app  && r.a && r.a.id!==v.app) return false;
+  if(v.kind && appKind(r.a)!==v.kind) return false;
   if(v.type && (r.q.type||'')!==v.type) return false;
   if(v.prio && (r.q.priority||'')!==v.prio) return false;
   if(v.quick==='untriaged' && (r.q.type&&r.q.priority)) return false;
@@ -2042,6 +2064,9 @@ function filterBar(scope, rows, opts){
   const type = fMenu(scope,v,'type','type',TYPE_ORDER.map(k=>({k,t:TYPE_META[k].t})).concat([{k:'',t:'no type'}].filter(()=>false)),rows);
   const prio = fMenu(scope,v,'prio','priority',PRIO_ORDER.map(k=>({k,t:PRIO_META[k].t})),rows);
   const app  = opts.apps ? fMenu(scope,v,'app','project',data.apps.map(a=>({k:a.id,t:a.name})),rows) : '';
+  // Products and infrastructure follow different rules, so "what is left for users" is a question the
+  // bar can now answer. Offered only where rows span more than one project. (#116)
+  const kind = opts.apps ? fMenu(scope,v,'kind','kind',KIND_ORDER.map(k=>({k,t:KIND_LABEL[k]})),rows) : '';
   const sort = opts.sort===false ? '' :
     `<select class="fsel${v.sort?' on':''}" aria-label="sort" title="sort" onchange="fSet('${scope}','sort',this.value)">`
     + Object.keys(F_SORTS).map(k=>`<option value="${k}"${v.sort===k?' selected':''}>sort · ${F_SORTS[k]}</option>`).join('')+`</select>`;
@@ -2052,12 +2077,13 @@ function filterBar(scope, rows, opts){
   const tag=(key,text)=>`<span class="ftag">${esc(text)}<button onclick="fSet('${scope}','${key}','${escArg(v[key])}')" title="remove this filter" aria-label="remove ${esc(text)}">✕</button></span>`;
   const tags=[ v.q?tag('q','“'+v.q+'”'):'', v.lane?tag('lane',BOARD_STATUS_LABEL[v.lane]||v.lane):'',
     v.type?tag('type',TYPE_META[v.type]?TYPE_META[v.type].t:v.type):'', v.prio?tag('prio',PRIO_META[v.prio]?PRIO_META[v.prio].t:v.prio):'',
-    v.app?tag('app',(app_(v.app)||{name:v.app}).name):'', v.quick?tag('quick',v.quick==='untriaged'?'untriaged':'needs verify'):'' ].filter(Boolean).join('');
+    v.app?tag('app',(app_(v.app)||{name:v.app}).name):'', v.kind?tag('kind',KIND_LABEL[v.kind]||v.kind):'',
+    v.quick?tag('quick',v.quick==='untriaged'?'untriaged':'needs verify'):'' ].filter(Boolean).join('');
   return `<div class="fwrap">`
     + `<button class="ftoggle" onclick="fToggleBar('${scope}')" aria-expanded="${_fOpen}">Filters${fCount(v)?`<span class="c">${fCount(v)}</span>`:''}</button>`
     + `<div class="fbody${_fOpen?'':' shut'}">`
     +   `<input id="fq-${scope}" class="fq" placeholder="${esc(opts.placeholder||'search…')}" value="${esc(v.q)}" oninput="fSetQ('${scope}',this.value)" aria-label="search">`
-    +   lane + type + prio + app + sort + quick
+    +   lane + type + prio + app + kind + sort + quick
     + `</div>`
     + `<div class="factive">showing <b>${shown}</b> of ${total}${tags?' · ':''}${tags}`
     +   (fActive(v)?`<button class="fclear" onclick="fClear('${scope}')">clear all</button>`:'')
@@ -2071,7 +2097,7 @@ function filterBar(scope, rows, opts){
 let _pjCommits = {};   // appId -> [{sha,msg}], memory only. Read live, stored nowhere (D46).
 // A view preference. It lives here and never goes to GitHub: GitHub holds the facts, Tiara holds
 // the view. Resets when you open a different project, because a filter you cannot see is a lie.
-let _pjView = { id:null, q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'', page:0, doneMonth:'', donePer:'10', donePage:0 };
+let _pjView = { id:null, q:'', lane:'', type:'', prio:'', app:'', kind:'', quick:'', sort:'', page:0, doneMonth:'', donePer:'10', donePage:0 };
 const PJ_PAGE = 10;
 const CARD_CAP = 10;   // a Portfolio card shows this many open items, then says so (#84)
 function pjPage(d){ _pjView.page += d; renderProject(_pjView.id); window.scrollTo(0,0); }
@@ -2086,7 +2112,7 @@ function openProject(id, opts){
   const ip=$('#issuepage'); if(ip) ip.style.display='none';
   const ni=$('#newissue'); if(ni) ni.style.display='none';   // the filing page is a sibling surface (#69)
   const p=$('#project'); if(!p) return;
-  if(_pjView.id!==id) _pjView={ id:id, q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'', page:0, doneMonth:'', donePer:'10', donePage:0 };
+  if(_pjView.id!==id) _pjView={ id:id, q:'', lane:'', type:'', prio:'', app:'', kind:'', quick:'', sort:'', page:0, doneMonth:'', donePer:'10', donePage:0 };
   p.style.display='block'; renderProject(id);
   _navFrom=null; renderBackChip();
   setHash('project/'+id);
@@ -2432,7 +2458,10 @@ function renderProject(id){
 //   setHash writes location.hash, which PUSHES a history entry - one Back press per keystroke -
 //     so a filter change uses replaceState.
 //   showTab wrote the bare surface name, dropping the query on every tab switch.
-const F_KEYS=['q','lane','type','prio','app','quick','sort'];
+// Must carry every key in F_EMPTY. These are two lists of the same thing: F_EMPTY drives `clear
+// all`, F_KEYS drives the URL and, in fApplyQuery, what a navigation RESETS. A key present in one
+// and missing from the other is a filter that survives a navigation meant to clear it, silently.
+const F_KEYS=['q','lane','type','prio','app','kind','quick','sort'];
 function fQuery(scope){ const v=fView(scope);
   return F_KEYS.filter(k=>v[k]).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(v[k])).join('&'); }
 function fApplyQuery(scope,qs){ const v=fView(scope); F_KEYS.forEach(k=>v[k]='');
@@ -2715,6 +2744,15 @@ function normaliseApps(){
     a.excluded = (a.excluded===true);
   });
 }
+// The `kind` flag was written in board-v91 and read on exactly one surface, Portfolio. Everywhere
+// else a factory repo and a product were the same thing, so 41% of the Task queue was infrastructure
+// work with nothing on the row saying so. One pair of readers, used by the filter, the Task queue,
+// the Portfolio groups and the Compliance order, so a fifth surface cannot drift from the other
+// four. `appRole` folds in `excluded`, which Portfolio needs and the queue does not. (#116)
+function appKind(a){ return (a && a.kind==='infrastructure') ? 'infrastructure' : 'app'; }
+function appRole(a){ return (a && a.excluded) ? 'excluded' : appKind(a); }
+const KIND_LABEL = { app:'Products', infrastructure:'Infrastructure' };
+const KIND_ORDER = ['app','infrastructure'];
 function migrate(){ normaliseApps(); ensurePrefixes(); data.apps.forEach(a=>{ a.queue.forEach(q=>{ if(!q.id) q.id=nextId(a); if(!q.status) q.status=q.done?'done':'todo'; q.done=(q.status==='done'); if(q.type==null) q.type=''; if(q.priority==null) q.priority=''; if(!Array.isArray(q.notes)) q.notes=[]; }); }); }
 const TYPE_ORDER=['bug','feature','chore'];   // 'task' deleted at the root (D42)
 const TYPE_META={none:{e:'',t:'no type',c:'var(--ty-none)',f:'var(--ty-none-f)',f2:'var(--ty-none-f2)'},bug:{e:'🐞',t:'bug',c:'var(--ty-bug)',f:'var(--ty-bug-f)',f2:'var(--ty-bug-f2)'},feature:{e:'✨',t:'feature',c:'var(--ty-feature)',f:'var(--ty-feature-f)',f2:'var(--ty-feature-f2)'},chore:{e:'🧹',t:'chore',c:'var(--ty-chore)',f:'var(--ty-chore-f)',f2:'var(--ty-chore-f2)'}};
@@ -3421,6 +3459,12 @@ function detailHtml(a,q,i,scope){ scope=scope||'';
 // next to this page and there is no same-origin copy. Shape: { generatedAt, keyed, apps:[{name,repo,modern,
 // dimensions:{bootstrap|cicd|tests:{status:'ok|partial|none', checks:[{id,label,pass,unknown}]}}}] }.
 let _compliance = null;
+// Which dimensions have had their passing checks expanded, keyed `product|dimension`. Deliberately
+// NOT persisted: it is a "show me the rest of this one" gesture, not an arrangement, so it resets
+// with the page the way an item panel does rather than the way a container does. (ticket 117)
+const _compShowOk = new Set();
+function compToggleOk(app,dim){ const k=app+'|'+dim;
+  _compShowOk.has(k)?_compShowOk.delete(k):_compShowOk.add(k); renderCompliance(); }
 let _compOrder = [];
 try{ _compOrder = JSON.parse(localStorage.getItem('tiaraCompOrder')||'[]'); }catch(e){ noted('compliance column order (load)',e); }
 function saveCompOrder(){
@@ -3550,9 +3594,15 @@ function compExplain(el){
 }
 function closeCompExplain(){ const o=document.getElementById('cexpov'); if(o) o.remove(); }
 
-function compPill(s){
+// The closed row now answers "where is the work" without opening anything. A dimension that is
+// partial or not started says how many checks are missing, so the common question is read off the
+// summary instead of by expanding a product and counting. `ok` and `na` carry no number: there is
+// nothing to go and look at. (ticket 117)
+function compPill(s,miss){
   const map={ok:['✓ done','cok'],partial:['◐ partial','cpart'],none:['○ not started','cnone'],na:['– not needed','cna']};
-  const v=map[s]||map.none; return `<span class="cpill ${v[1]}">${v[0]}</span>`;
+  const v=map[s]||map.none;
+  const n=(miss>0 && s!=='ok' && s!=='na') ? ` · ${miss} missing` : '';
+  return `<span class="cpill ${v[1]}">${v[0]}${n}</span>`;
 }
 // compliance.json keys products by repo, tiara-data by name, and the two disagree
 // ("SparkleReef" vs "Sparkle Reef"). Match on the repo, lowercased, or you silently get no icon.
@@ -3570,8 +3620,12 @@ function renderCompliance(){
     return;
   }
   const dims=CDIMS;
-  // apply the saved drag order (by product name); unknown/new apps fall to the end alphabetically
+  // apply the saved drag order (by product name); unknown/new apps fall to the end alphabetically.
+  // Infrastructure collects at the end regardless, because those rows carry no checks and sorting
+  // them alphabetically put unscoreable rows in the middle of scored ones. (#116)
   const ordered=[...c.apps].sort((a,b)=>{
+    const ka=(a.kind==='infrastructure')?1:0, kb=(b.kind==='infrastructure')?1:0;
+    if(ka!==kb) return ka-kb;
     const ia=_compOrder.indexOf(a.name), ib=_compOrder.indexOf(b.name);
     if(ia<0&&ib<0) return a.name.localeCompare(b.name);
     if(ia<0) return 1; if(ib<0) return -1; return ia-ib;
@@ -3586,27 +3640,45 @@ function renderCompliance(){
       const word=a.missing?'not checked':'infrastructure';
       return `<div class="crow cflat"><span class="cname">${compIcon(a)}${esc(a.name)}</span><span class="cpill ${a.missing?'cno':'cna'}">${word}</span><span class="cflatnote">${esc(a.note||'')}</span></div>`;
     }
-    const pills=dims.map(dm=>compPill((d[dm[0]]||{}).status)).join('');
+    const missOf=dm=>((d[dm]||{}).checks||[]).filter(c=>!c.unknown && !c.pass).length;
+    const pills=dims.map(dm=>compPill((d[dm[0]]||{}).status, missOf(dm[0]))).join('');
     const body=dims.map(dm=>{
       const dim=d[dm[0]]||{checks:[]};
+      const chkRow = ch => {
+        const st=ch.unknown?'cunknown':(ch.pass?'cyes':'cno');
+        const word=ch.unknown?'unknown':(ch.pass?'ok':'missing');
+        const x=ch.explain;
+        if(!x) return `<div class="cchk ${st}"><span class="cstate">${word}</span>${esc(ch.label)}
+          <span class="cnoexp" title="this check has no explanation, which the scanner should have refused">unexplained</span></div>`;
+        // The explanation is not written into the row. It is looked up from _compliance when
+        // you ask for it, so the row carries three identifiers and no prose (#71).
+        return `<div class="cchk cchkx ${st}" role="button" tabindex="0" data-app="${esc(a.name)}" data-dim="${esc(dm[0])}" data-chk="${esc(ch.id)}"
+          onclick="compExplain(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();compExplain(this);}"
+          ><span class="cstate">${word}</span>${esc(ch.label)}<span class="clook">explain</span></div>`;
+      };
+      // 636 rows were drawn across the tab and 335 of them said ok, so more than half the height was
+      // spent on what is already fine. The failing and unknown ones are what this tab is for and they
+      // stay; the passing ones become one line that says how many and opens them in place. Nothing is
+      // removed, and every check still opens its explanation once shown. A dimension where everything
+      // passes is now one line. (ticket 117)
+      const checks=dim.checks||[];
+      const bad=checks.filter(c=>c.unknown||!c.pass);
+      const good=checks.filter(c=>!c.unknown&&c.pass);
+      const okKey=a.name+'|'+dm[0], showOk=_compShowOk.has(okKey);
+      const toggle=`compToggleOk('${escArg(a.name)}','${escArg(dm[0])}')`;
       // Opt-out dimensions (e.g. an app that does not ship to TestFlight) show a friendly note,
       // not a list of red crosses for things it never needed.
       const inner = (dim.status==='na')
         ? `<div class="cnote">${esc(dim.note||'Not applicable for this app.')}</div>`
-        : (dim.checks||[]).map(ch=>{
-            const st=ch.unknown?'cunknown':(ch.pass?'cyes':'cno');
-            const word=ch.unknown?'unknown':(ch.pass?'ok':'missing');
-            const x=ch.explain;
-            if(!x) return `<div class="cchk ${st}"><span class="cstate">${word}</span>${esc(ch.label)}
-              <span class="cnoexp" title="this check has no explanation, which the scanner should have refused">unexplained</span></div>`;
-            // The explanation is not written into the row. It is looked up from _compliance when
-            // you ask for it, so the row carries three identifiers and no prose (#71).
-            return `<div class="cchk cchkx ${st}" role="button" tabindex="0" data-app="${esc(a.name)}" data-dim="${esc(dm[0])}" data-chk="${esc(ch.id)}"
-              onclick="compExplain(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();compExplain(this);}"
-              ><span class="cstate">${word}</span>${esc(ch.label)}<span class="clook">explain</span></div>`;
-          }).join('');
+        : bad.map(chkRow).join('')
+          + (good.length
+              ? `<div class="crollup" role="button" tabindex="0" onclick="${toggle}"
+                   onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${toggle};}"
+                   ><span class="cstate cyes">${good.length} ok</span><span class="clook">${showOk?'hide them':'show them'}</span></div>`
+                + (showOk ? good.map(chkRow).join('') : '')
+              : '');
       const covLine=(dm[0]==='tests'&&dim.coverage!=null)?`<span class="ccov" title="line coverage ratchet floor (a guaranteed lower bound)">${dim.coverage}% cov</span>`:'';
-      return `<div class="ccol"><div class="ccolh">${dm[1]} ${compPill(dim.status)} ${covLine}</div>${inner}</div>`;
+      return `<div class="ccol"><div class="ccolh">${dm[1]} ${compPill(dim.status, missOf(dm[0]))} ${covLine}</div>${inner}</div>`;
     }).join('');
     const tag=a.modern?'':'<span class="clegacy">legacy</span>';
     const cov=(d.tests&&d.tests.coverage!=null)?d.tests.coverage:null;
@@ -3656,8 +3728,8 @@ function setPortfolioSort(m){ portfolioSort=m; try{localStorage.setItem('tiaraPo
    are a view, they never go to GitHub, and they reset on load because a filter you cannot see is
    a lie. The grouping and the collapsed lanes DO persist, because a group heading states its own
    count on screen, so a collapsed lane is never a silent truncation. */
-let _tqView = { q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'', page:0 };
-let _bdView = { q:'', lane:'', type:'', prio:'', app:'', quick:'', sort:'' };   // Portfolio, which had no filter at all
+let _tqView = { q:'', lane:'', type:'', prio:'', app:'', kind:'', quick:'', sort:'', page:0 };
+let _bdView = { q:'', lane:'', type:'', prio:'', app:'', kind:'', quick:'', sort:'' };   // Portfolio, which had no filter at all
 const TQ_PAGE = 25;
 let tqGrouped = true;
 const tqClosed = new Set();
@@ -3705,6 +3777,14 @@ function renderPortfolio(){
 
   const tools=filterBar('tq', all, {shown:rows.length, apps:true, sort:false, placeholder:'search all open work…'});
 
+  // One outer split by kind, on both views, because a factory repo and a product follow different
+  // rules and 41% of this list was the former with nothing saying so. Products first. A group with
+  // nothing in it is not drawn, which is the rule Portfolio's GROUPS already uses, so a person with
+  // no infrastructure items sees exactly what they saw before. (#116)
+  const kindWrap = (kd, inner, n) => inner
+    ? `<section class="tqkind"><h3 class="tqkindh"><span class="tqkindt">${KIND_LABEL[kd]}</span>`
+      + `<span class="tqkindc">${n}</span><span class="grule"></span></h3>${inner}</section>`
+    : '';
   let body;
   if(!all.length){
     body = '<div class="muted">no open items - every board is clear 🎉</div>';
@@ -3712,28 +3792,49 @@ function renderPortfolio(){
     body = '<div class="muted">nothing matches</div>';
   } else if(tqGrouped){
     // Every lane states its own count, open or closed, so collapsing is never a silent truncation.
-    body = BOARD_STATUS_ORDER.filter(k=>k!=='done').map(k=>{
-      const g=rows.filter(r=>itemStatus(r.q)===k);
-      if(!g.length) return '';
-      const shut=tqClosed.has(k);
-      return `<button class="tqgroup" onclick="tqToggleLane('${k}')" title="${shut?'show':'hide'} this lane">`
-        +`<span>${shut?'▸':'▾'}</span><span class="gname">${BOARD_STATUS_LABEL[k]||k}</span>`
-        +`<span class="gcount">${g.length}${shut?' · hidden':''}</span><span class="grule"></span></button>`
-        + (shut?'':g.map(tqRow).join(''));
+    body = KIND_ORDER.map(kd=>{
+      const kr = rows.filter(r=>appKind(r.a)===kd);
+      if(!kr.length) return '';
+      const lanes = BOARD_STATUS_ORDER.filter(k=>k!=='done').map(k=>{
+        const g=kr.filter(r=>itemStatus(r.q)===k);
+        if(!g.length) return '';
+        // The collapse key carries the kind, so hiding Doing under Products does not silently hide
+        // it under Infrastructure too. Plain lane keys saved before this simply stop matching, which
+        // reopens a lane rather than losing anything.
+        const lk = kd+':'+k;
+        const shut=tqClosed.has(lk);
+        return `<button class="tqgroup" onclick="tqToggleLane('${lk}')" title="${shut?'show':'hide'} this lane">`
+          +`<span>${shut?'▸':'▾'}</span><span class="gname">${BOARD_STATUS_LABEL[k]||k}</span>`
+          +`<span class="gcount">${g.length}${shut?' · hidden':''}</span><span class="grule"></span></button>`
+          + (shut?'':g.map(tqRow).join(''));
+      }).join('');
+      return kindWrap(kd, lanes, kr.length);
     }).join('') || '<div class="muted">nothing matches</div>';
   } else {
     const maxPage=Math.max(0, Math.ceil(rows.length/TQ_PAGE)-1);
     if(_tqView.page>maxPage) _tqView.page=maxPage;
     const from=_tqView.page*TQ_PAGE;
     const page=rows.slice(from, from+TQ_PAGE);
-    body = page.map(tqRow).join('')
+    // The split is applied to the page you are looking at, not to the whole list, so paging stays
+    // one control and the counts on screen are the counts on screen.
+    body = KIND_ORDER.map(kd=>{
+      const g=page.filter(r=>appKind(r.a)===kd);
+      return kindWrap(kd, g.map(tqRow).join(''), g.length);
+    }).join('')
       + `<div class="pjpage"><span>showing ${from+1} to ${from+page.length} of ${rows.length}</span>`
       + `<button class="tb" onclick="tqPage(-1)" ${_tqView.page<=0?'disabled':''}>← previous</button>`
       + `<button class="tb" onclick="tqPage(1)" ${from+TQ_PAGE>=rows.length?'disabled':''}>next →</button></div>`;
   }
 
+  // One number that silently merged two populations said "across 15 projects" where 12 are products.
+  // It states both, or just the one, when there is no infrastructure to distinguish. (#116)
+  const nProd  = data.apps.filter(a=>!a.excluded && appKind(a)==='app').length;
+  const nInfra = data.apps.filter(a=>!a.excluded && appKind(a)==='infrastructure').length;
+  const across = nInfra
+    ? ` across ${nProd} product${nProd===1?'':'s'} and ${nInfra} infrastructure repo${nInfra===1?'':'s'}`
+    : ` across ${nProd} product${nProd===1?'':'s'}`;
   const head = `<div class="phead"><b>${rows.length}</b> open item${rows.length===1?'':'s'}`
-    + (fActive(_tqView)?` of ${all.length}`:` across ${data.apps.length} project${data.apps.length===1?'':'s'}`)
+    + (fActive(_tqView)?` of ${all.length}`:across)
     + ` · ${auto?'highest priority first':'your project order'}</div>`;
   el.innerHTML = head + toggles + tools + body;
 }
@@ -3927,8 +4028,7 @@ function render(){
       note:n=>n+' repo'+(n===1?'':'s')+' deliberately not part of the portfolio. They still exist on GitHub; they do not count towards anything here, and they are not scanned. Use More actions to put one back.' }
   ];
   const b = GROUPS.map(g=>{
-    const roleOf=a=>a.excluded ? 'excluded' : (a.kind==='infrastructure'?'infrastructure':'app');
-    const idx=data.apps.map((a,k)=>k).filter(k=>roleOf(data.apps[k])===g.kind);
+    const idx=data.apps.map((a,k)=>k).filter(k=>appRole(data.apps[k])===g.kind);
     if(!idx.length) return '';
     return `<section class="pgroup pg-${g.kind}">`
       + `<div class="pghead"><h2 class="pgname">${g.label}</h2><span class="pgnote">${esc(g.note(idx.length))}</span></div>`
@@ -3971,7 +4071,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v110';
+const TIARA_VERSION = 'board-v111';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
