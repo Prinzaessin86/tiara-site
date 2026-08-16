@@ -143,10 +143,30 @@ BOARD_BIN="$HOME/Developer/_ticketflow/scripts"
 # The list has grown one script at a time, each after somebody hit the wall: two at BOOT-31,
 # agent-comment.sh later, this one now. It is the whole of _ticketflow/scripts that an agent is told
 # to use, and it should stay that way rather than being discovered a fourth time.
-case "$NORM_EARLY" in
-  *[\;\&\|\`\$\(\>\<]*) ;;
-  "bash $BOARD_BIN/move-to-verify.sh "*|"bash $BOARD_BIN/make-board-ticket.sh "*|"bash $BOARD_BIN/agent-comment.sh "*|"bash $BOARD_BIN/agent-edit.sh "*) exit 0 ;;
+# THE FIRST WORD DECIDES, not a prefix of the whole line. The old test required the command to BEGIN
+# with `bash ` and vetoed the exemption on any of ; & | ` $ ( > < anywhere in it. Measured
+# consequences: the spelling root/CLAUDE.md:43,46,49 publishes was refused; `sh` and a quoted path
+# were refused; and a trailing `2>&1 | tail -5` refused a correct call, which is how an agent in
+# tiara-site was denied after retrying specifically to satisfy the guard. Piping is how you read a
+# script's output. (_bootstrap#134)
+#
+# ensure-board.sh is added because _ticketflow/README.md publishes it as an entry point other repos
+# may hardcode and it has never been in this list. Fourth time this list has been found incomplete.
+BOARD_HEAD=$NORM_EARLY
+BOARD_HEAD=${BOARD_HEAD#bash }
+BOARD_HEAD=${BOARD_HEAD#sh }
+BOARD_FIRST=${BOARD_HEAD%% *}
+BOARD_FIRST=${BOARD_FIRST//\"/}
+BOARD_FIRST=${BOARD_FIRST//\'/}
+BOARD_EXEMPT=0
+case "$BOARD_FIRST" in
+  "$BOARD_BIN/move-to-verify.sh"|"$BOARD_BIN/make-board-ticket.sh"|"$BOARD_BIN/agent-comment.sh"|"$BOARD_BIN/agent-edit.sh"|"$BOARD_BIN/ensure-board.sh")
+    BOARD_EXEMPT=1 ;;
 esac
+# DELIBERATELY NOT `exit 0`. The old exemption skipped sections 1c through 6 entirely: measured, a
+# board call could read Config.xcconfig, docs/archive/ and another repo, all of which are denied
+# plainly. The flag forgives exactly one thing, at 1c below, and the command remains subject to every
+# other rule. A pipe is therefore safe to allow: whatever is on the far side is still judged.
 
 # --- 1c. Cross-project scope guard -------------------------------------------
 # If a Bash command targets a path under ~/Developer that is NOT this project,
@@ -170,6 +190,12 @@ NORM=${NORM//\$HOME\//$HOME/}
 # the command also named the current project. Found by a session working in _ticketflow. (BOOT-46)
 OUTSIDE=$(printf '%s\n' "$NORM" | grep -oE "$HOME/Developer/[A-Za-z0-9_.-]+" 2>/dev/null \
             | sort -u | grep -vxF "$RESOLVED_PROJECT" || true)
+# A board call is forgiven its own script directory and nothing else in the same command. The -n
+# guard matters: printf '%s\n' "" emits a blank line that grep -vxF would pass through, turning an
+# empty OUTSIDE into a non-empty one and denying every board call. (_bootstrap#134)
+if [ "${BOARD_EXEMPT:-0}" = 1 ] && [ -n "$OUTSIDE" ]; then
+  OUTSIDE=$(printf '%s\n' "$OUTSIDE" | grep -vxF "$HOME/Developer/_ticketflow" || true)
+fi
 [ -z "$OUTSIDE" ] || deny "command targets $(printf '%s' "$OUTSIDE" | tr '\n' ' '), outside this project. Launch Claude from the target project so its hooks fire." "$CMD"
 
 # BOOT-72: the check above reads $HOME/Developer/<repo> out of the command text, so changing
