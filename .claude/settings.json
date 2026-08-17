@@ -1,6 +1,8 @@
 {
   "permissions": {
     "deny": [
+      "Bash(chflags *)",
+      "Bash(chmod *)",
       "Edit(./**/*.pbxproj)",
       "Edit(./**/*.xcodeproj/**)",
       "Edit(./.claude/**)",

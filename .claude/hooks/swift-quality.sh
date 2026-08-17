@@ -124,21 +124,52 @@ if [ "$FMT_CODE" -ne 0 ]; then
 fi
 
 # --- 2. Report what cannot ----------------------------------------------------
-LINT_OUT=$(swiftlint lint --quiet "$FILE" 2>&1)
+# _bootstrap#144: violations arrive on STDOUT as JSON. SwiftLint's own diagnostics arrive on
+# STDERR, including a config note about an opt-in analyzer rule that has nothing to do with the
+# file being edited. The old call merged the two with 2>&1 and blocked on any output at all, so a
+# byte-clean file was refused in every repo whose .swiftlint.yml opts into such a rule: measured as
+# 7 of 8 Swift repos. Read the violations, not the noise. Keep stderr for the tool-error branch,
+# which is the FD-0003 guarantee and must not be weakened.
+LINT_ERRFILE=$(mktemp "${TMPDIR:-/tmp}/swiftlint.XXXXXX")
+LINT_OUT=$(swiftlint lint --quiet --reporter json "$FILE" 2>"$LINT_ERRFILE")
 LINT_CODE=$?
+LINT_ERR=$(cat "$LINT_ERRFILE"); rm -f "$LINT_ERRFILE"
 
 # Tool level failure. Never pass silently. This is the guard the old hook was missing.
 if [ "$LINT_CODE" -ne 0 ] && [ "$LINT_CODE" -ne 2 ]; then
     echo "swift-quality: swiftlint could not run on $FILE (exit $LINT_CODE)." >&2
+    echo "$LINT_ERR" >&2
+    echo "the lint gate is not functioning. fix the invocation before trusting it." >&2
+    exit 2
+fi
+
+# A reporter whose output cannot be parsed is a broken gate, not a clean file. Fail loud.
+LINT_REPORT=$(printf '%s' "$LINT_OUT" | python3 -c '
+import sys, json
+try:
+    v = json.load(sys.stdin)
+except Exception:
+    sys.exit(3)
+out = []
+for e in v:
+    sev = str(e.get("severity", "")).lower()
+    if sev not in ("error", "warning"):
+        continue
+    out.append("  %s:%s:%s %s: %s" % (e.get("file", ""), e.get("line", ""),
+                                      e.get("character", ""), sev, e.get("reason", "")))
+print("\n".join(out))
+' 2>/dev/null)
+if [ $? -ne 0 ]; then
+    echo "swift-quality: could not parse SwiftLint JSON for $FILE." >&2
     echo "$LINT_OUT" >&2
     echo "the lint gate is not functioning. fix the invocation before trusting it." >&2
     exit 2
 fi
 
-# Any reported output (violations or warnings) blocks so the agent self corrects.
-if [ -n "$LINT_OUT" ]; then
-    echo "swift-quality: SwiftLint reported issues in $FILE:" >&2
-    echo "$LINT_OUT" >&2
+# Real violations block so the agent self corrects. A config note on stderr does not.
+if [ -n "$LINT_REPORT" ]; then
+    echo "swift-quality: SwiftLint reported violations in $FILE:" >&2
+    echo "$LINT_REPORT" >&2
     exit 2
 fi
 
