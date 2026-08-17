@@ -285,8 +285,10 @@ esac
 
 # --- 1d. The archive is not readable -----------------------------------------
 # FD-0011: an archived document is finished. Reading one as current is how a closed finding gets
-# reopened. settings.json denies the Edit/Read/Write TOOL route; permissions.deny does not bind Bash,
-# so without this the shell route was wide open and `cat docs/archive/x.md` was never refused.
+# reopened. settings.json denies the Edit/Read/Write TOOL route. A deny rule of the form Bash(...)
+# DOES bind shell commands, is harness-evaluated independently of this hook, and survives this hook
+# being disabled, measured in _bootstrap#148. An earlier comment here said the opposite. That belief
+# is why irreversible-act rules were written as patterns in this file instead of as deny rules.
 #
 # DENY BY DEFAULT, allowlist the archiving operations. The previous version did the opposite: it
 # matched `docs/archive/` anywhere and refused everything, including an agent MOVING a finished

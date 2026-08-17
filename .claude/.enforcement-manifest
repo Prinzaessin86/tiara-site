@@ -7,11 +7,11 @@
 # install ran from, and is NOT a claim that every file below is byte-identical to it:
 # .claude/settings.json is merged, so it carries the template's hooks and deny rules
 # plus whatever else this app has. See BOOT-32.
-template=18e2f6e
+template=ba6e471
 16b46ae40881c120c25a58ef0d18cb217edeb01d .claude/hooks/lib-gate.sh
 9cd1550ac95b26449fa75843284fd72b477084ab .claude/hooks/turn-start.sh
 55205f1d07324ef80f3e922678616dcdeda593b9 .claude/hooks/verify-on-stop.sh
-68ca76c222b7db759c9cc969babaaa8100c409cd .claude/hooks/guard-bash.sh
+6ea655c60bbcc31b7314626b71d9d0406a671d9b .claude/hooks/guard-bash.sh
 56c402ee02b450650147205374040a0a64121d2f .claude/hooks/guard-scope.sh
 e1e267fdf45016fb4f95d4204deec9fc583042c1 .claude/hooks/swift-quality.sh
 128990f60a6f0253fc29172e8ce20c8ea04b12d7 scripts/conform.sh
