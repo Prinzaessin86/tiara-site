@@ -7,14 +7,14 @@
 # install ran from, and is NOT a claim that every file below is byte-identical to it:
 # .claude/settings.json is merged, so it carries the template's hooks and deny rules
 # plus whatever else this app has. See BOOT-32.
-template=898fa44
-3d3dd378c8443126ef9311670ca4785449c8ac69 .claude/hooks/lib-gate.sh
+template=53b4c17
+16b46ae40881c120c25a58ef0d18cb217edeb01d .claude/hooks/lib-gate.sh
 9cd1550ac95b26449fa75843284fd72b477084ab .claude/hooks/turn-start.sh
 55205f1d07324ef80f3e922678616dcdeda593b9 .claude/hooks/verify-on-stop.sh
 68ca76c222b7db759c9cc969babaaa8100c409cd .claude/hooks/guard-bash.sh
 56c402ee02b450650147205374040a0a64121d2f .claude/hooks/guard-scope.sh
 74517f74cd028d3299ab40f83b401eb7e1cb99cf .claude/hooks/swift-quality.sh
-0dfcef511306926a208cbfc57dd2177b243128ca scripts/conform.sh
+128990f60a6f0253fc29172e8ce20c8ea04b12d7 scripts/conform.sh
 be757e4b571a2b45c7a08b31abcdd88c0a809da1 scripts/gate-status.sh
 1423956301831a6fc3c888ccbf0f0a0d9e29f2b2 scripts/gate-baseline.sh
 89ac992332806ec11e05a7f88c8ddd66cd229d2d scripts/tree-fingerprint.sh

@@ -598,5 +598,27 @@ else
   fi
 fi
 
+
+# The explanation lock and gate_fix_instructions (FD-0013, _bootstrap#4).
+#
+# WHY THIS IS HERE AND NOT ONLY IN A TEST. explain-lock.mjs's own header calls
+# `node scripts/explain-lock.mjs --check` "the gate", and nothing ran it. tests/fix-instructions.test.sh
+# asserts the fix/verify half against the real explanations, so that half was gated. The hash half,
+# which is what explain-lock was built for, was gated by nothing: no test asserts drifted, unlocked,
+# orphan or missing. Demonstrated on 2026-08-16 by adding a comment inside one check's slice, which
+# changes the hash and no behaviour: explain-lock --check exited 1 and `make verify` stayed green at
+# 567 assertions. no_secrets had also sat drifted since _bootstrap#120 with every run green.
+#
+# Runs only where the scanner lives. conform.sh is vendored into every app repo, and the
+# explanations, the lock and explain-lock.mjs are _bootstrap's alone, so an app repo skips this
+# rather than reporting an absent file as a failure.
+if [ -f scripts/explain-lock.mjs ] && [ -f scripts/compliance-explain.mjs ]; then
+  if _el=$(node scripts/explain-lock.mjs --check 2>&1); then
+    ok "every check explanation matches its code, and every fix/verify instruction resolves"
+  else
+    bad "an explanation has drifted from the code it explains, or a fix/verify instruction does not resolve. Re-read the explanation against the code, then re-lock: node scripts/explain-lock.mjs --write"
+    printf '%s\n' "$_el" | sed 's/^/        /'
+  fi
+fi
 if [ "$fail" -ne 0 ]; then echo "conform: FAILED (see ✗ above)"; exit 1; fi
 echo "conform: green"

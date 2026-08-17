@@ -11,7 +11,7 @@
 # The gate's OWN output. Excluded from "what changed", because otherwise every turn is blocked
 # for failing to declare the log file the block was just written to, and the screenshot captured
 # to satisfy the device check. Evidence is not work.
-GATE_NOISE='^(\.claude/(\.turn-start|\.turn-dirty|\.last-dirty|\.last-seen|gate\.log|override\.log|drift\.log)|\.artifacts/|\.gate/)'
+GATE_NOISE='^(\.claude/(\.turn-start|\.turn-dirty|\.last-dirty|\.last-seen|\.enforcement-staged|gate\.log|override\.log|drift\.log)|\.artifacts/|\.gate/)'
 
 # The same exclusion as a git pathspec. Needed because these files may be TRACKED (someone runs
 # `git add -A`), in which case they appear in `git diff HEAD` and a name-list grep never sees them.
