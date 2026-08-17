@@ -43,6 +43,17 @@
     ]
   },
   "hooks": {
+    "FileChanged": [
+      {
+        "matcher": "Makefile|.gitignore|.claude/settings.json|settings.json|.claude/.enforcement-manifest|enforcement-manifest",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/layer-watch.sh"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -92,6 +103,17 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/turn-start.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-floor.sh"
           }
         ]
       }

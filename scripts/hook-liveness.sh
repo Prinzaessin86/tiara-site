@@ -25,7 +25,11 @@ set -uo pipefail
 
 DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 HOOKDIR="$DIR/.claude/hooks"
-HOOKS="lib-gate.sh turn-start.sh verify-on-stop.sh guard-bash.sh guard-scope.sh swift-quality.sh"
+# layer-watch.sh and session-floor.sh are checked here too, which means a chmod -x on either is
+# caught by `make verify` rather than by session-floor itself. That is deliberate and it is the only
+# order that works: session-floor cannot report its own missing execute bit, because a hook with no
+# execute bit does not run. The probe that can see it must be the one that is not it.
+HOOKS="lib-gate.sh turn-start.sh verify-on-stop.sh guard-bash.sh guard-scope.sh swift-quality.sh layer-watch.sh session-floor.sh"
 
 fail=0
 
