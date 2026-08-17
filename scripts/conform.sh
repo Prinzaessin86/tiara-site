@@ -500,6 +500,20 @@ if [ -f scripts/hook-liveness.sh ]; then
   fi
 fi
 
+# _bootstrap#152: the manifest check below proves this repo's guard is the BYTE the factory shipped.
+# It cannot prove the guard WORKS, and those are different failures. A repo whose guard predates the
+# manifest has nothing to compare against, so it drifts past every content check in silence. That is
+# not hypothetical: TentaclePit did exactly this until 2026-08-17. So this runs the guard and reads
+# what it returns, rather than reading what it is.
+if [ -f scripts/shelltests/run.sh ]; then
+  if _st=$(bash scripts/shelltests/run.sh 2>&1); then
+    ok "this repo's own guard blocks, allows, and fails closed"
+  else
+    bad "this repo's guard is installed but does not behave like one."
+    printf '%s\n' "$_st" | sed 's/^/        /'
+  fi
+fi
+
 if [ -f .claude/.enforcement-manifest ]; then
   drift=0
   while IFS=' ' read -r want path; do

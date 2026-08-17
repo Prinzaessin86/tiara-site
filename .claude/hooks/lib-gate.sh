@@ -11,7 +11,31 @@
 # The gate's OWN output. Excluded from "what changed", because otherwise every turn is blocked
 # for failing to declare the log file the block was just written to, and the screenshot captured
 # to satisfy the device check. Evidence is not work.
-GATE_NOISE='^(\.claude/(\.turn-start|\.turn-dirty|\.last-dirty|\.last-seen|\.enforcement-staged|gate\.log|override\.log|drift\.log)|\.artifacts/|\.gate/)'
+GATE_NOISE='^(\.claude/(\.turn-start|\.turn-dirty|\.last-dirty|\.last-seen|gate\.log|override\.log|drift\.log)|\.artifacts/|\.gate/)'
+
+# BUILD AND TOOL OUTPUT. Excluded from "what changed" because it is regenerated, not authored.
+#
+# WHY THIS EXISTS AT ALL (_bootstrap#151). The dirty snapshot used to ask git which untracked files
+# mattered, via `ls-files -o --exclude-standard`. `--exclude-standard` consults FOUR inputs, and all
+# four are writable by the agent being gated: the root `.gitignore`, any nested `.gitignore`
+# containing `*`, `.git/info/exclude`, and `git config core.excludesFile`. Measured 2026-08-17: each
+# one hides a new file from the gate, and the last three leave `git status` completely clean, so
+# nothing else notices either. guard-bash returns rc=0 on `printf "x" >> .git/info/exclude`. The
+# gate's view of what changed was editable by the thing being gated.
+#
+# The obvious fix, dropping `--exclude-standard` outright, is unusable: measured across the 21 repos
+# under ~/Developer it surfaces 43370 files, 16644 in Threadmap and 11981 in CandyCart alone. A gate
+# that demands you declare node_modules is a gate nobody can pass.
+#
+# So the noise list is OURS, not git's, and it is ANCHORED. Every alternative below matches either
+# at the start of the repo-relative path or at a `/` boundary, and directory patterns end in `/`.
+# That is the whole point: `build/` cannot be spelled to cover `src/mybuild.swift`, and an agent
+# cannot widen it, because this file is human-only (guard-scope returns 2 on it).
+#
+# RESIDUAL, stated rather than hidden. This is reduction in kind, not elimination. A file placed
+# inside a genuinely-ignored build directory, `build/Backdoor.swift`, still passes. Closing that
+# needs a different mechanism than a path filter.
+GATE_BUILD_NOISE='(^|/)(node_modules|build|\.build|DerivedData|dist|out|coverage|\.next|\.nuxt|\.venv|venv|__pycache__|Pods|Carthage|\.swiftpm|xcuserdata|\.vercel|\.turbo|test-results|e2e-out|\.smoke|\.deploy|\.build-verify|\.xcodegen-cache)/|(^|/)[^/]*\.xcodeproj/|(^|/)\.DS_Store$|(^|/)\.verify-pass$|(^|/)\.xcodegen-cache$|(^|/)\.claude/(gate|override|drift)\.log$|\.xcuserstate$|\.tsbuildinfo$'
 
 # The same exclusion as a git pathspec. Needed because these files may be TRACKED (someone runs
 # `git add -A`), in which case they appear in `git diff HEAD` and a name-list grep never sees them.
@@ -31,6 +55,9 @@ GATE_PATHSPEC=(':(exclude).claude/.turn-start' ':(exclude).claude/.turn-dirty'
 # No error, no red output, a plausible answer, silently wrong. Do not remove these guards.
 _filter() { grep -vE "$GATE_NOISE" || true; }
 
+# Same `|| true` guard, same reason. See the block above.
+_filter_build() { grep -vE "$GATE_BUILD_NOISE" || true; }
+
 # ---------------------------------------------------------------------------------------------
 # DIRTY SNAPSHOT: one line per uncommitted file, "<blob-hash> <path>".
 #
@@ -46,7 +73,9 @@ gate_dirty_snapshot() {
   # quoted form then fails the [ -f ] test below, is recorded as DELETED, is never hashed, and
   # reports as changed on every turn forever, including turns that changed nothing.
   { git -C "$DIR" -c core.quotePath=false diff HEAD --name-only -- . "${GATE_PATHSPEC[@]}" 2>/dev/null
-    git -C "$DIR" -c core.quotePath=false ls-files -o --exclude-standard 2>/dev/null | _filter
+    # NOT `--exclude-standard`. See GATE_BUILD_NOISE. Cost of the wider walk, measured on the two
+    # worst repos: Threadmap 0.00s -> 0.09s, CandyCart 0.01s -> 0.05s. Once per turn, twice.
+    git -C "$DIR" -c core.quotePath=false ls-files -o 2>/dev/null | _filter_build | _filter
   } | sed '/^$/d' | sort -u | while IFS= read -r f; do
       if [ -f "$DIR/$f" ]; then
         printf '%s %s\n' "$(git -C "$DIR" hash-object "$DIR/$f" 2>/dev/null || echo UNREADABLE)" "$f"
