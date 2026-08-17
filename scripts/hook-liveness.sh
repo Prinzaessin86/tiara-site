@@ -48,6 +48,50 @@ for h in $HOOKS; do
   fi
 done
 
+# WIRING. The execute bit says the file CAN run. It does not say anything invokes it. Measured
+# 2026-08-17: emptying every hooks[] array in settings.json leaves all six files executable and
+# guard-bash still refusing when called directly, so an earlier version of this script reported
+# "the enforcement layer can run and is refusing" with ZERO hooks wired. That is the disarm proven
+# in _bootstrap#148, and this check missed it. Presence, executability and wiring are three
+# different questions and all three must be asked.
+SETTINGS="$DIR/.claude/settings.json"
+if [ -f "$SETTINGS" ]; then
+  wired=$(python3 - "$SETTINGS" <<'PYEOF' 2>/dev/null
+import sys, json
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    print("PARSE_FAILED"); raise SystemExit(0)
+cmds = []
+for entries in (d.get("hooks") or {}).values():
+    for e in entries:
+        for h in (e.get("hooks") or []):
+            c = (h.get("command") or "").strip()
+            # FIRST TOKEN ONLY. A hook command's first token is the executable. Substring matching
+            # is dodged by "/usr/bin/true # <original path>", which keeps every expected substring
+            # while running nothing. Measured 2026-08-17 against an earlier version of this check.
+            if c: cmds.append(c.split()[0] if c.split() else "")
+print("\n".join(cmds))
+PYEOF
+)
+  if [ "$wired" = "PARSE_FAILED" ]; then
+    echo "  UNPARSEABLE    .claude/settings.json could not be read as JSON"
+    echo "                 a settings file the harness cannot parse wires nothing"
+    fail=1
+  else
+    for h in $HOOKS; do
+      case "$h" in lib-gate.sh) continue ;; esac   # sourced by the others, never wired directly
+      if printf '%s\n' "$wired" | grep -qE "(^|/)$h\$"; then
+        echo "  ok             $h is wired in settings.json"
+      else
+        echo "  NOT WIRED      $h is present and executable, and settings.json never invokes it"
+        echo "                 the file is not the layer. Nothing will call this hook."
+        fail=1
+      fi
+    done
+  fi
+fi
+
 # Behavioural check. The execute bit says the file COULD run; this says it still refuses what it is
 # meant to refuse. Invoked directly, exactly as the harness does, never via `bash`.
 if [ -x "$HOOKDIR/guard-bash.sh" ]; then

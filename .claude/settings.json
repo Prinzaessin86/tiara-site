@@ -17,6 +17,7 @@
       "Edit(./scripts/conform.sh)",
       "Edit(./scripts/gate-baseline.sh)",
       "Edit(./scripts/gate-status.sh)",
+      "Edit(./scripts/hook-liveness.sh)",
       "Edit(./scripts/make-board-ticket.sh)",
       "Edit(./scripts/move-to-verify.sh)",
       "Edit(./scripts/tree-fingerprint.sh)",
@@ -35,6 +36,7 @@
       "Write(./scripts/conform.sh)",
       "Write(./scripts/gate-baseline.sh)",
       "Write(./scripts/gate-status.sh)",
+      "Write(./scripts/hook-liveness.sh)",
       "Write(./scripts/make-board-ticket.sh)",
       "Write(./scripts/move-to-verify.sh)",
       "Write(./scripts/tree-fingerprint.sh)"
