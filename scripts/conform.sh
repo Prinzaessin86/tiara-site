@@ -488,6 +488,18 @@ fi
 # turn, so conform would take the gate down in the very repos it exists to protect. Coverage is
 # tracked on the compliance board instead, which is built to be loud, and this warning
 # disappears repo by repo as the installer reaches them.
+# _bootstrap#148: a hook with no execute bit does not run, and the harness treats that as a
+# non-blocking error and proceeds. Content hashes cannot see it, because a mode change is not
+# content. This is the only check that asks whether the layer can actually RUN.
+if [ -f scripts/hook-liveness.sh ]; then
+  if _lv=$(bash scripts/hook-liveness.sh 2>&1); then
+    ok "every hook can execute, and guard-bash still refuses a blocked command"
+  else
+    bad "the enforcement layer cannot run. A hook with no execute bit fails open, silently."
+    printf '%s\n' "$_lv" | sed 's/^/        /'
+  fi
+fi
+
 if [ -f .claude/.enforcement-manifest ]; then
   drift=0
   while IFS=' ' read -r want path; do

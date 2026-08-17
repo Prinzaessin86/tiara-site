@@ -7,15 +7,16 @@
 # install ran from, and is NOT a claim that every file below is byte-identical to it:
 # .claude/settings.json is merged, so it carries the template's hooks and deny rules
 # plus whatever else this app has. See BOOT-32.
-template=ba6e471
+template=eaa3fde
 16b46ae40881c120c25a58ef0d18cb217edeb01d .claude/hooks/lib-gate.sh
 9cd1550ac95b26449fa75843284fd72b477084ab .claude/hooks/turn-start.sh
 55205f1d07324ef80f3e922678616dcdeda593b9 .claude/hooks/verify-on-stop.sh
 6ea655c60bbcc31b7314626b71d9d0406a671d9b .claude/hooks/guard-bash.sh
 56c402ee02b450650147205374040a0a64121d2f .claude/hooks/guard-scope.sh
 e1e267fdf45016fb4f95d4204deec9fc583042c1 .claude/hooks/swift-quality.sh
-128990f60a6f0253fc29172e8ce20c8ea04b12d7 scripts/conform.sh
+4854b418a90a20ce84b7680efabf2a4cb9d3f060 scripts/conform.sh
 be757e4b571a2b45c7a08b31abcdd88c0a809da1 scripts/gate-status.sh
 1423956301831a6fc3c888ccbf0f0a0d9e29f2b2 scripts/gate-baseline.sh
 89ac992332806ec11e05a7f88c8ddd66cd229d2d scripts/tree-fingerprint.sh
+5afb72b4d4227bc4811854856d011c93d0fdeef4 scripts/hook-liveness.sh
 288a202b3e8ab6b5f88d7e00119a8ac910bce981 .claude/settings.json
