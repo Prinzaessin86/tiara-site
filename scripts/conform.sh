@@ -538,6 +538,42 @@ elif [ -d .claude/hooks ]; then
   printf '        %s\n' "  bash ~/Developer/_bootstrap/scripts/install-enforcement.sh ."
 fi
 
+# --- an install that was staged and never committed (_bootstrap#89) --------------------
+# install-enforcement.sh stages what it writes and stops, so a human reviews before it lands. It
+# prints "staged, not committed" and then nothing ever checks that you did. Measured 2026-08-17:
+# eight repos carried three installs' worth of staged enforcement files for hours, through four
+# concurrent sessions, and the fleet read as consistent the whole time because the files were
+# PRESENT. Present and committed are different questions and only one of them was being asked.
+#
+# Why this matters rather than being untidy. The next agent to commit in the repo takes these files
+# with it, because they are already in the index and a plain `git commit` includes the index. Its
+# finish gate then sees paths it never touched and refuses the turn until it declares them, which
+# is _bootstrap#140's misattribution reached from the staging side.
+#
+# Staged-and-uncommitted is the one state that is ALWAYS wrong, because the installer's whole
+# contract is that a human commits. So this fails rather than warns.
+#
+# grep -c, never `| grep -q`: grep -q exits on the first match, the producer dies of SIGPIPE, and
+# under `set -o pipefail` a correct result is reported as a failure (BOOT-84).
+#
+# --relative, not a bare listing. A bare `git diff --cached --name-only` reports paths from the
+# REPO ROOT no matter where it runs, so running conform in a subdirectory of a repo reports the
+# parent's staged files as though they were this directory's. That is not hypothetical: it made
+# the template fixture in tests/conform.test.sh inherit _bootstrap's index and fail for a state
+# that had nothing to do with the template. --relative limits the listing to the working
+# directory AND strips the prefix, so a real app repo (where .claude/ is at the root) is
+# unaffected and a nested directory is judged on itself.
+STAGED_ENF=$(git diff --cached --name-only --relative 2>/dev/null \
+  | grep -E '^(\.claude/(hooks/|settings\.json|\.enforcement-manifest)|scripts/(conform|hook-liveness|gate-status|gate-baseline|tree-fingerprint)\.sh|scripts/shelltests/)' \
+  | tr '\n' ' ')
+if [ -n "$STAGED_ENF" ]; then
+  bad "enforcement files are STAGED but not committed: $STAGED_ENF"
+  printf '        %s\n' "An agent committing here will take them with it, and its finish gate will"
+  printf '        %s\n' "then refuse the turn for files it never touched (_bootstrap#89)."
+  printf '        %s\n' "Review them and commit them yourself:"
+  printf '        %s\n' "  git diff --cached --stat && git commit -m 'enforcement: install from template'"
+fi
+
 # --- D40/D41/D44: work lives on the GitHub board, never in a file -------------------
 # This exists because deleting the files once is not the same as them staying deleted. Every
 # one-time cleanup in this factory has decayed. A well-meaning agent reading an old memory or
