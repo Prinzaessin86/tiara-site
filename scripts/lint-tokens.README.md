@@ -4,10 +4,20 @@ The design system's one rule: a size, a colour and a radius are declared once in
 referenced everywhere else (AD-0001 decision 1a,
 [#77](https://github.com/Prinzaessin86/tiara-site/issues/77)). This script refuses the alternative.
 
-## It is wired in
+## It is wired in, by two routes
 
-It runs in `scripts/hooks/pre-commit`, which is installed through `core.hooksPath`. Every commit
-that touches `index.html` is linted **before** it is created.
+**On every commit.** It runs in `scripts/hooks/pre-commit`, which is installed through
+`core.hooksPath`. Every commit that touches `index.html` is linted **before** it is created, on the
+staged content.
+
+**On every turn.** `Makefile`'s `lint` target is `python3 scripts/lint-tokens.py index.html`, and
+`lint` is the first thing `verify` depends on. The finish gate runs `make verify` to end a turn, so
+the rule is checked against the **working tree** whether or not you commit. The two routes check
+different content on purpose: the hook checks what is about to be committed, `make verify` catches
+it before you stage.
+
+So this is a gate twice over, and neither route is optional
+([#120](https://github.com/Prinzaessin86/tiara-site/issues/120)).
 
 This file used to say the opposite, "It is not wired in", and carried a patch for a human to
 apply. The patch was applied, in `1f518cd`, and the paragraph was never corrected, so the README
@@ -40,6 +50,7 @@ own refusal.
 
 ```bash
 python3 scripts/lint-tokens.py index.html     # 🎀 every size, colour and radius comes from a token
+make lint                                     # the same check, the way verify runs it
 ```
 
 ## Proving it is live rather than vacuous
