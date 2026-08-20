@@ -8,6 +8,7 @@
 #   lint     the design-token rule the pre-commit hook enforces on staged content (AD-0001 1a)
 #   syntax   every script parses, because a broken one is found at the worst moment otherwise
 #   version  the board version the pre-commit hook demands on every index.html change
+#   adrs     the FD-/AD- decision set is internally consistent (FD-0000)
 #   conform  the enforcement manifest, once install-enforcement.sh has run here
 #
 # Written because install-enforcement.sh:153 refuses a repo with no 'verify:' target, and
@@ -17,9 +18,9 @@
 
 SHELL := /bin/bash
 
-.PHONY: verify lint syntax version conform
+.PHONY: verify lint syntax version adrs conform help
 
-verify: lint syntax version conform
+verify: lint syntax version adrs conform
 	@echo "verify: green"
 	@# BOOT-115: record that the gate passed on THIS code. Without it compliance reports
 	@# gate_green false forever, which is indistinguishable from a gate that has never run.
@@ -71,6 +72,23 @@ version:
 	   || { echo "  ✗ index.html declares no TIARA_VERSION, which the pre-commit hook requires"; exit 1; }; \
 	 echo "  ✓ TIARA_VERSION declared ($$v)"
 
+# FD-0000's executable half. scripts/check-adrs.sh is vendored here alongside the decisions
+# themselves and has been called by nothing since it arrived, so 19 factory FD- files and this
+# repo's own AD-0001 and AD-0002 were checked by no gate at all (#124). It reads the filename id
+# against the title id, requires Status/Date/"Enforced by" with a legal Status, and requires
+# supersession to be symmetric.
+#
+# Called directly rather than guarded on existence like conform below, and the difference is the
+# point: conform arrives with the enforcement layer, so its absence is a repo that has not been
+# installed yet. check-adrs.sh arrives with the ADRs, so its absence is a broken vendor and must
+# fail the gate rather than print a note (FD-0002, FD-0013).
+#
+# docs/decisions, not docs/decisions/factory, though the script defaults to the same path: the
+# .factory-checksum that conform verifies covers FD-*.md only, so the two AD- decisions in this
+# repo have no other check anywhere and the wider path is what includes them.
+adrs:
+	@bash scripts/check-adrs.sh docs/decisions
+
 # D35: the enforcement layer is recorded in .claude/.enforcement-manifest and scripts/conform.sh
 # re-checks it on every verify. Neither exists here until install-enforcement.sh has run, so this
 # says so plainly rather than passing silently over an absent check.
@@ -81,3 +99,17 @@ conform:
 	   echo "  note: no scripts/conform.sh, so the enforcement manifest is not checked here yet."; \
 	   echo "        Install it with: bash ~/Developer/_bootstrap/scripts/install-enforcement.sh . (tiara-site#100)"; \
 	 fi
+
+# #124's acceptance asks that `make help` list the new target "matching the style of the four
+# targets already there". There was no help target when that was written and the four descriptions
+# lived only in the header comment above, which you have to open the file to read. This prints the
+# same set, and it is last so that `make` with no argument still means verify.
+help:
+	@echo "tiara-site: what this repo can honestly assert about itself."
+	@echo
+	@echo "  verify   every check below, in order. The finish gate runs this to end a turn."
+	@echo "  lint     the design-token rule the pre-commit hook enforces on staged content (AD-0001 1a)"
+	@echo "  syntax   every script parses, because a broken one is found at the worst moment otherwise"
+	@echo "  version  the board version the pre-commit hook demands on every index.html change"
+	@echo "  adrs     the FD-/AD- decision set is internally consistent (FD-0000)"
+	@echo "  conform  the enforcement manifest, once install-enforcement.sh has run here"
