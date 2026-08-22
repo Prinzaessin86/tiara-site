@@ -3668,13 +3668,13 @@ async function wpSet(appId, itemId, parentId){
 }
 async function wpCreate(){
   if(!HELPER.on){ setStatus('connect GitHub first'); return; }
-  const nm=(prompt('Name this work package.\n\nIt becomes an issue in '+WP_REPO+' titled "'+WP_PREFIX+'<name>", and is deliberately NOT put on a board: a work package is not a ticket, and one on a board would join a lane and every count.')||'').trim();
+  const nm=(prompt('Name this work package.\n\nIt becomes an issue in '+WP_REPO+' titled "'+WP_PREFIX+'<name>". Tiara does not put it on a board, so it never lands in a lane or a count: it is what tickets point at, and there is no work in it of its own.')||'').trim();
   if(!nm) return;
   setStatus('creating the work package…');
   try{
     const r=await ghApi('/repos/'+GH.owner+'/'+WP_REPO+'/issues',{method:'POST',body:JSON.stringify({
       title: WP_PREFIX+nm,
-      body: 'A work package. Its members are its sub-issues, and they may come from any repository in this estate.\n\nCreated from Tiara. This issue is deliberately not on a board.'
+      body: 'A work package. Its members are its sub-issues, and they may come from any repository in this estate.\n\nCreated from Tiara, which does not put it on a board: there is no work in this issue of its own, so a lane and a priority would be answers to questions it is not asking.'
     })});
     if(!r.ok) throw new Error('create issue '+r.status);
     await loadWorkPackages(); renderWP(); setStatus('🟢 work package created: '+nm);
@@ -4469,7 +4469,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v113';
+const TIARA_VERSION = 'board-v114';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
