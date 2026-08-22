@@ -485,6 +485,30 @@
      product read as the same KIND of container, because they are: a thing you open to see what is
      inside it. The members are the ordinary ticket rows, unchanged, so a ticket looks like itself
      wherever it is standing. */
+  .wpid{font-family:ui-monospace,monospace;font-size:var(--t-sm);font-weight:800;color:var(--c-7a4a9e);
+        background:var(--c-f3e9fb);padding:var(--sp-18) var(--sp-50);border-radius:var(--r-md);white-space:nowrap;}
+  /* The tag a ticket wears on its detail panel and its own page. A button, not a chip, because it
+     goes somewhere: the package it names, on the Work packages tab. */
+  .wptag{border:none;cursor:pointer;font-family:'Quicksand';font-size:var(--t-xs);font-weight:800;
+         background:var(--c-f3e9fb);color:var(--c-7a4a9e);padding:var(--sp-18) var(--sp-55);
+         border-radius:var(--r-pill);white-space:nowrap;}
+  .wptag:hover{background:var(--c-e9d9f7);}
+  /* "in no package" is said, not left blank. Blank and "this page failed to draw it" look the same. */
+  span.wptag.wpnone2{background:var(--c-f1eef6);color:var(--ink-3,var(--ink-3));cursor:default;font-weight:700;}
+  .wpadd{display:flex;align-items:center;gap:var(--sp-50);flex-wrap:wrap;margin-top:var(--sp-70);}
+  .wpadd label{font-size:var(--t-xs);font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3,var(--ink-3));}
+  .wpadd select{max-width:32rem;font-family:'Quicksand';font-size:var(--t-sm);padding:var(--sp-25) var(--sp-50);
+                border:1.5px solid var(--line2);border-radius:var(--r-md);background:var(--card);color:var(--ink-1);}
+  .wpaddwhy,.wpcmdwhy{font-size:var(--t-xs);color:var(--ink-3,var(--ink-3));line-height:1.5;}
+  .wpnote{margin-top:var(--sp-80);}
+  .wpnote label{display:block;font-size:var(--t-xs);font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+                color:var(--ink-3,var(--ink-3));margin-bottom:var(--sp-30);}
+  .wpnote textarea{width:100%;min-height:5rem;font-family:'Quicksand';font-size:var(--t-sm);line-height:1.6;
+                   padding:var(--sp-55) var(--sp-65);border:1.5px solid var(--line2);border-radius:var(--r-lg);
+                   background:var(--c-fdfaff);color:var(--ink-1);resize:vertical;margin-bottom:var(--sp-30);}
+  .wpcmd{display:flex;align-items:center;gap:var(--sp-50);flex-wrap:wrap;margin-top:var(--sp-80);
+         background:var(--c-faf7fc);border:1.5px solid var(--line2);border-radius:var(--r-lg);padding:var(--sp-55) var(--sp-65);}
+  .wpcmd code{font-family:ui-monospace,monospace;font-size:var(--t-xs);color:var(--ink-2,var(--ink-2));word-break:break-all;}
   .wpbar{margin:0 0 var(--sp-80);}
   .wprow{background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-lg);margin-bottom:var(--sp-65);
          box-shadow:0 .12rem .6rem rgba(240,111,164,.08);overflow:hidden;}
@@ -511,7 +535,7 @@
      chosen from a fixed vocabulary; a work package is a name somebody typed, and at the shared
      135px cap "the enforcement layer wave" reads as "the enforcement", which is a different
      package as far as anyone glancing at the row is concerned. */
-  .chipsel.wpsel{background-color:var(--c-f3e9fb);color:var(--c-7a4a9e);max-width:210px;}
+  .chipsel.wpsel{background-color:var(--c-f3e9fb);color:var(--c-7a4a9e);max-width:260px;}
   /* Compliance tab */
   .cmeta{font-size:var(--t-sm);color:var(--ink-3,var(--ink-3));margin:0 0 var(--sp-65);line-height:1.5;max-width:78ch;}
   .clegend{display:flex;gap:var(--sp-40);flex-wrap:wrap;align-items:center;font-size:var(--t-xs);color:var(--ink-3,var(--ink-3));margin-bottom:var(--sp-90);}
@@ -1456,11 +1480,10 @@ async function loadBoardItems(a){
   // query used to hardcode "Type", so a board whose field is `Work type` returned null for every
   // item and every row read as untriaged. resolveBoard already worked out the real names. (#98)
   const fname = (role,dflt)=>((meta&&meta.fields&&meta.fields[role]&&meta.fields[role].name)||dflt).replace(/"/g,'');
-  // `parent` and the issue's own `id` ride along in this query rather than in one of their own
-  // (#127). The parent IS the work package: GitHub's native sub-issue link is the only cross-repo
-  // grouping this account can have, because Issue Types are organisation-only and this is a User
-  // account. Asking for it here costs nothing, and a board with no work packages anywhere gets a
-  // column of nulls rather than a second round trip.
+  // Label DESCRIPTIONS ride along with the names (ticket 127). A work package is a label, `WP-0007`,
+  // and the label's description is its readable name, so a package's id and its name arrive together
+  // in a query that was already being made. Nothing extra is fetched and nothing else exists to
+  // fetch: the package is the label, and there is no object behind it.
   // PAGINATE. `items(first:100)` with no cursor is a hard cap, not a page size: a board with more
   // than 100 items showed the first 100 and said nothing at all. One board was hiding 42 items,
   // 14 of them open work. A bounded query states its bound and its total (D13), so this walks
@@ -1472,7 +1495,7 @@ async function loadBoardItems(a){
       pageInfo{ hasNextPage endCursor }
       nodes{
       id
-      content{ ... on Issue { id number title body state url createdAt closedAt comments{ totalCount } labels(first:20){ nodes{ name } } parent { id number title url repository { nameWithOwner } } } }
+      content{ ... on Issue { number title body state url createdAt closedAt comments{ totalCount } labels(first:20){ nodes{ name description } } } }
       lane: fieldValueByName(name:"${fname('lane','Lane')}"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
       priority: fieldValueByName(name:"${fname('priority','Priority')}"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
       type: fieldValueByName(name:"${fname('type','Type')}"){ ... on ProjectV2ItemFieldSingleSelectValue { name } }
@@ -1494,15 +1517,15 @@ async function loadBoardItems(a){
     const c = n.content;
     // the migrated Linear id (if any) now lives in the title; keep it as _lid for reference only
     const lid = (c.labels&&c.labels.nodes||[]).map(l=>l.name).find(nm=>/^[A-Za-z]+-\d+$/.test(nm));
+    const labelNames = (c.labels&&c.labels.nodes||[]).map(l=>l.name);
     const lane = (n.lane&&n.lane.name) || 'Up next';
     const status = (c.state==='CLOSED') ? 'done' : (LANE2STATUS[lane.toLowerCase()] || 'todo');
     return { id: itemIdFor(a,c.number), _lid:lid, issueNumber:c.number, itemId:n.id, url:c.url,
-      // The issue's own node id, which the two sub-issue mutations both need. itemId is the BOARD
-      // item and is a different thing entirely; passing one where the other belongs fails with an
-      // unhelpful message, so they are named apart. (#127)
-      nodeId:c.id,
-      // The work package, or null. Shape: {id, number, title, url, repository:{nameWithOwner}}.
-      wp:(c.parent||null),
+      // The work package: the `WP-nnnn` label, or ''. `wpTitle` is that label's description, which
+      // is where the readable name lives. A ticket carrying two would be a mistake somebody made by
+      // hand; the first is taken and the rest are reported by wpConflicts() rather than hidden.
+      wp:wpLabelOf(c.labels), wpTitle:wpTitleOf(c.labels),
+      _labels:labelNames,
       title:c.title, body:c.body||'', status, done:(status==='done'),
       // When the ticket was filed. Nothing in this file asked GitHub for it until #91, so "newest
       // first" sorted by issue number as a stand-in and no surface said when anything happened.
@@ -2003,8 +2026,8 @@ function renderNewIssue(){
         <select id="ni-type" onchange="niSetType(this.value)"><option value="">pick a type</option>${TYPE_ORDER.map(t=>`<option value="${t}"${ty===t?' selected':''}>${TYPE_META[t].e} ${TYPE_META[t].t}</option>`).join('')}</select></div>
       <div class="nifield"><label for="ni-prio">Priority</label>
         <select id="ni-prio" onchange="niSetPrio(this.value)">${PRIO_ORDER.map(x=>`<option value="${x}"${(d.prio||'med')===x?' selected':''}>${PRIO_META[x].t}</option>`).join('')}</select></div>
-      ${(_wps&&_wps.length)?`<div class="nifield"><label for="ni-wp">Work package</label>
-        <select id="ni-wp" onchange="niSetWp(this.value)"><option value=""${d.wp?'':' selected'}>none</option>${_wps.map(w=>`<option value="${esc(w.id)}"${d.wp===w.id?' selected':''}>${esc(wpName(w.title))}</option>`).join('')}</select></div>`:''}
+      ${(function(){ const gs=wpGroups(); return gs.length?`<div class="nifield"><label for="ni-wp">Work package</label>
+        <select id="ni-wp" onchange="niSetWp(this.value)"><option value=""${d.wp?'':' selected'}>none</option>${gs.map(g=>`<option value="${esc(g.id)}"${d.wp===g.id?' selected':''}>${esc(wpLabel(g))}</option>`).join('')}</select></div>`:''; })()}
       <div class="nifield wide"><label for="ni-title">Title</label>
         <input id="ni-title" placeholder="what needs doing…" value="${esc(d.title||'')}" oninput="niSetTitle(this.value)"></div>
     </div>
@@ -2059,11 +2082,12 @@ function submitNewIssue(){
       let wpNote='';
       if(wantWp){
         try{
-          await wpAttach(wantWp, res.url);
-          const w=(_wps||[]).find(x=>x.id===wantWp);
-          if(w){ tmp.wp={ id:w.id, number:w.number, title:w.title, url:w.url, repository:{ nameWithOwner:GH.owner+'/'+WP_REPO } };
-                 wpNote=' · '+wpName(w.title); }
-          loadWorkPackages().then(()=>renderWP()).catch(()=>{});
+          const or=appOwnerRepo(a); const g=wpGroups().find(x=>x.id===wantWp);
+          await wpEnsureLabel(or, wantWp, (g&&g.title)||'');
+          const add=await ghApi('/repos/'+or+'/issues/'+res.issueNumber+'/labels',{method:'POST',body:JSON.stringify({labels:[wantWp]})});
+          if(!add.ok) throw new Error('GitHub '+add.status);
+          tmp.wp=wantWp; tmp.wpTitle=(g&&g.title)||''; tmp._labels=[ty,wantWp];
+          wpNote=' · '+wantWp;
         }catch(e){ wpNote=' · ⚠ filed, but NOT put in the work package ('+((e&&e.message)||e)+')'; noted('work package on a new ticket',e); }
       }
       _drafts[a.id]={type:'',vals:{},title:''};   // cleared only once GitHub has it, so a failure keeps what you typed
@@ -2319,8 +2343,9 @@ function renderIssue(){
       <div class="ipcrumb"><button class="backchip" onclick="openProject('${escArg(a.id)}')">← ${esc(a.name)}</button>
         ${q.url?`<a class="ghlink" href="${q.url}" target="_blank">#${q.issueNumber} on GitHub ↗</a>`:''}</div>
       ${titleBlock}
-      <div class="ipmeta"><span class="ipid">${esc(q.id)}</span>${chipSel(a.id,q.id,'status')}${prioDot(a.id,q.id)}${typeChip(a.id,q.id)}
+      <div class="ipmeta"><span class="ipid">${esc(q.id)}</span>${chipSel(a.id,q.id,'status')}${prioDot(a.id,q.id)}${typeChip(a.id,q.id)}${wpFieldCtl(a.id,q.id)}
         <span class="ipid">${sm.e} ${esc(sm.t)}</span>${whenHtml(q.created,'filed')}</div>
+      <div class="ipmeta">${wpTag(q)}</div>
     </div>
     <div class="ipsec">Description</div>
     <div class="ipbody">${body}</div>
@@ -2717,7 +2742,7 @@ function typingInside(node){
   if(!el || (el.tagName!=='INPUT' && el.tagName!=='TEXTAREA')) return false;
   return !!(node && node.contains && node.contains(el));
 }
-function busyTyping(){ return ipEditOpen() || editingIn('#board,#portfolio,#project,#issuepage'); }
+function busyTyping(){ return ipEditOpen() || editingIn('#board,#portfolio,#project,#issuepage,#wp'); }
 function markBusy(id,on){ itemNodes(id).forEach(n=>{ const r=n.querySelector('.ihead')||n; r.classList.toggle('busy',!!on); }); }
 // The row says what happened to it. The status strip is sticky now, but a confirmation you have to
 // look up for is still a confirmation you miss.
@@ -3126,29 +3151,6 @@ function discWord(isOpen,noun){ return `<span class="disc">${isOpen?'Hide':'Show
 const VNAME={status:'Status',prio:'Priority',type:'Type'};
 function chipField(id,itemId,kind){
   return `<label class="vfield"><span class="vname">${VNAME[kind]}</span>${chipSel(id,itemId,kind)}</label>`;
-}
-// The work package control on a row (#127). Deliberately the SAME shape as the three chips beside
-// it: a native <select> with its name in front, because that is what already reads as a control
-// here, and because "assign it after the fact" was half the ask.
-//
-// It is drawn only when there is something to choose or something already chosen. A fourth empty
-// chooser on every row of an estate that uses no work packages would be a control that does
-// nothing, on twelve boards, forever.
-function wpField(id,itemId){
-  const f=findItem(id,itemId); const q=f&&f.q; if(!q) return '';
-  const cur=q.wp||null;
-  const list=_wps||[];
-  if(!list.length && !cur) return '';
-  const opts=[`<option value=""${cur?'':' selected'}>no work package</option>`]
-    .concat(list.map(w=>`<option value="${esc(w.id)}"${cur&&cur.id===w.id?' selected':''}>${esc(wpName(w.title))}</option>`));
-  // A package this ticket is in that is not in the index (closed, or living elsewhere) is still the
-  // truth about this ticket, so it is offered as its own option rather than silently reading as
-  // "no work package", which would be the control lying about what it is showing.
-  if(cur && !list.some(w=>w.id===cur.id))
-    opts.push(`<option value="${esc(cur.id)}" selected>${esc(wpName(cur.title))} (not in ${esc(WP_REPO)})</option>`);
-  return `<label class="vfield"><span class="vname">work package</span>`
-    + `<select class="chipsel wpsel" title="work package: ${esc(cur?wpName(cur.title):'none')}" aria-label="work package"`
-    + ` onchange="wpSet('${escArg(id)}','${escArg(itemId)}',this.value)">${opts.join('')}</select></label>`;
 }
 // A menu with words in it, for the actions that were bare glyphs. <details> rather than a custom
 // popover, for the same reason the chips are a <select>: the summary is focusable, it toggles from
@@ -3576,7 +3578,7 @@ function detailHtml(a,q,i,scope){ scope=scope||'';
     ? `<div class="dsec"><div class="dlab">Notes · ${notes.length}</div>${noteHtml(newest,'note')}</div>`
     : `<div class="dsec"><div class="dlab">Notes</div><div class="muted">${q._notesFailed?('⛔ the notes could not be read ('+esc(q._notesFailed)+')'):'no notes yet'}</div></div>`;
   return `<div class="detail">`
-    + `<div class="dhead"><span class="did">${esc(q.id)}</span><span class="dtitle">${esc(q.title||'')}</span>${whenHtml(q.created,'filed')}${full}</div>`
+    + `<div class="dhead"><span class="did">${esc(q.id)}</span><span class="dtitle">${esc(q.title||'')}</span>${wpTag(q)}${whenHtml(q.created,'filed')}${full}</div>`
     + body + note
     + (bits.length?`<div class="dmore">${bits.join(' and ')} on the ${full}</div>`:'')
     + `<div class="addbox"><input id="note-${scope}${dsId(q.id)}" placeholder="add a note…" onkeydown="if(event.key==='Enter')addNote('${escArg(a.id)}','${escArg(q.id)}','${scope}')"><button onclick="addNote('${escArg(a.id)}','${escArg(q.id)}','${scope}')">note</button></div>`
@@ -3585,155 +3587,287 @@ function detailHtml(a,q,i,scope){ scope=scope||'';
 // Task queue tab (id 'portfolio') - every open item across every project, one list.
 // Auto = re-sort by priority on every render (regenerates). Manual = follow the exact order you
 // arranged your projects (and items within each) in Portfolio, and leave it put (no re-sort).
-// ---------- Work packages (#127) ---------------------------------------------------------------
-// A WORK PACKAGE IS A PARENT ISSUE, and a ticket's membership is GitHub's own sub-issue link.
-// Researched against this account on 2026-08-22 rather than assumed:
+// ---------- Work packages (ticket 127) -----------------------------------------------------------
+// A WORK PACKAGE IS A LABEL, `WP-0007`, AND NOTHING ELSE. It does not live in a repo, it has no
+// issue, no body, no lane and no owner. Two tickets are in one package when they carry the same
+// label, and they may be in any repos at all, because a label name is not scoped to a project the
+// way a board field is. The label's DESCRIPTION is the readable name, so `WP-0007` and
+// "board honesty" travel together and neither has to be looked up anywhere.
 //
-//   - Prinzaessin86 is a User, not an organisation, so Issue Types are not available at all.
-//   - Sub-issues require the same repository OWNER, not the same repository, and every repo in this
-//     estate shares one owner. One work package therefore spans repos natively. 100 per parent.
-//   - Milestones and labels are repo-scoped and cannot span repos even in principle.
-//   - A Projects v2 custom field would work, but it would have to be added to fifteen boards, and
-//     updateProjectV2Field REPLACES a single-select's whole option list, so every new work package
-//     would be fifteen destructive writes to fifteen boards.
+// WHY A LABEL AND NOT THE THREE ALTERNATIVES, measured rather than assumed:
 //
-// So the membership lives on GitHub, which is also the only place D39 allows it: tiara-data.json
-// holds app metadata and never ticket data.
+//   sub-issue parent   The parent IS an issue, so the bracket acquires a repo, a body, a lane it
+//                      has to be kept out of, and a home that has to be argued for. A bracket with
+//                      consequences is not a bracket.
+//   a board field      Pure metadata, but scoped to ONE board. An agent hunting one package would
+//                      have to read all fifteen, because nothing ties the boards to each other.
+//   one shared board   Works, and is one read, but every ticket then has to join a second board.
 //
-// A WORK PACKAGE IS NEVER PUT ON A BOARD, and that is the whole of how it stays out of the lanes,
-// the Task queue and every count. A filter that hid `WP:` rows would be a rule that could swallow a
-// real ticket by accident; not adding the item is a fact that cannot. It is an issue in _ticketflow
-// titled `WP: <name>`, because _ticketflow is where work tracking itself lives and FD-0016's "the
-// repo its work lands in" has no answer for a bundle that spans repos by definition.
+// A label is the only one that is both a bare name and reachable in ONE command:
 //
-// AN AGENT CANNOT SET ONE FROM A SHELL, and that is correct rather than a gap. guard-bash refuses a
-// direct write to the issues API and names make-board-ticket.sh, agent-comment.sh and agent-edit.sh
-// as the doors; none of them does sub-issues. This page runs in your browser under your own token
-// and is not that guard's subject, so this is the door until _ticketflow grows one.
-const WP_REPO   = '_ticketflow';
-const WP_PREFIX = 'WP: ';
-// null is "not read yet" and [] is "read, and there are none". A reader that cannot tell those
-// apart is the stale-scan defect from #126 in a smaller coat, so they stay distinct here too.
-let _wps = null;
-let _wpErr = '';
-const wpName = t => String(t||'').replace(/^WP:\s*/,'') || '(unnamed)';
-async function loadWorkPackages(){
-  if(!GH.token) return;                    // absent before sign-in is fine, same as the board itself
-  try{
-    const d = await ghGraphQL(`query($login:String!,$repo:String!){ repository(owner:$login,name:$repo){
-      issues(first:100, states:[OPEN], orderBy:{field:CREATED_AT, direction:DESC}){
-        nodes{ id number title url subIssuesSummary{ total completed } } } } }`,
-      { login:GH.owner, repo:WP_REPO });
-    const all = (((d||{}).repository||{}).issues||{}).nodes || [];
-    _wps = all.filter(i => String(i.title||'').startsWith(WP_PREFIX));
-    _wpErr = '';
-  }catch(e){ _wpErr=(e&&e.message)||String(e); noted('work packages',e,'stale'); }
+//   gh search issues --owner Prinzaessin86 --label "WP-0007" --state open
+//
+// and `Labels` is a BUILT-IN Projects v2 field, so the same package also shows, filters and groups
+// on every board with no work from this page at all. That is what makes it something an agent can
+// be pointed at: the agent reads GitHub, never Tiara.
+//
+// THE NUMBER IS ALLOCATED BY LOOKING, NOT BY COUNTING. There is no stored counter, because a
+// counter is a second place the truth can live and the first thing to go stale. wpAllocate() asks
+// every registered repo what `WP-` labels it already has and takes the highest plus one, so a
+// number is never reused even when a package's last ticket is long closed. It costs one call per
+// repo and happens only when a NEW package is made, which is rare.
+//
+// THE COST, STATED. The label object has to exist in each repo it is used in, and Tiara creates it
+// there on demand with the same description. A description edited by hand in one repo and not
+// another will disagree, and this page shows the first one it finds rather than pretending to
+// reconcile them.
+const WP_RE   = /^WP-\d+$/;
+const WP_PAD  = 4;
+const wpFmt   = n => 'WP-' + String(n).padStart(WP_PAD,'0');
+const wpNum   = nm => { const m=/^WP-(\d+)$/.exec(nm||''); return m?parseInt(m[1],10):0; };
+// The first `WP-nnnn` on an issue, and its description. Taken off the labels the board query
+// already returns, so membership costs nothing to read.
+function wpLabelOf(labels){
+  const ns=(labels&&labels.nodes)||[];
+  for(const l of ns){ if(l&&WP_RE.test(l.name||'')) return l.name; }
+  return '';
 }
-// replaceParent is ALWAYS true. Without it, attaching a ticket that is already in a package fails,
-// and "move this to another package" is the second most likely thing anyone does here.
-async function wpAttach(parentId, issueUrl){
-  return ghGraphQL(`mutation($p:ID!,$u:String!){ addSubIssue(input:{issueId:$p, subIssueUrl:$u, replaceParent:true}){ issue{ number } } }`,
-    { p:parentId, u:issueUrl });
+function wpTitleOf(labels){
+  const ns=(labels&&labels.nodes)||[];
+  for(const l of ns){ if(l&&WP_RE.test(l.name||'')) return (l.description||'').trim(); }
+  return '';
 }
-async function wpDetach(parentId, childNodeId){
-  return ghGraphQL(`mutation($p:ID!,$c:ID!){ removeSubIssue(input:{issueId:$p, subIssueId:$c}){ issue{ number } } }`,
-    { p:parentId, c:childNodeId });
+// A ticket wearing two package labels is a thing somebody did by hand. It is not silently corrected
+// and not silently hidden: the row uses the first, and the tab says which tickets are doubled.
+function wpConflicts(){
+  const out=[];
+  (data.apps||[]).forEach(a=>(a.queue||[]).forEach(q=>{
+    const ns=((q._labels)||[]).filter(n=>WP_RE.test(n));
+    if(ns.length>1) out.push({a,q,names:ns});
+  }));
+  return out;
 }
-// The row control and the compose chooser both write through here, so there is one place that knows
-// what "no work package" means and one place that reloads the index afterwards.
-async function wpSet(appId, itemId, parentId){
+// Every package in use, by id, with the readable name and its tickets. There is no registry to
+// read: the set of packages IS the set of labels on tickets, so a package with no tickets in it
+// does not appear. That is not a gap, it is what "a label and nothing else" means. Its NUMBER is
+// still never handed out again, because allocation asks the repos rather than this list.
+function wpGroups(){
+  const by={};
+  (data.apps||[]).forEach(a=>(a.queue||[]).forEach(q=>{ const id=(q&&q.wp||''); if(!id) return;
+    const g=by[id]=by[id]||{ id, title:'', items:[] };
+    if(!g.title && q.wpTitle) g.title=q.wpTitle;
+    g.items.push({a,q}); }));
+  const out=Object.keys(by).map(k=>{
+    const g=by[k];
+    g.open=g.items.filter(x=>x.q.status!=='done').length;
+    g.done=g.items.length-g.open;
+    g.repos=Object.keys(g.items.reduce((m,x)=>{ m[x.a.name]=1; return m; },{})).sort();
+    return g;
+  });
+  // By id, ascending, and that is deliberate: WP-0003 always sits where it sat yesterday. Sorting
+  // by how busy a package is would move every row every time a ticket closed.
+  out.sort((x,y)=> wpNum(x.id)-wpNum(y.id));
+  return out;
+}
+const wpLabel = g => g.id + (g.title?' · '+g.title:'');
+// A note on a work package, LOCAL TO THIS BROWSER, and deliberately so (ticket 127). It is the one
+// thing here that is not on GitHub, which has two consequences worth saying out loud rather than
+// discovering: it does not follow you to another machine, and an agent pointed at the package with
+// `gh search issues` never sees it. That is the trade for a scratchpad you can write in without
+// filing anything. D39 is not in play: this is not ticket data and it does not go near
+// tiara-data.json.
+let _wpNotes = {};
+try{ _wpNotes = JSON.parse(localStorage.getItem('tiaraWpNotes')||'{}') || {}; }catch(e){ noted('work package notes (load)',e); }
+function wpNoteSet(id,v){
+  if(v && v.trim()) _wpNotes[id]=v; else delete _wpNotes[id];
+  try{ localStorage.setItem('tiaraWpNotes', JSON.stringify(_wpNotes)); }
+  catch(e){ noted('work package notes (save)',e,'tell'); }
+}
+// Every open ticket that is NOT already in this package, so one can be added from the package's own
+// side. Grouped by project, because "which ticket" is nearly always answered project first. Done
+// tickets are left out: adding a finished ticket to a package is not the gesture this is for.
+function wpAddOptions(id){
+  const groups=[];
+  (data.apps||[]).forEach(a=>{
+    const rows=(a.queue||[]).filter(q=>q && q.status!=='done' && (q.wp||'')!==id && q.issueNumber);
+    if(rows.length) groups.push({a,rows});
+  });
+  return groups;
+}
+function wpAddPick(id,sel){
+  const v=sel.value; sel.selectedIndex=0;
+  if(!v) return;
+  const k=v.indexOf('|'); if(k<0) return;
+  wpSet(v.slice(0,k), v.slice(k+1), id);
+}
+// The tag a ticket wears, on its detail panel and on its own page. It says which bracket this is in
+// and goes there; a ticket in none says so rather than showing nothing, because "no work package"
+// and "this page forgot to draw it" would otherwise look identical.
+function wpTag(q){
+  const id=(q&&q.wp||'').trim();
+  if(!id) return `<span class="wptag wpnone2" title="this ticket is in no work package, which is not a gap">no work package</span>`;
+  const g=wpGroups().find(x=>x.id===id);
+  const t=(g&&g.title)||q.wpTitle||'';
+  return `<button class="wptag" onclick="wpGoto('${escArg(id)}')" title="open this work package on the Work packages tab">📦 ${esc(id)}${t?' · '+esc(t):''}</button>`;
+}
+function wpGoto(id){ openState.add('wp:'+id); renderWP(); showTab('wp');
+  setTimeout(()=>{ const el=document.querySelector('#wplist [data-key="wp:'+CSS.escape(id)+'"]'); if(el) el.scrollIntoView({block:'center'}); },30); }
+// Which repos this page may create a label in: exactly the registered projects, which is the same
+// standing rule for what the fleet is that the scanner and the board scripts use.
+function wpRepos(){
+  const out={};
+  (data.apps||[]).forEach(a=>{ const or=appOwnerRepo(a); if(or && !a.excluded) out[or]=1; });
+  return Object.keys(out).sort();
+}
+// The next free number, by asking. One call per registered repo, and only when a new package is
+// made. A repo that cannot be read is REPORTED and the allocation refuses, rather than quietly
+// handing out a number that might already be in use somewhere unread.
+async function wpAllocate(){
+  const repos=wpRepos();
+  if(!repos.length) throw new Error('no registered project has a repo, so there is nowhere to look');
+  let max=0; const unread=[];
+  await Promise.all(repos.map(async or=>{
+    try{
+      const r=await ghApi('/repos/'+or+'/labels?per_page=100');
+      if(!r.ok){ unread.push(or+' ('+r.status+')'); return; }
+      (await r.json()).forEach(l=>{ const n=wpNum(l&&l.name); if(n>max) max=n; });
+    }catch(e){ unread.push(or); }
+  }));
+  if(unread.length) throw new Error('could not read the labels of '+unread.join(', ')+', so the next number cannot be known. Refusing to guess one.');
+  return wpFmt(max+1);
+}
+// Create the label in one repo if it is not already there. Idempotent: an existing label is left
+// exactly as it is, including a description somebody has edited.
+async function wpEnsureLabel(ownerRepo, id, title){
+  const got=await ghApi('/repos/'+ownerRepo+'/labels/'+encodeURIComponent(id));
+  if(got.ok) return;
+  if(got.status!==404) throw new Error('GitHub '+got.status+' reading the label list of '+ownerRepo);
+  const r=await ghApi('/repos/'+ownerRepo+'/labels',{method:'POST',body:JSON.stringify({
+    name:id, description:(title||'').slice(0,100), color:'c9b6ff' })});
+  if(!r.ok && r.status!==422) throw new Error('GitHub '+r.status+' creating '+id+' in '+ownerRepo);
+}
+// One place that puts a ticket in a package, and takes it out of whatever it was in. Two calls, in
+// this order: add first, then remove the old one. If the second fails the ticket is in two packages,
+// which is visible and repairable; the other order can leave it in none.
+async function wpSet(appId, itemId, id){
   const a=app(appId); const f=findItem(appId,itemId); const q=f&&f.q;
   if(!a||!q){ setStatus('that ticket is no longer on the board'); return; }
-  if(!q.url || !q.nodeId){ setStatus('⚠ that ticket has not reached GitHub yet'); return; }
-  const was=q.wp||null;
+  const or=appOwnerRepo(a);
+  if(!or||!q.issueNumber){ setStatus('⚠ that ticket has not reached GitHub yet'); return; }
+  const want=(id||'').trim(); const was=q.wp||'';
+  if(want===was) return;
+  const wasTitle=q.wpTitle||'';
   try{
-    setStatus(parentId?'moving to the work package…':'clearing the work package…');
-    if(parentId){
-      await wpAttach(parentId, q.url);
-      const w=(_wps||[]).find(x=>x.id===parentId);
-      q.wp = w ? { id:w.id, number:w.number, title:w.title, url:w.url, repository:{ nameWithOwner:GH.owner+'/'+WP_REPO } } : null;
-    } else {
-      if(!was){ return; }
-      await wpDetach(was.id, q.nodeId);
-      q.wp = null;
+    setStatus(want?('putting '+q.id+' in '+want+'…'):('taking '+q.id+' out of '+was+'…'));
+    if(want){
+      const g=wpGroups().find(x=>x.id===want);
+      await wpEnsureLabel(or, want, (g&&g.title)||'');
+      const add=await ghApi('/repos/'+or+'/issues/'+q.issueNumber+'/labels',{method:'POST',body:JSON.stringify({labels:[want]})});
+      if(!add.ok) throw new Error('GitHub '+add.status+' adding '+want);
+      q.wp=want; q.wpTitle=(g&&g.title)||'';
     }
-    await loadWorkPackages();
-    captureOpen(); render(); renderWP();
-    setStatus(parentId ? ('🟢 '+q.id+' → '+wpName((q.wp&&q.wp.title)||'')) : ('🟢 '+q.id+' has no work package'));
+    if(was){
+      const del=await ghApi('/repos/'+or+'/issues/'+q.issueNumber+'/labels/'+encodeURIComponent(was),{method:'DELETE'});
+      // 404 means it was already gone, which is the state we wanted anyway.
+      if(!del.ok && del.status!==404) throw new Error('GitHub '+del.status+' removing '+was);
+      if(!want){ q.wp=''; q.wpTitle=''; }
+    }
+    captureOpen(); render();
+    setStatus(want?('🟢 '+q.id+' → '+want):('🟢 '+q.id+' is in no work package'));
   }catch(e){
-    q.wp = was;                                  // put the row back rather than lying about it
-    captureOpen(); render(); renderWP();
+    q.wp=was; q.wpTitle=wasTitle;              // put the row back rather than lying about it
+    captureOpen(); render();
     setStatus('⚠ could not change the work package: '+((e&&e.message)||e));
   }
 }
-async function wpCreate(){
+// Making a package is naming it. The number is allocated by looking at every repo, so it is asked
+// for BEFORE the name: if the estate cannot be read there is no point taking a name first.
+async function wpNew(appId, itemId){
   if(!HELPER.on){ setStatus('connect GitHub first'); return; }
-  const nm=(prompt('Name this work package.\n\nIt becomes an issue in '+WP_REPO+' titled "'+WP_PREFIX+'<name>". Tiara does not put it on a board, so it never lands in a lane or a count: it is what tickets point at, and there is no work in it of its own.')||'').trim();
-  if(!nm) return;
-  setStatus('creating the work package…');
   try{
-    const r=await ghApi('/repos/'+GH.owner+'/'+WP_REPO+'/issues',{method:'POST',body:JSON.stringify({
-      title: WP_PREFIX+nm,
-      body: 'A work package. Its members are its sub-issues, and they may come from any repository in this estate.\n\nCreated from Tiara, which does not put it on a board: there is no work in this issue of its own, so a lane and a priority would be answers to questions it is not asking.'
-    })});
-    if(!r.ok) throw new Error('create issue '+r.status);
-    await loadWorkPackages(); renderWP(); setStatus('🟢 work package created: '+nm);
-  }catch(e){ setStatus('⚠ could not create it: '+((e&&e.message)||e)); }
+    setStatus('finding the next work package number…');
+    const id=await wpAllocate();
+    const title=(prompt('New work package '+id+'.\n\nGive it a readable name. It becomes the label\'s description, so '+id+' and its name travel together on every ticket.\n\nA work package is only a label. Nothing else is created, it belongs to no repo, and tickets from any repos can share one.')||'').trim();
+    if(!title){ setStatus('no name given, so nothing was made'); return; }
+    const a=app(appId); const or=a&&appOwnerRepo(a);
+    if(!or){ setStatus('⚠ that project has no repo'); return; }
+    await wpEnsureLabel(or, id, title);
+    const f=findItem(appId,itemId); if(f&&f.q) f.q.wpTitle=title;   // so the first row shows the name
+    await wpSet(appId, itemId, id);
+  }catch(e){ setStatus('⚠ '+((e&&e.message)||e)); }
 }
-// Every package that exists, plus every package any ticket claims to be in. The second half matters:
-// a parent that was closed, or that lives somewhere other than _ticketflow, still has tickets
-// pointing at it, and dropping those rows would make work disappear rather than be explained.
-function wpGroups(){
-  const byUrl={};
-  const slot=(wp)=>{ const k=wp.url; if(!byUrl[k]) byUrl[k]={ wp, items:[], indexed:false }; return byUrl[k]; };
-  (_wps||[]).forEach(w=>{ const g=slot({ id:w.id, number:w.number, title:w.title, url:w.url,
-    repository:{ nameWithOwner: GH.owner+'/'+WP_REPO } }); g.indexed=true; });
-  (data.apps||[]).forEach(a=>{ (a.queue||[]).forEach(q=>{ if(q && q.wp && q.wp.url) slot(q.wp).items.push({a,q}); }); });
-  const out=Object.keys(byUrl).map(k=>byUrl[k]);
-  out.forEach(g=>{
-    g.open = g.items.filter(x=>x.q.status!=='done').length;
-    g.done = g.items.length - g.open;
-    g.repos = Object.keys(g.items.reduce((m,x)=>{ m[x.a.name]=1; return m; },{})).sort();
-  });
-  // Busiest first, then alphabetical. An empty package sinks rather than being hidden: it was made
-  // on purpose and a package with nothing in it yet is a normal state, not an error.
-  out.sort((x,y)=> (y.open-x.open) || (y.items.length-x.items.length)
-    || wpName(x.wp.title).localeCompare(wpName(y.wp.title)));
-  return out;
+// The row control. The same shape as the three chips beside it, because it is the same kind of
+// thing: one value on this ticket you can change here. Always drawn, including when no package
+// exists yet, or the first one could never be made.
+function wpFieldCtl(id,itemId){
+  const f=findItem(id,itemId); const q=f&&f.q; if(!q) return '';
+  const cur=(q.wp||'').trim();
+  const groups=wpGroups();
+  const opts=[`<option value=""${cur?'':' selected'}>no work package</option>`]
+    .concat(groups.map(g=>`<option value="${esc(g.id)}"${g.id===cur?' selected':''}>${esc(wpLabel(g))}</option>`))
+    .concat(cur && !groups.some(g=>g.id===cur) ? [`<option value="${esc(cur)}" selected>${esc(cur)}</option>`] : [])
+    .concat([`<option value="">new work package…</option>`]);
+  return `<label class="vfield"><span class="vname">work package</span>`
+    + `<select class="chipsel wpsel" title="work package: ${esc(cur||'none')}" aria-label="work package"`
+    + ` onchange="wpPick('${escArg(id)}','${escArg(itemId)}',this)">${opts.join('')}</select></label>`;
+}
+// "new work package…" is ALWAYS the last option and is recognised by its POSITION, never by a
+// sentinel value. A sentinel is a string a real package could one day be called, and the day one is,
+// choosing that package would silently open a prompt instead. A position cannot collide with a name.
+function wpPick(id,itemId,sel){
+  if(sel.selectedIndex === sel.options.length-1){ sel.selectedIndex=0; wpNew(id,itemId); return; }
+  wpSet(id,itemId,sel.value);
 }
 function renderWP(){
   const el=$('#wp'); if(!el) return;
-  const head=`<div class="phead">Work packages · one bundle, across repos</div>`;
-  const newBtn=`<button class="tb primary" onclick="wpCreate()">New work package</button>`;
+  const head=`<div class="phead">Work packages · one bracket, across repos</div>`;
   try{
+    const meta=`<div class="cmeta">A work package is a label, <code>WP-0001</code>, and nothing else. It belongs to no repo, has no issue behind it and sits in no lane, so it can hold tickets from as many projects as you like and costs nothing to make or to abandon. The label's description is its readable name. An agent is pointed at one with <code>gh search issues --owner ${esc(GH.owner||'you')} --label "WP-0001" --state open</code>, which reads GitHub and never this page, and <code>Labels</code> is a built-in Projects field so the same package filters on every board. A ticket in no package is not missing anything.</div>`;
     if(!GH.token){
-      el.innerHTML=head+`<div class="muted">Connect GitHub to read work packages. They are issues in <code>${esc(WP_REPO)}</code> titled <code>${esc(WP_PREFIX)}…</code>, and reading them needs your token exactly as the boards do.</div>`;
+      el.innerHTML=head+`<div class="muted">Connect GitHub to read the boards. A work package is a label on a ticket, so it arrives with the boards.</div>`;
       return;
     }
     const groups=wpGroups();
-    const meta=`<div class="cmeta">A work package is a parent issue in <code>${esc(WP_REPO)}</code>, and a ticket belongs to one through GitHub's own sub-issue link, so a package holds tickets from any repo at once. A work package is never put on a board, which is why none of them appears in a lane or a count. A ticket without one is not missing anything.${_wpErr?' <b>The package list could not be read ('+esc(_wpErr)+'), so only packages some ticket points at are shown.</b>':''}</div>`;
-    if(_wps===null && !_wpErr)
-      { el.innerHTML=head+`<div class="cmeta">Reading the work packages…</div>`; return; }
+    const dbl=wpConflicts();
+    const warn=dbl.length?`<div class="cexpwarn">⛔ ${dbl.length} ticket${dbl.length===1?'':'s'} carr${dbl.length===1?'ies':'y'} more than one work package label, so ${dbl.length===1?'it is':'they are'} counted under the first one only:<br>${dbl.map(x=>esc(x.q.id)+' · '+esc(x.names.join(', '))).join('<br>')}<br><span class="cexpfix">Take the wrong one off from the row's work package control, or on GitHub.</span></div>`:'';
     if(!groups.length){
-      el.innerHTML=head+meta+`<div class="wpempty"><b>No work packages yet.</b> One bundles tickets that belong together across repos, the way <code>_bootstrap#218</code> to <code>#222</code> do today in their titles and nowhere a tool can read.<div class="wpfoot">${newBtn}</div></div>`;
+      el.innerHTML=head+meta+warn+`<div class="wpempty"><b>Nothing is in a work package yet.</b> Open any ticket's <b>work package</b> control, choose <b>new work package…</b>, and name it. Tiara allocates the next number by asking every repo which <code>WP-</code> labels already exist, so a number is never handed out twice. Put the same package on a ticket in another project and they are in one bracket.</div>`;
       return;
     }
     const rows=groups.map(g=>{
-      const key='wp:'+g.wp.url;
+      const key='wp:'+g.id;
       const members=g.items
         .slice().sort((x,y)=> (x.q.status==='done'?1:0)-(y.q.status==='done'?1:0) || x.a.name.localeCompare(y.a.name))
         .map(x=>itemRow(x.a, x.q, (x.a.queue||[]).indexOf(x.q), 'w', {showApp:true, compact:true})).join('');
       const spread=g.repos.length>1
-        ? `<span class="wpspread" title="this package spans more than one repository, which is the whole point of it">${esc(String(g.repos.length))} repos</span>`
-        : (g.repos.length===1?`<span class="wpspread wpone">${esc(g.repos[0])}</span>`:'');
-      const gone=g.indexed?'':`<span class="wpgone" title="no open issue with this name in ${esc(WP_REPO)}. It may be closed, or it may live in another repo. The tickets pointing at it are still shown.">not in ${esc(WP_REPO)}</span>`;
+        ? `<span class="wpspread" title="this package spans more than one project, which is the whole point of it">${esc(String(g.repos.length))} projects</span>`
+        : `<span class="wpspread wpone">${esc(g.repos[0])}</span>`;
+      const q=`gh search issues --owner ${GH.owner||'you'} --label "${g.id}" --state open`;
+      const addOpts=wpAddOptions(g.id);
+      const nAdd=addOpts.reduce((n,x)=>n+x.rows.length,0);
+      const adder=nAdd
+        ? `<div class="wpadd"><label for="wpadd-${esc(g.id)}">Add a ticket</label>
+             <select id="wpadd-${esc(g.id)}" onchange="wpAddPick('${escArg(g.id)}',this)">
+               <option value="">choose an open ticket…</option>
+               ${addOpts.map(x=>`<optgroup label="${esc(x.a.name)}">`
+                 + x.rows.map(r=>`<option value="${esc(x.a.id)}|${esc(r.id)}">${esc(r.id)} · ${esc((r.title||'').slice(0,70))}${(r.title||'').length>70?'…':''}${r.wp?' (moves out of '+esc(r.wp)+')':''}</option>`).join('')
+                 + `</optgroup>`).join('')}
+             </select><span class="wpaddwhy">${nAdd} open ticket${nAdd===1?'':'s'} not in this package. A ticket is in one package at a time, so choosing one already in another moves it.</span></div>`
+        : `<div class="wpaddwhy">Every open ticket on every board is already in this package.</div>`;
+      const note=_wpNotes[g.id]||'';
       return `<details class="wprow" data-key="${esc(key)}" ${openState.has(key)?'open':''}>
-        <summary><span class="wpname">📦 ${esc(wpName(g.wp.title))}</span>${spread}${gone}
-          <span class="wpcount">${g.done} done · <b>${g.open} open</b></span>
-          <a class="wplink" href="${esc(g.wp.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="open the work package issue on GitHub">#${esc(String(g.wp.number))} ↗</a></summary>
-        <div class="wpbody">${members||`<div class="wpnone">Nothing is in this package yet. Put a ticket in one from its <b>work package</b> control on any row.</div>`}</div></details>`;
+        <summary><span class="wpid">${esc(g.id)}</span><span class="wpname">${esc(g.title||'(no name on the label)')}</span>${spread}
+          <span class="wpcount">${g.done} done · <b>${g.open} open</b></span></summary>
+        <div class="wpbody">${members}
+          ${adder}
+          <div class="wpnote"><label for="wpn-${esc(g.id)}">Your notes on ${esc(g.id)}</label>
+            <textarea id="wpn-${esc(g.id)}" placeholder="what this package is really about, what to do first, what you decided…"
+              oninput="wpNoteSet('${escArg(g.id)}',this.value)">${esc(note)}</textarea>
+            <div class="wpaddwhy">This note lives in this browser only. It is not on GitHub, so it does not follow you to another machine and an agent pointed at ${esc(g.id)} never sees it.</div></div>
+          <div class="wpcmd"><code id="wpq-${esc(g.id)}">${esc(q)}</code><button onclick="copyCmd('wpq-${escArg(g.id)}')">copy</button>
+            <span class="wpcmdwhy">point an agent at this package. It reads GitHub, not this page.</span></div></div></details>`;
     }).join('');
-    el.innerHTML=head+meta+`<div class="wpbar">${newBtn}</div><div id="wplist">${rows}</div>`;
+    el.innerHTML=head+meta+warn+`<div id="wplist">${rows}</div>`;
   }catch(e){
     noted('drawing the Work packages tab',e,'tell');
     el.innerHTML=head+`<div class="muted">The work packages could not be drawn: ${esc((e&&e.message)||String(e))}</div>`;
@@ -4351,7 +4485,7 @@ function itemRow(a,q,i,scope,opts){
         + `<button class="ititle" onclick="openIssue('${escArg(a.id)}','${escArg(q.id)}')" title="open this ticket's own page">${esc(q.title||'')}</button>`
         + `<div class="ivals">`
           + (opts.showApp?`<span class="apptag" title="${esc(a.name)}">${icon}${esc(a.name)}</span>`:'')
-          + chipField(a.id,q.id,'status') + chipField(a.id,q.id,'prio') + chipField(a.id,q.id,'type') + wpField(a.id,q.id)
+          + chipField(a.id,q.id,'status') + chipField(a.id,q.id,'prio') + chipField(a.id,q.id,'type') + wpFieldCtl(a.id,q.id)
         + `</div>`
       + `</div>`
       + `<div class="iacts">`
@@ -4469,7 +4603,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v114';
+const TIARA_VERSION = 'board-v115';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
@@ -4490,9 +4624,6 @@ function loadViewPrefs(){
   // Fill ONLY the Compliance tab when its snapshot arrives; never call the full render() here,
   // that rebuilds the board and would collapse any card the user had expanded.
   loadCompliance().then(()=>{ try{ renderCompliance(); initSortables(); }catch(e){ noted('drawing the Compliance tab',e,'tell'); } });
-  // Same shape as the compliance snapshot: fill the one tab when its data lands, never call the
-  // full render() here, which would rebuild the board and collapse whatever was expanded. (#127)
-  loadWorkPackages().then(()=>{ try{ renderWP(); }catch(e){ noted('drawing the Work packages tab',e,'tell'); } });
   _loading = !!GH.token;          // so the first paint says "reading" rather than "all clear"
   render();
   if(GH.token){
