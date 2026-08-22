@@ -9,6 +9,7 @@
 #   syntax   every script parses, because a broken one is found at the worst moment otherwise
 #   version  the board version the pre-commit hook demands on every index.html change
 #   adrs     the FD-/AD- decision set is internally consistent (FD-0000)
+#   wp       the work package reader, over the two ways it has already broken (tiara-site#127)
 #   conform  the enforcement manifest, once install-enforcement.sh has run here
 #
 # Written because install-enforcement.sh:153 refuses a repo with no 'verify:' target, and
@@ -18,9 +19,9 @@
 
 SHELL := /bin/bash
 
-.PHONY: verify lint syntax version adrs conform help
+.PHONY: verify lint syntax version adrs wp conform help
 
-verify: lint syntax version adrs conform
+verify: lint syntax version adrs wp conform
 	@echo "verify: green"
 	@# BOOT-115: record that the gate passed on THIS code. Without it compliance reports
 	@# gate_green false forever, which is indistinguishable from a gate that has never run.
@@ -89,6 +90,25 @@ version:
 adrs:
 	@bash scripts/check-adrs.sh docs/decisions
 
+# The work package reader, over the two ways it has ALREADY broken rather than ways it might.
+#
+# Both faults presented identically, as "my work package is missing", with no error anywhere:
+#   an await that did not wait   a forced read returned early while another read was in flight, so
+#                                a package created in that window was drawn from a stale index. On a
+#                                first load it left the index unassigned and the tab drew nothing.
+#   a bounded read that lied     per_page=100 with no paging is a hard cap, so one repo's 152 labels
+#                                hid both packages on page two. The number allocator reads those to
+#                                guarantee an id is never reused, so the next one would have collided.
+#
+# The test lifts loadWorkPackages OUT OF index.html at run time rather than keeping a copy, so it
+# cannot pass against code that has moved on. No network, no token, a tenth of a second.
+#
+# What it does NOT cover, stated rather than left to be discovered: one function, with stubs. Not
+# the write path, not the UI, not GitHub's real behaviour. It would not have caught either of that
+# ticket's design mistakes. It is a net under the one place that has already fallen through twice.
+wp:
+	@node scripts/wp-race.test.js
+
 # D35: the enforcement layer is recorded in .claude/.enforcement-manifest and scripts/conform.sh
 # re-checks it on every verify. Neither exists here until install-enforcement.sh has run, so this
 # says so plainly rather than passing silently over an absent check.
@@ -112,4 +132,5 @@ help:
 	@echo "  syntax   every script parses, because a broken one is found at the worst moment otherwise"
 	@echo "  version  the board version the pre-commit hook demands on every index.html change"
 	@echo "  adrs     the FD-/AD- decision set is internally consistent (FD-0000)"
+	@echo "  wp       the work package reader, over the two ways it has already broken (#127)"
 	@echo "  conform  the enforcement manifest, once install-enforcement.sh has run here"
