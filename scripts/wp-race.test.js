@@ -46,33 +46,61 @@ const wpNum = nm => { const m=/^WP-(\\d+)$/.exec(nm||''); return m?parseInt(m[1]
 const GH = { token: 'x' };
 let labels = ['WP-0001'];
 function wpRepos(){ return ['o/r']; }
-function ghApi(){
+// Pages the way GitHub does: ?page=N over a flat list, 100 at a time.
+function ghApi(path){
   const snapshot = labels.slice();
+  const page = parseInt((/[?&]page=(\\d+)/.exec(path)||[])[1] || '1', 10);
+  const slice = snapshot.slice((page-1)*100, page*100);
   return new Promise(res=>setTimeout(()=>res({
-    ok:true, json:async()=>snapshot.map(n=>({name:n, description:'name of '+n}))
+    ok:true, json:async()=>slice.map(n=>({name:n, description:'name of '+n}))
   }), 40));
 }
 ${shipped}
-module.exports = async function(){
-  const first = loadWorkPackages();          // a background read starts
-  await new Promise(r=>setTimeout(r,10));    // ...and is still in flight
-  labels.push('WP-0002');                    // a package is created meanwhile
-  await loadWorkPackages(true);              // the forced read a creator awaits
-  const ids = (_wpIndex||[]).map(e=>e.id);
-  await first;
-  return ids;
+module.exports = {
+  // A forced read issued while another is in flight must reflect a label written in between.
+  race: async function(){
+    const first = loadWorkPackages();          // a background read starts
+    await new Promise(r=>setTimeout(r,10));    // ...and is still in flight
+    labels.push('WP-0002');                    // a package is created meanwhile
+    await loadWorkPackages(true);              // the forced read a creator awaits
+    const ids = (_wpIndex||[]).map(e=>e.id);
+    await first;
+    return ids;
+  },
+  // A repo whose WP- labels sort onto page two must still be read. TentaclePit really is like this:
+  // 152 labels, most of them migrated Linear ids, WP- sorting after TEN-54.
+  paging: async function(){
+    labels = []; _wpIndex = null;
+    for(let i=1;i<=120;i++) labels.push('TEN-'+String(i).padStart(3,'0'));
+    labels.push('WP-0007');                    // label 121, so page two
+    await loadWorkPackages(true);
+    return (_wpIndex||[]).map(e=>e.id);
+  }
 };
 `;
 const tmp = path.join(__dirname, '.wprace.gen.js');
 fs.writeFileSync(tmp, harness);
 (async () => {
   try{
-    const ids = await require(tmp)();
-    const pass = ids.includes('WP-0002');
-    console.log('index after the forced read:', ids.join(', ') || '(empty)');
-    console.log(pass
-      ? 'PASS: the forced read waited, so a package created mid-flight is there'
-      : 'FAIL: the forced read returned early and the new package is missing');
-    process.exitCode = pass ? 0 : 1;
+    const t = require(tmp);
+    let bad = 0;
+
+    const raced = await t.race();
+    const rOk = raced.includes('WP-0002');
+    console.log('race   · index after the forced read:', raced.join(', ') || '(empty)');
+    console.log(rOk
+      ? '       PASS: the forced read waited, so a package created mid-flight is there'
+      : '       FAIL: the forced read returned early and the new package is missing');
+    if(!rOk) bad++;
+
+    const paged = await t.paging();
+    const pOk = paged.includes('WP-0007');
+    console.log('paging · 121 labels, WP- on page two:', paged.join(', ') || '(none found)');
+    console.log(pOk
+      ? '       PASS: every page was read'
+      : '       FAIL: the read stopped at the first hundred, so the package is invisible');
+    if(!pOk) bad++;
+
+    process.exitCode = bad ? 1 : 0;
   } finally { fs.unlinkSync(tmp); }
 })();

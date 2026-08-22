@@ -3684,6 +3684,28 @@ function wpConflicts(){
 // null is "not read yet" and [] is "read, and there are none". Kept apart, as everywhere else here.
 let _wpIndex = null;
 let _wpIndexErr = '';
+// EVERY PAGE OF LABELS, NOT THE FIRST HUNDRED. `?per_page=100` with no paging is a hard cap, not a
+// page size, which is the same defect this file's board reader already carries a comment about.
+// Measured: TentaclePit has 152 labels, most of them migrated Linear ids, and its WP- labels sort
+// after TEN-54 so they land on page two. The first cut read page one only and reported that repo as
+// having no work packages at all. That is not merely a short list on screen. wpAllocate reads these
+// to decide the next number, so a package that exists on page two is invisible to it and the number
+// gets handed out AGAIN, which is exactly the guarantee allocation exists to give.
+//
+// It REFUSES past ten pages rather than truncating. A repo with a thousand labels is a different
+// problem, and a reader that silently stops is how this happened in the first place. (D13)
+async function wpAllLabels(ownerRepo){
+  const out=[];
+  for(let page=1; page<=10; page++){
+    const r=await ghApi('/repos/'+ownerRepo+'/labels?per_page=100&page='+page);
+    if(!r.ok) throw new Error('GitHub '+r.status);
+    const j=await r.json();
+    if(!Array.isArray(j)) throw new Error('unexpected label list');
+    out.push(...j);
+    if(j.length<100) return out;
+  }
+  throw new Error('more than 1000 labels, so the list was not read to the end');
+}
 // THE IN-FLIGHT READ IS SHARED, NOT SKIPPED, and that is the whole of a bug worth writing down.
 // This used to be a plain `_wpLoading` flag with `if(_wpLoading) return`, which meant a caller that
 // AWAITED a forced read got control back immediately whenever any other read happened to be in
@@ -3704,15 +3726,13 @@ function loadWorkPackages(force){
     const repos=wpRepos(); const seen={}; const unread=[];
     await Promise.all(repos.map(async or=>{
       try{
-        const r=await ghApi('/repos/'+or+'/labels?per_page=100');
-        if(!r.ok){ unread.push(or+' ('+r.status+')'); return; }
-        (await r.json()).forEach(l=>{
+        (await wpAllLabels(or)).forEach(l=>{
           if(!l||!WP_RE.test(l.name||'')) return;
           const e=seen[l.name]=seen[l.name]||{ id:l.name, title:'', repos:[] };
           if(!e.title && l.description) e.title=String(l.description).trim();
           e.repos.push(or);
         });
-      }catch(e){ unread.push(or); }
+      }catch(e){ unread.push(or+' ('+((e&&e.message)||e)+')'); }
     }));
     _wpIndex=Object.keys(seen).map(k=>seen[k]).sort((x,y)=>wpNum(x.id)-wpNum(y.id));
     // Named, never swallowed. A partial read is why a number could otherwise be handed out twice.
@@ -4712,7 +4732,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v117';
+const TIARA_VERSION = 'board-v118';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
