@@ -3684,13 +3684,23 @@ function wpConflicts(){
 // null is "not read yet" and [] is "read, and there are none". Kept apart, as everywhere else here.
 let _wpIndex = null;
 let _wpIndexErr = '';
-let _wpLoading = false;
-async function loadWorkPackages(force){
-  if(!GH.token) return;
-  if(_wpLoading) return;
-  if(_wpIndex && !force) return;
-  _wpLoading=true;
-  try{
+// THE IN-FLIGHT READ IS SHARED, NOT SKIPPED, and that is the whole of a bug worth writing down.
+// This used to be a plain `_wpLoading` flag with `if(_wpLoading) return`, which meant a caller that
+// AWAITED a forced read got control back immediately whenever any other read happened to be in
+// flight, and then drew from the index as it was BEFORE its own write. Measured shape: make a
+// package while the two-minute poll is redrawing, and the package does not appear until the next
+// reload, because the read that was supposed to pick it up never ran. An await that does not wait
+// is worse than no await, because every caller is written as though it did.
+//
+// So: one promise, shared. A second plain caller joins the read already happening. A FORCED caller
+// waits for it and then starts a fresh one, because "force" exists precisely to see a write that
+// landed after the in-flight read began.
+let _wpLoad = null;
+function loadWorkPackages(force){
+  if(!GH.token) return Promise.resolve();
+  if(_wpLoad) return force ? _wpLoad.then(()=>loadWorkPackages(true)) : _wpLoad;
+  if(_wpIndex && !force) return Promise.resolve();
+  _wpLoad = (async ()=>{
     const repos=wpRepos(); const seen={}; const unread=[];
     await Promise.all(repos.map(async or=>{
       try{
@@ -3707,7 +3717,8 @@ async function loadWorkPackages(force){
     _wpIndex=Object.keys(seen).map(k=>seen[k]).sort((x,y)=>wpNum(x.id)-wpNum(y.id));
     // Named, never swallowed. A partial read is why a number could otherwise be handed out twice.
     _wpIndexErr=unread.length?('the labels of '+unread.join(', ')+' could not be read'):'';
-  } finally { _wpLoading=false; }
+  })().finally(()=>{ _wpLoad=null; });
+  return _wpLoad;
 }
 // Every package, whether or not anything is in it, with its tickets and its state. The index gives
 // the packages that EXIST; the tickets give what is IN them. A package a ticket claims but that is
@@ -3840,14 +3851,27 @@ async function wpCreate(){
     const title=(prompt('New work package '+id+'.\n\nGive it a readable name. It becomes the label\'s description, so '+id+' and its name travel together on every ticket that joins it.\n\nA work package is only a label: it belongs to no repo, has no issue behind it and sits in no lane, and tickets from any projects can share one.')||'').trim();
     if(!title){ setStatus('no name given, so nothing was made'); return; }
     setStatus('creating '+id+' in every project…');
-    const failed=[];
-    await Promise.all(wpRepos().map(async or=>{ try{ await wpEnsureLabel(or,id,title); }catch(e){ failed.push(or); } }));
+    const repos=wpRepos(); const failed=[];
+    await Promise.all(repos.map(async or=>{ try{ await wpEnsureLabel(or,id,title); }catch(e){ failed.push(or+' ('+((e&&e.message)||e)+')'); } }));
+    // EVERY project refusing is not a partial success. The old wording said "made, but not in ..."
+    // whichever way it went, so a creation that landed nowhere at all reported itself as a creation
+    // and then drew no package, which is the most confusing pair of things a screen can do.
+    if(failed.length===repos.length){
+      setStatus('⛔ '+id+' could not be created in any project: '+failed.join('; '));
+      return;
+    }
     await loadWorkPackages(true);
     openState.add('wp:'+id);
     renderWP();
-    setStatus(failed.length
-      ? ('⚠ '+id+' made, but not in '+failed.join(', ')+'. A ticket there cannot join it until that is fixed.')
-      : ('🟢 '+id+' · '+title));
+    // Confirm it is actually THERE rather than trusting the write. If the read comes back without
+    // it, say so: a package that was made and cannot be seen is a different problem from one that
+    // was never made, and silence would make them look identical.
+    const landed=(_wpIndex||[]).some(e=>e.id===id);
+    setStatus(!landed
+      ? ('⚠ '+id+' was created, but reading the labels back did not find it. Reload; if it is still missing, the token may not see every project.')
+      : failed.length
+        ? ('⚠ '+id+' made, but not in '+failed.join('; ')+'. A ticket there cannot join it until that is fixed.')
+        : ('🟢 '+id+' · '+title));
   }catch(e){ setStatus('⚠ '+((e&&e.message)||e)); }
 }
 // One place that puts a ticket in a package, and takes it out of whatever it was in. Two calls, in
@@ -3915,7 +3939,7 @@ function renderWP(){
     const makeBtn=`<div class="wpbar"><button class="tb primary" onclick="wpCreate()">New work package</button>${_wpIndexErr?`<span class="wpaddwhy"> ${esc(_wpIndexErr)}, so this list may be short and a new number cannot be allocated.</span>`:''}</div>`;
     if(_wpIndex===null){
       el.innerHTML=head+`<div class="cmeta">Reading the work packages…</div>`;
-      loadWorkPackages().then(()=>renderWP()).catch(e=>noted('reading work packages',e,'tell'));
+      loadWorkPackages().then(()=>{ if(_wpIndex!==null) renderWP(); }).catch(e=>noted('reading work packages',e,'tell'));
       return;
     }
     const groups=wpGroups();
@@ -4688,7 +4712,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v116';
+const TIARA_VERSION = 'board-v117';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
