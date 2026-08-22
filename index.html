@@ -490,6 +490,42 @@
   .cpill.cnone{background:var(--c-f1eef6);color:var(--c-8a7a98);}
   .cpill.cna{background:var(--c-eef4fb);color:var(--c-6a86a8);}
   .cnote{font-size:var(--t-sm);color:var(--ink-3,var(--ink-3));line-height:1.5;font-style:italic;}
+  /* THREE STATES, NOT TWO (_bootstrap#39, ticket 126). compliance.json has carried generatedAt from
+     the beginning and this page never read it, so a scan that STOPPED RUNNING rendered exactly like
+     a clean one: the last good result, green, forever. That is the autosync failure again, the one
+     that failed 294 consecutive times over fourteen days with nothing on any screen changing colour,
+     and it is the half of it this page can actually see.
+     One banner, three looks, three leading words, so which state you are in is the first thing on
+     the tab rather than something you work out from the rows. */
+  .cscan{border:1.5px solid var(--line2);border-radius:var(--r-lg);padding:var(--sp-60) var(--sp-80);
+         margin:0 0 var(--sp-80);font-size:var(--t-sm);line-height:1.6;}
+  .cscan.cscanok{background:var(--c-f2faf6);border-color:var(--c-cfe9dc);color:var(--c-2f6b50);}
+  .cscan.cscanfind{background:var(--c-fdeecd);border-color:var(--c-eec98f);color:var(--c-8a5e20);}
+  .cscan.cscandnr{background:var(--c-fbe7ee);border-color:var(--c-f0c9d6);color:var(--blocked-i);}
+  /* The rows under a stale scan. Grey and dashed rather than recoloured, because the statuses are
+     still the last thing that was measured and deleting them would throw away the only information
+     there is. What they may not do is keep wearing the colour of a fresh pass, so nothing here reads
+     as green, and every row leads with the words "did not run". D37: a state is a word. */
+  .cstale .cpill,.cstale .ccov,.cstale .cdeny{background:var(--c-f4f0f8);color:var(--c-8a7a98);
+                               border:var(--sp-1px) dashed var(--c-c9b8d6);}
+  .cstale .cpill.cdnr{background:var(--c-fbe7ee);color:var(--c-c0396a);border:var(--sp-1px) solid var(--c-f0c9d6);}
+  /* THE GATE LOG, DRAWN (_bootstrap#39, ticket 126). guard-bash has written .claude/gate.log since
+     BOOT-31 and nothing ever read it, so the estate collected 9,651 refusals across 43 rules in one
+     repo while the cross-project rule's ten-day misfire was still found by hand. compliance.mjs
+     counts them now; this draws them. Data collected and never rendered is data never collected. */
+  .cgate{margin:0 var(--sp-100) var(--sp-110);padding:var(--sp-70) var(--sp-80);background:var(--c-faf7fc);
+         border:1.5px solid var(--line2);border-radius:var(--r-lg);}
+  .cgateh{font-weight:800;font-size:var(--t-sm);color:var(--ink-1,var(--ink-1));margin-bottom:var(--sp-40);
+          display:flex;align-items:center;gap:var(--sp-50);flex-wrap:wrap;}
+  .cgatenote{font-size:var(--t-sm);color:var(--ink-3,var(--ink-3));line-height:1.55;max-width:78ch;}
+  .cgaterules{margin-top:var(--sp-55);display:grid;gap:var(--sp-25);}
+  .cgaterule{display:flex;gap:var(--sp-50);align-items:baseline;line-height:1.5;}
+  .cgaten{font-weight:800;font-size:var(--t-sm);color:var(--blocked-i);font-variant-numeric:tabular-nums;
+          min-width:3.2rem;text-align:right;flex:0 0 auto;}
+  .cgatemsg{font-family:ui-monospace,monospace;font-size:var(--t-xs);color:var(--ink-2,var(--ink-2));word-break:break-word;}
+  .cdeny{font-size:var(--t-xs);font-weight:800;background:var(--c-fbe7ee);color:var(--c-c0396a);
+         padding:var(--sp-18) var(--sp-50);border-radius:var(--r-pill);white-space:nowrap;}
+  .cdeny.cdeny0{background:var(--c-f1eef6);color:var(--c-8a7a98);}
   /* An explanation opens over the board, not inside it (#71). It used to be a <details> in a grid
      column, and an open one made that column span the whole card: every other column reflowed and
      the row you had just clicked jumped out from under the cursor. The overlay is fixed, so
@@ -3459,6 +3495,34 @@ function detailHtml(a,q,i,scope){ scope=scope||'';
 // next to this page and there is no same-origin copy. Shape: { generatedAt, keyed, apps:[{name,repo,modern,
 // dimensions:{bootstrap|cicd|tests:{status:'ok|partial|none', checks:[{id,label,pass,unknown}]}}}] }.
 let _compliance = null;
+// ---- Is this a scan, or the memory of one? (_bootstrap#39, ticket 126) ------------------------
+// compliance.json says when it was generated and, until this version, nothing on this page asked.
+// So the tab had two states where it needed three: clean and findings, with did-not-run wearing
+// clean's clothes. A stale scan is the more dangerous of the two failures, because a board that has
+// stopped being updated looks calmer than one reporting problems.
+//
+// A DAY IS THE LINE, and it is the ticket's line rather than one chosen here. The scan is driven
+// every four hours, so a file older than twenty four hours has missed at least five runs; anything
+// shorter and a laptop that was shut overnight becomes an alarm, which is how alarms get ignored.
+//
+// ABSENT OR UNPARSEABLE IS ALSO DID-NOT-RUN. A scan that cannot say when it ran cannot be shown to
+// be recent, and the whole point of this is that not knowing is not a pass (FD-0013).
+const COMP_STALE_MS = 24*60*60*1000;
+function compScanAge(c){
+  // Never throws: this decides what the whole tab renders as, and render() must never throw.
+  const out = { abs:'', rel:'', stale:true, dated:false };
+  try{
+    if(!c || !c.generatedAt) return out;
+    const t = Date.parse(c.generatedAt);
+    if(!isFinite(t)) return out;
+    const w = fmtWhen(c.generatedAt);
+    out.abs = w.abs; out.rel = w.rel; out.dated = true;
+    // A future timestamp is a wrong clock, not a fresh scan, and fmtWhen already says so in words.
+    // It is not treated as stale, because the file did arrive; the clock is the thing to fix.
+    out.stale = (Date.now() - t) > COMP_STALE_MS;
+  }catch(e){ noted('compliance scan age',e); }
+  return out;
+}
 // Which dimensions have had their passing checks expanded, keyed `product|dimension`. Deliberately
 // NOT persisted: it is a "show me the rest of this one" gesture, not an arrangement, so it resets
 // with the page the way an item panel does rather than the way a container does. (ticket 117)
@@ -3541,14 +3605,18 @@ function wfSection(a){
     return `<div class="pjsec"><h3>Xcode Cloud</h3><div class="muted">No compliance scan on this browser yet. In <code>_bootstrap</code> run <code>bash scripts/compliance-refresh.sh</code>, then reload.</div></div>`;
   const ca=compAppFor(a);
   if(!ca) return `<div class="pjsec"><h3>Xcode Cloud</h3><div class="muted">This project is not in the scan, so nothing is known about its workflows.</div></div>`;
-  let when=''; try{ when=c.generatedAt?new Date(c.generatedAt).toLocaleString():''; }catch(e){ noted('workflow scan timestamp',e); }
+  // Same generatedAt, same lie if it goes unread: this line claims a scan, and a scan that stopped
+  // running still fills it in. It says so here for the same reason the compliance tab does. (126)
+  const age=compScanAge(c);
+  const when=age.dated?`${age.abs}, ${age.rel}`:'a scan that does not say when it ran';
+  const staleWord=age.stale?' <b>That scan did not run recently, so these are the workflows as they were then.</b>':'';
   const chips=wfChips(ca);
   // Only promise a link when one is actually there. A footnote about clicking a chip, under a row
   // that says "no Xcode Cloud workflow", is the page telling you about something it did not draw.
   const linked=chips.indexOf('<a ')>=0;
   return `<div class="pjsec"><h3>Xcode Cloud \u00b7 what actually runs</h3>
     <div class="wfset">${chips}</div>
-    <div class="muted" style="margin-top:.5rem">From the compliance scan of ${esc(when)}, not from the runbook.${linked?' A chip opens this app\u2019s Xcode Cloud page in App Store Connect: a workflow has no address of its own, so every workflow here opens the same page.':''}</div></div>`;
+    <div class="muted" style="margin-top:.5rem">From the compliance scan of ${esc(when)}, not from the runbook.${staleWord}${linked?' A chip opens this app\u2019s Xcode Cloud page in App Store Connect: a workflow has no address of its own, so every workflow here opens the same page.':''}</div></div>`;
 }
 
 // The five dimensions, named once. The overlay (#71) titles itself with the same words the column
@@ -3612,6 +3680,62 @@ function compIcon(ca){
   if(!a) return '';
   return `<span class="emojitile">${_icon[a.id]?`<img class="appicon" src="${_icon[a.id]}" alt="">`:(a.emoji||'')}</span>`;
 }
+// ---- The gate log, per repo (_bootstrap#39, ticket 126) ---------------------------------------
+// compliance.mjs writes `gateLog` for every scanned repo: total refusals, the window they cover,
+// how many distinct rules produced them, and a count per rule. FOUR ANSWERS, AND NO TWO OF THEM ARE
+// EVER COLLAPSED, because collapsing them is the whole defect this ticket is about:
+//
+//   no `gateLog` key   this scan predates the count. Nothing is known, and it says so.
+//   null               no .claude/gate.log in that repo, so the gate has never run there.
+//   total 0            it ran and refused nothing. scripts/gate-status.sh calls that the HEALTHIEST
+//                      state, so it is reported as one and not as an absence.
+//   total > 0          a count, with the window, because 580 refusals over nine months and 580 over
+//                      one afternoon are different facts about the same rule.
+//
+// The rule keys arrive already collapsed and truncated at 72 characters by compliance.mjs's
+// ruleKey(), so they are printed as given rather than re-shortened here.
+function gateChip(a){
+  try{
+    if(!a || !('gateLog' in a)) return '';
+    const g=a.gateLog;
+    if(g===null||g===undefined)
+      return `<span class="cdeny cdeny0" title="there is no .claude/gate.log in this repo, so the gate has never run here. That is not the same as running and refusing nothing.">no gate log</span>`;
+    const n=(g&&typeof g.total==='number')?g.total:null;
+    if(n===null||n===0) return '';   // zero is healthy and says so in the row, not in the summary
+    return `<span class="cdeny" title="refusals the guard wrote to .claude/gate.log. Open the row for the rules and the window they cover.">${esc(String(n))} denial${n===1?'':'s'}</span>`;
+  }catch(e){ noted('gate log chip',e); return ''; }
+}
+const gateDay = ts => { try{ return String(ts).slice(0,10); }catch(e){ return ''; } };
+function gateBlock(a){
+  const box=(head,body)=>`<div class="cgate"><div class="cgateh">🛡 Gate log ${head}</div><div class="cgatenote">${body}</div></div>`;
+  try{
+    if(!a || !('gateLog' in a))
+      return box('', 'This scan predates the gate log count, so nothing is known about what the guard has refused here. Re-run <code>node scripts/compliance.mjs</code> in <code>_bootstrap</code>.');
+    const g=a.gateLog;
+    if(g===null||g===undefined)
+      return box('<span class="cdeny cdeny0">no log</span>', 'There is no <code>.claude/gate.log</code> in this repo, so the gate has never run here. That is a different answer from a gate that ran and refused nothing, and it is the weaker one.');
+    const total=(g&&typeof g.total==='number')?g.total:null;
+    if(total===null)
+      return box('', 'The scan recorded a gate log in a shape this page does not understand, so nothing is claimed about it.');
+    const win=(g.firstAt&&g.lastAt)
+      ? `between ${esc(gateDay(g.firstAt))} and ${esc(gateDay(g.lastAt))}`
+      : 'over a window the scan did not record';
+    if(total===0)
+      return box('<span class="cdeny cdeny0">refused nothing</span>', `The gate has a log here and it holds no refusals ${win}. That is the healthiest state there is, not a missing one.`);
+    const pairs=Object.entries((g.byRule&&typeof g.byRule==='object')?g.byRule:{})
+      .filter(p=>typeof p[1]==='number').sort((x,y)=>y[1]-x[1]);
+    const SHOWN=10;
+    const rules=pairs.slice(0,SHOWN).map(([k,n])=>
+      `<div class="cgaterule"><span class="cgaten">${esc(String(n))}</span><span class="cgatemsg">${esc(k)}</span></div>`).join('');
+    // A cap that is not named reads as "that was all of them", which is the same lie in miniature.
+    const hidden=Math.max(0,pairs.length-SHOWN);
+    const more=hidden?`<div class="cgatenote">${esc(String(hidden))} further rule${hidden===1?'':'s'} not listed here, the smallest counts. The full set is in <code>.claude/gate.log</code>.</div>`:'';
+    const nRules=(typeof g.rules==='number')?g.rules:pairs.length;
+    return `<div class="cgate"><div class="cgateh">🛡 Gate log <span class="cdeny">${esc(String(total))} denial${total===1?'':'s'}</span></div>
+      <div class="cgatenote">${esc(String(total))} refusal${total===1?'':'s'} ${win}, from ${esc(String(nRules))} distinct rule${nRules===1?'':'s'}. A rule at the top of this list is either doing its job or misfiring, and the count is the only thing that tells you which.</div>
+      <div class="cgaterules">${rules}</div>${more}</div>`;
+  }catch(e){ noted('gate log block',e); return box('', 'The gate log could not be read from this scan.'); }
+}
 function renderCompliance(){
   const el=$('#compliance'); if(!el) return;
   const c=_compliance;
@@ -3620,6 +3744,10 @@ function renderCompliance(){
     return;
   }
   const dims=CDIMS;
+  // Decided once, here, and then used by every row: a stale scan does not report per row, it
+  // reports per file, so one answer governs the whole tab. (ticket 126)
+  const age=compScanAge(c), stale=age.stale;
+  const dnrPill=stale?`<span class="cpill cdnr" title="this scan is older than a day, so what this row shows is the last thing that was measured, not what is true now">⏱ did not run</span>`:'';
   // apply the saved drag order (by product name); unknown/new apps fall to the end alphabetically.
   // Infrastructure collects at the end regardless, because those rows carry no checks and sorting
   // them alphabetically put unscoreable rows in the middle of scored ones. (#116)
@@ -3638,7 +3766,7 @@ function renderCompliance(){
     // could be checked. Neither is green and neither is silence. (D48)
     if(a.kind==='infrastructure' || a.missing){
       const word=a.missing?'not checked':'infrastructure';
-      return `<div class="crow cflat"><span class="cname">${compIcon(a)}${esc(a.name)}</span><span class="cpill ${a.missing?'cno':'cna'}">${word}</span><span class="cflatnote">${esc(a.note||'')}</span></div>`;
+      return `<div class="crow cflat"><span class="cname">${compIcon(a)}${esc(a.name)}</span>${dnrPill}<span class="cpill ${a.missing?'cno':'cna'}">${word}</span><span class="cflatnote">${esc(a.note||'')}</span></div>`;
     }
     const missOf=dm=>((d[dm]||{}).checks||[]).filter(c=>!c.unknown && !c.pass).length;
     const pills=dims.map(dm=>compPill((d[dm[0]]||{}).status, missOf(dm[0]))).join('');
@@ -3683,12 +3811,27 @@ function renderCompliance(){
     const tag=a.modern?'':'<span class="clegacy">legacy</span>';
     const cov=(d.tests&&d.tests.coverage!=null)?d.tests.coverage:null;
     const covChip=cov!=null?`<span class="ccov" title="line coverage ratchet floor (make coverage); a guaranteed lower bound">${cov}% cov</span>`:'';
-    return `<details class="crow" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${compIcon(a)}${esc(a.name)} ${tag}</span><span class="cpills">${covChip}${pills}</span></summary><div class="cbody">${body}</div></details>`;
+    return `<details class="crow" data-key="comp:${esc(a.name)}" ${openState.has('comp:'+a.name)?'open':''}><summary><span class="cgrip" title="drag to reorder">⠿</span><span class="cname">${compIcon(a)}${esc(a.name)} ${tag}</span><span class="cpills">${dnrPill}${gateChip(a)}${covChip}${pills}</span></summary><div class="cbody">${body}</div>${gateBlock(a)}</details>`;
   }).join('');
-  let when=''; try{ when=c.generatedAt?new Date(c.generatedAt).toLocaleString():''; }catch(e){ noted('scan timestamp format',e); }
   const note=c.keyed?'':' · no Xcode Cloud key present, so CI/CD cloud checks show as unknown';
+  // The three states, decided in one place and said in one banner (ticket 126). `scored` excludes
+  // the infrastructure and not-checked rows: they carry no dimensions, so they can be neither clean
+  // nor short, and counting them would make both numbers mean nothing.
+  const scored=ordered.filter(a=>a.kind!=='infrastructure' && !a.missing);
+  const shortOf=scored.filter(a=>{ const d=a.dimensions||{};
+    return dims.some(dm=>{ const s=(d[dm[0]]||{}).status; return s==='partial'||s==='none'; }); });
+  const banner = stale
+    ? `<div class="cscan cscandnr">⏱ <b>Did not run.</b> ${age.dated
+        ? `The newest scan this browser has is from ${esc(age.abs)}, ${esc(age.rel)}.`
+        : 'This file carries no usable <code>generatedAt</code>, so nothing here can say when it last ran.'}
+       Everything below is the last thing that was measured, not what is true now. A scan that stopped running is not a scan that passed.
+       <br><span class="cexpfix">In <code>_bootstrap</code> run <code>bash scripts/compliance-refresh.sh</code>, then reload.</span></div>`
+    : shortOf.length
+      ? `<div class="cscan cscanfind">◐ <b>Findings.</b> Scanned ${esc(age.abs)}, ${esc(age.rel)}. ${shortOf.length} of ${scored.length} scored product${scored.length===1?'':'s'} ${shortOf.length===1?'is':'are'} short in at least one dimension, and ${shortOf.length===1?'it is':'they are'} below.</div>`
+      : `<div class="cscan cscanok">✓ <b>Clean.</b> Scanned ${esc(age.abs)}, ${esc(age.rel)}. All ${scored.length} scored product${scored.length===1?'':'s'} pass every check in all five dimensions.</div>`;
   el.innerHTML=`<div class="phead">Compliance · where each product stands, auto-checked</div>
-    <div class="cmeta">Snapshot ${esc(when)}${esc(note)}. Every status is the rollup of the concrete checks below; open a product to see exactly what is missing. Regenerate with <code>node scripts/compliance.mjs</code> in _bootstrap.</div>
+    ${banner}
+    <div class="cmeta">Every status is the rollup of the concrete checks below; open a product to see exactly what is missing, and what its gate has refused${esc(note)}. Regenerate with <code>node scripts/compliance.mjs</code> in _bootstrap.</div>
     ${(function(){
         const ea=c.explainAudit;
         if(!ea) return '<div class="cexpwarn">This scan predates check explanations. Regenerate it to get them.</div>';
@@ -3717,7 +3860,7 @@ function renderCompliance(){
           <br><span class="cexpfix">Bring the number up to date in <code>_bootstrap/FACTORY_VERSION</code> and <code>template/.factory-version</code> together, in its own commit.</span></div>`;
       })()}
     <div class="clegend">${compPill('ok')} all checks pass &nbsp; ${compPill('partial')} some missing (listed) &nbsp; ${compPill('none')} core not in place &nbsp; ${compPill('na')} optional, not set up (cloud CI or TestFlight)</div>
-    <div id="complist">${rows}</div>`;
+    <div id="complist"${stale?' class="cstale"':''}>${rows}</div>`;
 }
 
 let portfolioSort = 'auto';
@@ -4071,7 +4214,7 @@ function renderProjectIfOpen(){
 function copyCmd(id){ const t=document.getElementById(id).textContent; navigator.clipboard.writeText(t).then(()=>setStatus('copied: '+t.slice(0,40)+'…')); }
 
 function showOnboard(on){ const o=document.getElementById('onboard'); if(o) o.style.display=on?'block':'none'; document.getElementById('tabs').style.display=on?'none':'flex'; document.getElementById('board').style.display=on?'none':'block'; }
-const TIARA_VERSION = 'board-v111';
+const TIARA_VERSION = 'board-v112';
 // Everything the page remembers about where you were. Reading it is one place, so a key that
 // fails to parse costs you that one preference and nothing else.
 function loadViewPrefs(){
